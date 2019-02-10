@@ -15,14 +15,15 @@ object Model {
   case class Node(
     id: Long,
     location: Location,
-    attributes: Attributes
+    attributes: Attributes,
+    edges: Set[Edge] = Set.empty
   )
 
   case class Edge(
     id: Long,
-    attributes: Attributes,
     source: Long,
-    target: Long
+    target: Long,
+    attributes: Attributes
   )
 
 }
