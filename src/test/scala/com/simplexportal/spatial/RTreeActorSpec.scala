@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 20019 SimplexPortal Ltd. <https://www.simplexportal.com>
+ */
+
 package com.simplexportal.spatial
 
 import akka.actor.ActorSystem
