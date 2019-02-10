@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 20019 SimplexPortal Ltd. <https://www.simplexportal.com>
+ * Copyright (C) 2019 SimplexPortal Ltd. <https://www.simplexportal.com>
  */
 
 package com.simplexportal.spatial
