@@ -11,33 +11,35 @@ object RTreeActor {
 
   def props(boundingBox: Model.BoundingBox): Props = Props(new RTreeActor(boundingBox))
 
-  sealed  trait  RTreeActions
-  case class AddNode(node: Model.Node) extends RTreeActions
-  case class GetNode(id: Long) extends RTreeActions
-  case class ConnectNodes(edge: Model.Edge) extends RTreeActions
-  object GetMetrics extends RTreeActions
+  sealed trait  RTreeCommands
+  case class AddNode(node: Model.Node) extends RTreeCommands
+  case class GetNode(id: Long) extends RTreeCommands
+  case class ConnectNodes(edge: Model.Edge) extends RTreeCommands
+  object GetMetrics extends RTreeCommands
 
-  sealed  trait  RTreeMessages
-  case class Metrics(nodes: Long, edges: Long)
+
+
+  sealed trait RTreeDataTransfer
+  case class Metrics(nodes: Long, edges: Long) extends RTreeDataTransfer
 
 }
 
 class RTreeActor(boundingBox: Model.BoundingBox) extends Actor with ActorLogging {
 
   // Internal representation of Nodes and Edges.
-
+  sealed trait RTreeEvents
   protected case class Node(
     location: Model.Location,
     attributes: Model.Attributes,
     outs: Set[Long] = Set.empty,
     ins: Set[Long] = Set.empty
-  )
+  ) extends RTreeEvents
 
   protected case class Edge(
     source: Long,
     target: Long,
     attributes: Model.Attributes
-  )
+  ) extends RTreeEvents
 
   // TODO: For performance, should be replaced by a binary tree or mutable Map ??
 
@@ -57,17 +59,16 @@ class RTreeActor(boundingBox: Model.BoundingBox) extends Actor with ActorLogging
 
     case AddNode(modelNode) =>
       addNode(modelNode.id, Node(modelNode.location, modelNode.attributes))
+      sender ! akka.Done
 
     case ConnectNodes(modelEdge) =>
-
       // Add "out" connection.
       val addedOut = nodes.get(modelEdge.source).map(n => addNode(modelEdge.source, n.copy(outs = n.outs + modelEdge.id))).isDefined
-
       // Add "in" connection.
       val addedIn = nodes.get(modelEdge.target).map(n => addNode(modelEdge.target, n.copy(ins = n.ins + modelEdge.id))).isDefined
-
       // Add edge data only if the node is present as In or Out.
       if(addedOut || addedIn) addEdge(modelEdge.id, Edge(modelEdge.source, modelEdge.target, modelEdge.attributes))
+      sender ! akka.Done
 
   }
 

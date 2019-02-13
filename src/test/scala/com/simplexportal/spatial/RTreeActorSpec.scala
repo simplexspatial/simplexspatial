@@ -31,6 +31,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       rTreeActor ! GetNode(10)
       rTreeActor ! GetMetrics
 
+      expectMsg(akka.Done)
       expectMsg(Some(Node(10, Location(5,5), Map(10L -> "17 Redwood Avenue"))))
       expectMsg(Metrics(1, 0))
     }
@@ -47,6 +48,10 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
         rTreeActor ! GetMetrics
 
         val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
+
+        expectMsg(akka.Done)
+        expectMsg(akka.Done)
+        expectMsg(akka.Done)
         expectMsg(100.millis, Some(Node(10, Location(5,5), Map(10L -> "source node"), Set(expectedEdge))))
         expectMsg(100.millis, Some(Node(11, Location(5,6), Map(10L -> "target node"), Set(expectedEdge))))
         expectMsg(Metrics(2, 1))
@@ -61,6 +66,9 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
         rTreeActor ! GetMetrics
 
         val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
+
+        expectMsg(akka.Done)
+        expectMsg(akka.Done)
         expectMsg(100.millis, Some(Node(10, Location(5,5), Map(10L -> "source node"), Set(expectedEdge))))
         expectMsg(Metrics(1, 1))
       }
@@ -74,6 +82,9 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
         rTreeActor ! GetMetrics
 
         val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
+
+        expectMsg(akka.Done)
+        expectMsg(akka.Done)
         expectMsg(100.millis, Some(Node(11, Location(5,6), Map(10L -> "target node"), Set(expectedEdge))))
         expectMsg(Metrics(1, 1))
       }
@@ -84,6 +95,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
         rTreeActor ! GetMetrics
 
+        expectMsg(akka.Done)
         expectMsg(Metrics(0, 0))
       }
 
