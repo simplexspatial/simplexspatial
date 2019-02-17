@@ -6,50 +6,78 @@ package com.simplexportal.spatial
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.simplexportal.spatial.RTreeActor._
+import akka.persistence._
+import com.simplexportal.spatial.Model.{Attributes, Edge, Location}
+import collection.immutable.Seq
 
 object RTreeActor {
 
   def props(boundingBox: Model.BoundingBox): Props = Props(new RTreeActor(boundingBox))
 
+  // TODO: Parameters of the commands should be not other Messages. Try to use parameters directly.
+  //       For example: AddNode(id: Long, location: Location)
   sealed trait  RTreeCommands
-  case class AddNode(node: Model.Node) extends RTreeCommands
+
+  case class AddNodeCommand(
+    id: Long,
+    location: Location,
+    attributes: Attributes,
+    edges: Set[ConnectNodesCommand] = Set.empty
+  ) extends RTreeCommands
+
+  case class ConnectNodesCommand(
+    id: Long,
+    source: Long,
+    target: Long,
+    attributes: Attributes
+  ) extends RTreeCommands
+
   case class GetNode(id: Long) extends RTreeCommands
-  case class ConnectNodes(edge: Model.Edge) extends RTreeCommands
+
   object GetMetrics extends RTreeCommands
-
-
 
   sealed trait RTreeDataTransfer
   case class Metrics(nodes: Long, edges: Long) extends RTreeDataTransfer
 
-}
-
-class RTreeActor(boundingBox: Model.BoundingBox) extends Actor with ActorLogging {
-
   // Internal representation of Nodes and Edges.
-  sealed trait RTreeEvents
-  protected case class Node(
+
+  protected case class NodeIntRepr(
     location: Model.Location,
     attributes: Model.Attributes,
     outs: Set[Long] = Set.empty,
     ins: Set[Long] = Set.empty
-  ) extends RTreeEvents
+  )
 
-  protected case class Edge(
+  protected case class EdgeIntRepr(
     source: Long,
     target: Long,
     attributes: Model.Attributes
-  ) extends RTreeEvents
+  )
+
+  // Persisted messages.
+
+  sealed trait  RTreeEvents
+  case class AddNodeEvent(id: Long, node:NodeIntRepr) extends RTreeEvents
+  case class AddEdgeEvent(id: Long, edge: EdgeIntRepr) extends RTreeEvents
+
+}
+
+class RTreeActor(boundingBox: Model.BoundingBox) extends PersistentActor with ActorLogging {
+
+  override def persistenceId: String = s"rtree-status-[(${boundingBox.min.lon},${boundingBox.min.lat}),(${boundingBox.max.lon},${boundingBox.max.lat})]"
+
+
 
   // TODO: For performance, should be replaced by a binary tree or mutable Map ??
 
   // Table with Nodes by Id.
-  var nodes: Map[Long, Node] = Map.empty
+  var nodes: Map[Long, NodeIntRepr] = Map.empty
 
   // Table with Edges by Id.
-  var edges: Map[Long, Edge] = Map.empty
+  var edges: Map[Long, EdgeIntRepr] = Map.empty
 
-  override def receive: Receive = {
+
+  override def receiveCommand: Receive = {
 
     case GetNode(id) =>
       sender ! nodes.get(id).map(node => reconstructNode(id, node))
@@ -57,29 +85,59 @@ class RTreeActor(boundingBox: Model.BoundingBox) extends Actor with ActorLogging
     case GetMetrics =>
       sender ! Metrics(nodes.size, edges.size)
 
-    case AddNode(modelNode) =>
-      addNode(modelNode.id, Node(modelNode.location, modelNode.attributes))
-      sender ! akka.Done
+    case AddNodeCommand(id, location, attributes, edges) =>
+      persistAll( buildAddNodeEvents(id, location, attributes, edges) ) { event =>
+        event match {
+          case e: AddNodeEvent => processAddNodeEvent(e)
+          case e: AddEdgeEvent => processAddEdgeEvent(e)
+        }
+        sender ! akka.Done
+      }
 
-    case ConnectNodes(modelEdge) =>
-      // Add "out" connection.
-      val addedOut = nodes.get(modelEdge.source).map(n => addNode(modelEdge.source, n.copy(outs = n.outs + modelEdge.id))).isDefined
-      // Add "in" connection.
-      val addedIn = nodes.get(modelEdge.target).map(n => addNode(modelEdge.target, n.copy(ins = n.ins + modelEdge.id))).isDefined
-      // Add edge data only if the node is present as In or Out.
-      if(addedOut || addedIn) addEdge(modelEdge.id, Edge(modelEdge.source, modelEdge.target, modelEdge.attributes))
-      sender ! akka.Done
+    case ConnectNodesCommand(id, source, target, attributes) =>
+      persist( buildAddEdgeEvent(id, source, target, attributes) ) { event =>
+        processAddEdgeEvent(event)
+        sender ! akka.Done
+      }
 
   }
 
-  private def addNode(id: Long, node: Node) = nodes = nodes + ( id -> node )
+  def buildEvents(): scala.collection.immutable.Seq[AddNodeEvent] = ???
 
-  private def addEdge(id: Long, edge: Edge) = edges = edges + ( id -> edge )
+  override def receiveRecover: Receive = {
+    case event: AddNodeEvent => processAddNodeEvent(event)
+    case event: AddEdgeEvent => processAddEdgeEvent(event)
+  }
 
-  private def reconstructEdge(id: Long, edge: Edge) =
+  def processEvents: Receive = {
+    case event: AddNodeEvent => processAddNodeEvent(event)
+    case event: AddEdgeEvent => processAddEdgeEvent(event)
+  }
+
+  private def buildAddNodeEvents(id: Long, location: Location, attributes: Attributes, edges: Set[ConnectNodesCommand]) =
+    Seq(AddNodeEvent(id, NodeIntRepr(location, attributes))) ++ edges.map(e => buildAddEdgeEvent(e.id, e.source, e.target, e.attributes))
+
+  private def buildAddEdgeEvent(id: Long, source: Long, target: Long, attributes: Attributes): AddEdgeEvent = AddEdgeEvent(id, EdgeIntRepr(source, target, attributes))
+
+  private def processAddNodeEvent(event: AddNodeEvent) = addNodeIntRepr(event.id, event.node)
+
+  private def processAddEdgeEvent(event: AddEdgeEvent) = {
+    // Add "out" connection.
+    val addedOut = nodes.get(event.edge.source).map(n => addNodeIntRepr(event.edge.source, n.copy(outs = n.outs + event.id))).isDefined
+    // Add "in" connection.
+    val addedIn = nodes.get(event.edge.target).map(n => addNodeIntRepr(event.edge.target, n.copy(ins = n.ins + event.id))).isDefined
+    // Add edge data only if the node is present as In or Out.
+    if(addedOut || addedIn) addEdgeIntRepr(event.id, EdgeIntRepr(event.edge.source, event.edge.target, event.edge.attributes))
+  }
+
+  private def addNodeIntRepr(id: Long, node: NodeIntRepr) = nodes = nodes + ( id -> node )
+
+  private def addEdgeIntRepr(id: Long, edge: EdgeIntRepr) = edges = edges + ( id -> edge )
+
+  private def reconstructEdge(id: Long, edge: EdgeIntRepr) =
     Model.Edge(id, edge.source, edge.target, edge.attributes)
 
-  private def reconstructNode(id: Long, node: Node) =
+  private def reconstructNode(id: Long, node: NodeIntRepr) =
     Model.Node(
       id,
       node.location,

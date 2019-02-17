@@ -4,11 +4,12 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
+import better.files.File
 import com.simplexportal.spatial.Model.{BoundingBox, Edge, Location, Node}
 import com.simplexportal.spatial.RTreeActor._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 
@@ -16,17 +17,19 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
     with ImplicitSender
     with Matchers
     with WordSpecLike
+    with BeforeAndAfter
     with BeforeAndAfterAll {
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
+    File("target/journal").delete(true)
   }
 
   "RTree Actor" should {
 
     "add the nodes" in {
       val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,10))))
-      rTreeActor ! AddNode(Node(10, Location(5,5), Map(10L -> "17 Redwood Avenue")))
+      rTreeActor ! AddNodeCommand(10, Location(5,5), Map(10L -> "17 Redwood Avenue"))
 
       rTreeActor ! GetNode(10)
       rTreeActor ! GetMetrics
@@ -39,9 +42,8 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
     "connect nodes adding edge information" when {
       "source and target are present" in {
         val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,10))))
-        rTreeActor ! AddNode(Node(10, Location(5,5), Map(10L -> "source node")))
-        rTreeActor ! AddNode(Node(11, Location(5,6), Map(10L -> "target node")))
-        rTreeActor ! ConnectNodes(Edge(1L, 10L, 11L, Map(1L -> "bridge") ))
+        rTreeActor ! AddNodeCommand(10, Location(5,5), Map(10L -> "source node"))
+        rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))) )
 
         rTreeActor ! GetNode(10)
         rTreeActor ! GetNode(11)
@@ -59,8 +61,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
       "only source is present" in {
         val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,10))))
-        rTreeActor ! AddNode(Node(10, Location(5,5), Map(10L -> "source node")))
-        rTreeActor ! ConnectNodes(Edge(1L, 10L, 11L, Map(1L -> "bridge") ))
+        rTreeActor ! AddNodeCommand(10, Location(5,5), Map(10L -> "source node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
 
         rTreeActor ! GetNode(10)
         rTreeActor ! GetMetrics
@@ -75,8 +76,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
       "only target is present" in {
         val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,10))))
-        rTreeActor ! AddNode(Node(11, Location(5,6), Map(10L -> "target node")))
-        rTreeActor ! ConnectNodes(Edge(1L, 10L, 11L, Map(1L -> "bridge") ))
+        rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
 
         rTreeActor ! GetNode(11)
         rTreeActor ! GetMetrics
@@ -91,7 +91,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
       "neither target nor source are present" in {
         val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,10))))
-        rTreeActor ! ConnectNodes(Edge(1L, 10L, 11L, Map(1L -> "bridge") ))
+        rTreeActor ! ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge") )
 
         rTreeActor ! GetMetrics
 
@@ -100,7 +100,6 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       }
 
     }
-
   }
 
 }
