@@ -4,8 +4,7 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.persistence.PersistentActor
+import akka.actor.{ActorRef, ActorSystem, Kill, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
 import com.simplexportal.spatial.Model.{BoundingBox, Edge, Location, Node}
@@ -103,14 +102,8 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
     "recover properly" when {
 
-      trait RTreeActorRecoveryTestHelper extends PersistentActor {
-        abstract override def receiveCommand = super.receiveCommand orElse {
-          case "stopWithException" => throw new Exception("Exception to test case")
-        }
-      }
-
       def createActorAndKillIt(bbox: BoundingBox, kill: ActorRef => Unit) = {
-        val rTreeActor = system.actorOf(Props(new RTreeActor(bbox) with RTreeActorRecoveryTestHelper))
+        val rTreeActor = system.actorOf(Props(new RTreeActor(bbox)))
         rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
         receiveN(2)
         kill(rTreeActor)
@@ -131,8 +124,8 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       }
 
       "the actor died because Exception" in {
-        val bbox = BoundingBox(Location(1,1), Location(10,15))
-        createActorAndKillIt(bbox, actor => actor ! "stopWithException")
+        val bbox = BoundingBox(Location(1,1), Location(10,16))
+        createActorAndKillIt(bbox, actor => actor ! Kill)
 
         val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
 
