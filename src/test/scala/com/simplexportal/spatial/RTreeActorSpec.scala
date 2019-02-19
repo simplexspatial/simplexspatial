@@ -4,7 +4,8 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
+import akka.persistence.PersistentActor
 import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
 import com.simplexportal.spatial.Model.{BoundingBox, Edge, Location, Node}
@@ -98,6 +99,50 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
         expectMsg(Metrics(0, 0))
       }
 
+    }
+
+    "recover properly" when {
+
+      trait RTreeActorRecoveryTestHelper extends PersistentActor {
+        abstract override def receiveCommand = super.receiveCommand orElse {
+          case "stopWithException" => throw new Exception("Exception to test case")
+        }
+      }
+
+      def createActorAndKillIt(bbox: BoundingBox, kill: ActorRef => Unit) = {
+        val rTreeActor = system.actorOf(Props(new RTreeActor(bbox) with RTreeActorRecoveryTestHelper))
+        rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
+        receiveN(2)
+        kill(rTreeActor)
+      }
+
+      "the actor restart" in {
+        val bbox = BoundingBox(Location(1,1), Location(10,15))
+        createActorAndKillIt(bbox, actor => actor ! PoisonPill)
+
+        val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
+
+        val rTreeActorRecovered = system.actorOf(RTreeActor.props(bbox))
+        rTreeActorRecovered ! GetNode(11)
+        rTreeActorRecovered ! GetMetrics
+
+        expectMsg(100.millis, Some(Node(11, Location(5,6), Map(10L -> "target node"), Set(expectedEdge))))
+        expectMsg(Metrics(1, 1))
+      }
+
+      "the actor died because Exception" in {
+        val bbox = BoundingBox(Location(1,1), Location(10,15))
+        createActorAndKillIt(bbox, actor => actor ! "stopWithException")
+
+        val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
+
+        val rTreeActorRecovered = system.actorOf(RTreeActor.props(bbox))
+        rTreeActorRecovered ! GetNode(11)
+        rTreeActorRecovered ! GetMetrics
+
+        expectMsg(100.millis, Some(Node(11, Location(5,6), Map(10L -> "target node"), Set(expectedEdge))))
+        expectMsg(Metrics(1, 1))
+      }
     }
   }
 
