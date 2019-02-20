@@ -4,7 +4,7 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ActorLogging, Props}
 import com.simplexportal.spatial.RTreeActor._
 import akka.persistence._
 import com.simplexportal.spatial.Model.{Attributes, Edge, Location}
@@ -12,7 +12,7 @@ import collection.immutable.Seq
 
 object RTreeActor {
 
-  def props(boundingBox: Model.BoundingBox): Props = Props(new RTreeActor(boundingBox))
+  def props(networkId: String, boundingBox: Model.BoundingBox): Props = Props(new RTreeActor(networkId, boundingBox))
 
   // TODO: Parameters of the commands should be not other Messages. Try to use parameters directly.
   //       For example: AddNode(id: Long, location: Location)
@@ -62,9 +62,9 @@ object RTreeActor {
 
 }
 
-class RTreeActor(boundingBox: Model.BoundingBox) extends PersistentActor with ActorLogging {
+class RTreeActor(networkId: String, boundingBox: Model.BoundingBox) extends PersistentActor with ActorLogging {
 
-  override def persistenceId: String = s"rtree-status-[(${boundingBox.min.lon},${boundingBox.min.lat}),(${boundingBox.max.lon},${boundingBox.max.lat})]"
+  override def persistenceId: String = s"rtree-${networkId}-[(${boundingBox.min.lon},${boundingBox.min.lat}),(${boundingBox.max.lon},${boundingBox.max.lat})]"
 
 
 

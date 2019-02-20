@@ -24,10 +24,12 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
     File("target/journal").delete(true)
   }
 
+  val bbox = BoundingBox(Location(1,1), Location(10,10))
+
   "RTree Actor" should {
 
     "add the nodes" in {
-      val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,11))))
+      val rTreeActor = system.actorOf(RTreeActor.props("add-nodes-test", bbox))
       rTreeActor ! AddNodeCommand(10, Location(5,5), Map(10L -> "17 Redwood Avenue"))
 
       rTreeActor ! GetNode(10)
@@ -40,7 +42,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
     "connect nodes adding edge information" when {
       "source and target are present" in {
-        val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,12))))
+        val rTreeActor = system.actorOf(RTreeActor.props("source-and-target-present", bbox))
         rTreeActor ! AddNodeCommand(10, Location(5,5), Map(10L -> "source node"))
         rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))) )
 
@@ -59,7 +61,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       }
 
       "only source is present" in {
-        val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,13))))
+        val rTreeActor = system.actorOf(RTreeActor.props("only-source-present", bbox))
         rTreeActor ! AddNodeCommand(10, Location(5,5), Map(10L -> "source node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
 
         rTreeActor ! GetNode(10)
@@ -74,7 +76,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       }
 
       "only target is present" in {
-        val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,14))))
+        val rTreeActor = system.actorOf(RTreeActor.props("only-target-present", bbox))
         rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
 
         rTreeActor ! GetNode(11)
@@ -89,7 +91,7 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       }
 
       "neither target nor source are present" in {
-        val rTreeActor = system.actorOf(RTreeActor.props(BoundingBox(Location(1,1), Location(10,15))))
+        val rTreeActor = system.actorOf(RTreeActor.props("neither-source-and-target-present", bbox))
         rTreeActor ! ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge") )
 
         rTreeActor ! GetMetrics
@@ -102,20 +104,19 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
 
     "recover properly" when {
 
-      def createActorAndKillIt(bbox: BoundingBox, kill: ActorRef => Unit) = {
-        val rTreeActor = system.actorOf(Props(new RTreeActor(bbox)))
+      def createActorAndKillIt(networkId: String, kill: ActorRef => Unit) = {
+        val rTreeActor = system.actorOf(RTreeActor.props(networkId, bbox))
         rTreeActor ! AddNodeCommand(11, Location(5,6), Map(10L -> "target node"), Set(ConnectNodesCommand(1L, 10L, 11L, Map(1L -> "bridge"))))
         receiveN(2)
         kill(rTreeActor)
       }
 
       "the actor restart" in {
-        val bbox = BoundingBox(Location(1,1), Location(10,15))
-        createActorAndKillIt(bbox, actor => actor ! PoisonPill)
+        createActorAndKillIt("recover-after-graceful-kill", actor => actor ! PoisonPill)
 
         val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
 
-        val rTreeActorRecovered = system.actorOf(RTreeActor.props(bbox))
+        val rTreeActorRecovered = system.actorOf(RTreeActor.props("recover-after-graceful-kill", bbox))
         rTreeActorRecovered ! GetNode(11)
         rTreeActorRecovered ! GetMetrics
 
@@ -124,12 +125,11 @@ class RTreeActorSpec extends TestKit(ActorSystem("RTreeActorSpec"))
       }
 
       "the actor died because Exception" in {
-        val bbox = BoundingBox(Location(1,1), Location(10,16))
-        createActorAndKillIt(bbox, actor => actor ! Kill)
+        createActorAndKillIt("recover-after-failure", actor => actor ! Kill)
 
         val expectedEdge = Edge(1, 10, 11, Map(1L -> "bridge"))
 
-        val rTreeActorRecovered = system.actorOf(RTreeActor.props(bbox))
+        val rTreeActorRecovered = system.actorOf(RTreeActor.props("recover-after-failure", bbox))
         rTreeActorRecovered ! GetNode(11)
         rTreeActorRecovered ! GetMetrics
 
