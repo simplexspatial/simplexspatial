@@ -18,14 +18,14 @@ object RTreeActor {
   //       For example: AddNode(id: Long, location: Location)
   sealed trait  RTreeCommands
 
-  case class AddNodeCommand(
+  case class AddNode(
     id: Long,
     location: Location,
     attributes: Attributes,
-    edges: Set[ConnectNodesCommand] = Set.empty
+    edges: Set[ConnectNodes] = Set.empty
   ) extends RTreeCommands
 
-  case class ConnectNodesCommand(
+  case class ConnectNodes(
     id: Long,
     source: Long,
     target: Long,
@@ -57,8 +57,8 @@ object RTreeActor {
   // Persisted messages.
 
   sealed trait  RTreeEvents
-  case class AddNodeEvent(id: Long, node:NodeIntRepr) extends RTreeEvents
-  case class AddEdgeEvent(id: Long, edge: EdgeIntRepr) extends RTreeEvents
+  case class NodeAdded(id: Long, node:NodeIntRepr) extends RTreeEvents
+  case class EdgeAdded(id: Long, edge: EdgeIntRepr) extends RTreeEvents
 
 }
 
@@ -85,16 +85,16 @@ class RTreeActor(networkId: String, boundingBox: Model.BoundingBox) extends Pers
     case GetMetrics =>
       sender ! Metrics(nodes.size, edges.size)
 
-    case AddNodeCommand(id, location, attributes, edges) =>
+    case AddNode(id, location, attributes, edges) =>
       persistAll( buildAddNodeEvents(id, location, attributes, edges) ) { event =>
         event match {
-          case e: AddNodeEvent => processAddNodeEvent(e)
-          case e: AddEdgeEvent => processAddEdgeEvent(e)
+          case e: NodeAdded => processAddNodeEvent(e)
+          case e: EdgeAdded => processAddEdgeEvent(e)
         }
         sender ! akka.Done
       }
 
-    case ConnectNodesCommand(id, source, target, attributes) =>
+    case ConnectNodes(id, source, target, attributes) =>
       persist( buildAddEdgeEvent(id, source, target, attributes) ) { event =>
         processAddEdgeEvent(event)
         sender ! akka.Done
@@ -102,26 +102,24 @@ class RTreeActor(networkId: String, boundingBox: Model.BoundingBox) extends Pers
 
   }
 
-  def buildEvents(): scala.collection.immutable.Seq[AddNodeEvent] = ???
-
   override def receiveRecover: Receive = {
-    case event: AddNodeEvent => processAddNodeEvent(event)
-    case event: AddEdgeEvent => processAddEdgeEvent(event)
+    case event: NodeAdded => processAddNodeEvent(event)
+    case event: EdgeAdded => processAddEdgeEvent(event)
   }
 
   def processEvents: Receive = {
-    case event: AddNodeEvent => processAddNodeEvent(event)
-    case event: AddEdgeEvent => processAddEdgeEvent(event)
+    case event: NodeAdded => processAddNodeEvent(event)
+    case event: EdgeAdded => processAddEdgeEvent(event)
   }
 
-  private def buildAddNodeEvents(id: Long, location: Location, attributes: Attributes, edges: Set[ConnectNodesCommand]) =
-    Seq(AddNodeEvent(id, NodeIntRepr(location, attributes))) ++ edges.map(e => buildAddEdgeEvent(e.id, e.source, e.target, e.attributes))
+  private def buildAddNodeEvents(id: Long, location: Location, attributes: Attributes, edges: Set[ConnectNodes]) =
+    Seq(NodeAdded(id, NodeIntRepr(location, attributes))) ++ edges.map(e => buildAddEdgeEvent(e.id, e.source, e.target, e.attributes))
 
-  private def buildAddEdgeEvent(id: Long, source: Long, target: Long, attributes: Attributes): AddEdgeEvent = AddEdgeEvent(id, EdgeIntRepr(source, target, attributes))
+  private def buildAddEdgeEvent(id: Long, source: Long, target: Long, attributes: Attributes): EdgeAdded = EdgeAdded(id, EdgeIntRepr(source, target, attributes))
 
-  private def processAddNodeEvent(event: AddNodeEvent) = addNodeIntRepr(event.id, event.node)
+  private def processAddNodeEvent(event: NodeAdded) = addNodeIntRepr(event.id, event.node)
 
-  private def processAddEdgeEvent(event: AddEdgeEvent) = {
+  private def processAddEdgeEvent(event: EdgeAdded) = {
     // Add "out" connection.
     val addedOut = nodes.get(event.edge.source).map(n => addNodeIntRepr(event.edge.source, n.copy(outs = n.outs + event.id))).isDefined
     // Add "in" connection.
