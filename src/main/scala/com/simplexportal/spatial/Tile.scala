@@ -1,5 +1,17 @@
 /*
- * Copyright (C) 2019 SimplexPortal Ltd. <https://www.simplexportal.com>
+ * Copyright 2019 SimplexPortal Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.simplexportal.spatial
@@ -34,54 +46,70 @@ case class Tile(
     ways: LongMap[Way] = LongMap.empty
 ) {
 
-  def addNode(id: Long,
-              lat: Double,
-              lon: Double,
-              attributes: Attributes): Tile =
+  def addNode(
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Attributes
+  ): Tile =
     copy(nodes = nodes + (id -> Node(id, Location(lat, lon), attributes)))
 
-  def addWay(wayId: Long,
-             nodeIds: Seq[Long],
-             attributes: Map[String, String]): Tile = {
-
-    // Manage generated list in private scope as List because performance is not bad!
-    @tailrec
-    def updateConnections(prev: Option[Long],
-                          current: Long,
-                          nodeIds: Seq[Long],
-                          updated: List[(Long, Node)]): List[(Long, Node)] =
-      nodeIds match {
-        case Nil => (current, buildNewNode(prev, current, None)) :: updated
-        case next :: tail => {
-          updateConnections(
-            Some(current),
-            next,
-            tail,
-            (current, buildNewNode(prev, current, Some(next))) :: updated)
-        }
-      }
-
-    def buildNewNode(prev: Option[Long], current: Long, next: Option[Long]) = {
-      val node = nodes
-        .getOrElse(
-          current,
-          throw new NotImplementedError(
-            "Node not found in the Tile is still not implemented.")
+  private def buildNewNode(
+      wayId: Long,
+      prev: Option[Long],
+      current: Long,
+      next: Option[Long]
+  ) = {
+    val node = nodes
+      .getOrElse(
+        current,
+        throw new NotImplementedError(
+          "Node not found in the Tile is still not implemented."
         )
+      )
 
-      node.copy( // TODO: Calculate directions. Now, all bidirectional.
-                ways = node.ways + wayId,
-                outs = (node.outs ++ next) ++ prev,
-                ins = (node.ins ++ next) ++ prev)
-    }
-
-    copy(
-      ways = ways + (wayId -> Way(wayId, nodeIds.head, attributes)),
-      nodes = nodes ++ updateConnections(None,
-                                         nodeIds.head,
-                                         nodeIds.tail,
-                                         List.empty)
+    node.copy( // TODO: Calculate directions. Now, all bidirectional.
+      ways = node.ways + wayId,
+      outs = (node.outs ++ next) ++ prev,
+      ins = (node.ins ++ next) ++ prev
     )
   }
+
+  // Manage generated list in private scope as List because performance is not bad!
+  @tailrec
+  private def updateConnections(
+      wayId: Long,
+      prev: Option[Long],
+      current: Long,
+      nodeIds: Seq[Long],
+      updated: List[(Long, Node)]
+  ): List[(Long, Node)] =
+    nodeIds match {
+      case Nil => (current, buildNewNode(wayId, prev, current, None)) :: updated
+      case next :: tail => {
+        updateConnections(
+          wayId,
+          Some(current),
+          next,
+          tail,
+          (current, buildNewNode(wayId, prev, current, Some(next))) :: updated
+        )
+      }
+    }
+
+  def addWay(
+      wayId: Long,
+      nodeIds: Seq[Long],
+      attributes: Map[String, String]
+  ): Tile = copy(
+    ways = ways + (wayId -> Way(wayId, nodeIds.head, attributes)),
+    nodes = nodes ++ updateConnections(
+      wayId,
+      None,
+      nodeIds.head,
+      nodeIds.tail,
+      List.empty
+    )
+  )
 
 }
