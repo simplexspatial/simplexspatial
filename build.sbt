@@ -6,6 +6,10 @@ scalaVersion := "2.12.6"
 
 fork := true
 
+organizationName := "SimplexPortal Ltd"
+startYear := Some(2019)
+licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
+
 lazy val akkaVersion = "2.5.21"
 lazy val scalatestVersion = "3.0.5"
 lazy val leveldbVersion = "1.8"

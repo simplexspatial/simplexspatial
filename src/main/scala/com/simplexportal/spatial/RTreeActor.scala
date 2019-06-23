@@ -1,149 +1,122 @@
 /*
- * Copyright (C) 2019 SimplexPortal Ltd. <https://www.simplexportal.com>
+ * Copyright 2019 SimplexPortal Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.simplexportal.spatial
 
 import akka.actor.{ActorLogging, Props}
-import com.simplexportal.spatial.RTreeActor._
 import akka.persistence._
-import com.simplexportal.spatial.Model.{Attributes, Edge, Location}
-import collection.immutable.Seq
+import com.simplexportal.spatial.RTreeActor._
+import com.simplexportal.spatial.model._
 
 object RTreeActor {
 
-  def props(networkId: String, boundingBox: Model.BoundingBox): Props = Props(new RTreeActor(networkId, boundingBox))
+  def props(networkId: String, boundingBox: BoundingBox): Props =
+    Props(new RTreeActor(networkId, boundingBox))
 
-  // TODO: Parameters of the commands should be not other Messages. Try to use parameters directly.
-  //       For example: AddNode(id: Long, location: Location)
-  sealed trait  RTreeCommands
+  sealed trait RTreeCommands
 
   case class AddNode(
-    id: Long,
-    location: Location,
-    attributes: Attributes,
-    edges: Set[ConnectNodes] = Set.empty
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Map[String, String]
   ) extends RTreeCommands
 
-  case class ConnectNodes(
-    id: Long,
-    source: Long,
-    target: Long,
-    attributes: Attributes
+  case class AddWay(
+      id: Long,
+      nodeIds: Seq[Long],
+      attributes: Map[String, String]
   ) extends RTreeCommands
 
   case class GetNode(id: Long) extends RTreeCommands
 
+  case class GetWay(id: Long) extends RTreeCommands
+
   object GetMetrics extends RTreeCommands
 
   sealed trait RTreeDataTransfer
-  case class Metrics(nodes: Long, edges: Long) extends RTreeDataTransfer
 
-  // Internal representation of Nodes and Edges.
-
-  protected case class NodeIntRepr(
-    location: Model.Location,
-    attributes: Model.Attributes,
-    outs: Set[Long] = Set.empty,
-    ins: Set[Long] = Set.empty
-  )
-
-  protected case class EdgeIntRepr(
-    source: Long,
-    target: Long,
-    attributes: Model.Attributes
-  )
+  case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
 
   // Persisted messages.
+  sealed trait RTreeEvents
 
-  sealed trait  RTreeEvents
-  case class NodeAdded(id: Long, node:NodeIntRepr) extends RTreeEvents
-  case class EdgeAdded(id: Long, edge: EdgeIntRepr) extends RTreeEvents
+  case class NodeAdded(
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Map[String, String]
+  ) extends RTreeEvents
+
+  case class WayAdded(
+      id: Long,
+      nodeIds: Seq[Long],
+      attributes: Map[String, String]
+  ) extends RTreeEvents
 
 }
 
-class RTreeActor(networkId: String, boundingBox: Model.BoundingBox) extends PersistentActor with ActorLogging {
+class RTreeActor(networkId: String, boundingBox: BoundingBox)
+    extends PersistentActor
+    with ActorLogging {
 
-  override def persistenceId: String = s"rtree-${networkId}-[(${boundingBox.min.lon},${boundingBox.min.lat}),(${boundingBox.max.lon},${boundingBox.max.lat})]"
+  override def persistenceId: String =
+    s"rtree-${networkId}-[(${boundingBox.min.lon},${boundingBox.min.lat}),(${boundingBox.max.lon},${boundingBox.max.lat})]"
 
-
-
-  // TODO: For performance, should be replaced by a binary tree or mutable Map ??
-
-  // Table with Nodes by Id.
-  var nodes: Map[Long, NodeIntRepr] = Map.empty
-
-  // Table with Edges by Id.
-  var edges: Map[Long, EdgeIntRepr] = Map.empty
-
+  var tile: Tile = Tile()
 
   override def receiveCommand: Receive = {
 
     case GetNode(id) =>
-      sender ! nodes.get(id).map(node => reconstructNode(id, node))
+      log.debug(s"Returning node ${id}")
+      sender ! tile.nodes.get(id)
+
+    case GetWay(id) =>
+      log.debug(s"Returning way ${id}")
+      sender ! tile.ways.get(id)
 
     case GetMetrics =>
-      sender ! Metrics(nodes.size, edges.size)
+      log.debug("Returning metrics")
+      sender ! Metrics(tile.ways.size, tile.nodes.size)
 
-    case AddNode(id, location, attributes, edges) =>
-      persistAll( buildAddNodeEvents(id, location, attributes, edges) ) { event =>
-        event match {
-          case e: NodeAdded => processAddNodeEvent(e)
-          case e: EdgeAdded => processAddEdgeEvent(e)
-        }
+    case AddNode(id, lat, lon, attributes) =>
+      persist(NodeAdded(id, lat, lon, attributes)) { node =>
+        addNode(node)
+        log.debug(s"Added node ${id}")
         sender ! akka.Done
       }
 
-    case ConnectNodes(id, source, target, attributes) =>
-      persist( buildAddEdgeEvent(id, source, target, attributes) ) { event =>
-        processAddEdgeEvent(event)
+    case AddWay(id, nodeIds, attributes) =>
+      persist(WayAdded(id, nodeIds, attributes)) { way =>
+        addWay(way)
+        log.debug(s"Added way ${id}")
         sender ! akka.Done
       }
 
   }
 
   override def receiveRecover: Receive = {
-    case event: NodeAdded => processAddNodeEvent(event)
-    case event: EdgeAdded => processAddEdgeEvent(event)
+    case event: NodeAdded => addNode(event)
+    case event: WayAdded  => addWay(event)
   }
 
-  def processEvents: Receive = {
-    case event: NodeAdded => processAddNodeEvent(event)
-    case event: EdgeAdded => processAddEdgeEvent(event)
-  }
+  private def addNode(node: NodeAdded) =
+    tile = tile.addNode(node.id, node.lat, node.lon, node.attributes)
 
-  private def buildAddNodeEvents(id: Long, location: Location, attributes: Attributes, edges: Set[ConnectNodes]) =
-    Seq(NodeAdded(id, NodeIntRepr(location, attributes))) ++ edges.map(e => buildAddEdgeEvent(e.id, e.source, e.target, e.attributes))
-
-  private def buildAddEdgeEvent(id: Long, source: Long, target: Long, attributes: Attributes): EdgeAdded = EdgeAdded(id, EdgeIntRepr(source, target, attributes))
-
-  private def processAddNodeEvent(event: NodeAdded) = addNodeIntRepr(event.id, event.node)
-
-  private def processAddEdgeEvent(event: EdgeAdded) = {
-    // Add "out" connection.
-    val addedOut = nodes.get(event.edge.source).map(n => addNodeIntRepr(event.edge.source, n.copy(outs = n.outs + event.id))).isDefined
-    // Add "in" connection.
-    val addedIn = nodes.get(event.edge.target).map(n => addNodeIntRepr(event.edge.target, n.copy(ins = n.ins + event.id))).isDefined
-    // Add edge data only if the node is present as In or Out.
-    if(addedOut || addedIn) addEdgeIntRepr(event.id, EdgeIntRepr(event.edge.source, event.edge.target, event.edge.attributes))
-  }
-
-  private def addNodeIntRepr(id: Long, node: NodeIntRepr) = nodes = nodes + ( id -> node )
-
-  private def addEdgeIntRepr(id: Long, edge: EdgeIntRepr) = edges = edges + ( id -> edge )
-
-  private def reconstructEdge(id: Long, edge: EdgeIntRepr) =
-    Model.Edge(id, edge.source, edge.target, edge.attributes)
-
-  private def reconstructNode(id: Long, node: NodeIntRepr) =
-    Model.Node(
-      id,
-      node.location,
-      node.attributes,
-      reconstructEdgeList(node.ins) ++ reconstructEdgeList(node.outs)
-    )
-
-  private def reconstructEdgeList(ids: Set[Long]) =
-    ids.flatMap(edgeId => edges.get(edgeId).map(reconstructEdge(edgeId, _)))
+  private def addWay(way: WayAdded) =
+    tile = tile.addWay(way.id, way.nodeIds, way.attributes)
 
 }
