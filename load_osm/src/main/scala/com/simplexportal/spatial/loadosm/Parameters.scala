@@ -21,5 +21,6 @@ import java.io.File
 import org.backuity.clist._
 
 class Parameters extends Command(description = "Load an osm file into an server") {
+  var loadType = arg[String](description = "type of load: akka or direct")
   var osmFile = arg[File](description = "osm file")
 }

@@ -85,8 +85,9 @@ case class Tile(
       updated: List[(Long, Node)]
   ): List[(Long, Node)] =
     nodeIds match {
-      case Nil => (current, buildNewNode(wayId, prev, current, None)) :: updated
-      case next :: tail => {
+      case Seq() =>
+        (current, buildNewNode(wayId, prev, current, None)) :: updated
+      case Seq(next, tail @ _*) => {
         updateConnections(
           wayId,
           Some(current),
@@ -101,15 +102,16 @@ case class Tile(
       wayId: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String]
-  ): Tile = copy(
-    ways = ways + (wayId -> Way(wayId, nodeIds.head, attributes)),
-    nodes = nodes ++ updateConnections(
-      wayId,
-      None,
-      nodeIds.head,
-      nodeIds.tail,
-      List.empty
+  ): Tile =
+    copy(
+      ways = ways + (wayId -> Way(wayId, nodeIds.head, attributes)),
+      nodes = nodes ++ updateConnections(
+        wayId,
+        None,
+        nodeIds.head,
+        nodeIds.tail,
+        List.empty
+      )
     )
-  )
 
 }

@@ -16,65 +16,14 @@
 
 package com.simplexportal.spatial.loadosm
 
-import java.io.{File, FileInputStream, InputStream}
-
-import akka.actor.{ActorSystem, PoisonPill}
-
-import scala.concurrent.Await
-import akka.pattern.ask
-import akka.util.Timeout
-
-import scala.concurrent.duration._
-import com.acervera.osm4scala.EntityIterator._
-import com.acervera.osm4scala.model.{NodeEntity, WayEntity}
-import com.simplexportal.spatial.RTreeActor
-import com.simplexportal.spatial.RTreeActor.{AddNode, AddWay, GetMetrics, Metrics}
-import com.simplexportal.spatial.model.{BoundingBox, Location}
 import com.simplexportal.spatial.utils.Benchmarking
 import org.backuity.clist.Cli
 
 object Main extends App with Benchmarking {
 
   Cli.parse(args).withCommand(new Parameters) {
-    case params => load(params.osmFile)
-  }
-
-  def load(osmFile: File): Unit = {
-    println(s"Loading data from [${osmFile.getAbsolutePath}]")
-
-    val system = ActorSystem("osm-actor-system")
-    val rTreeActor = system.actorOf(
-      RTreeActor.props(
-        "load_and_shutdown_osm",
-        BoundingBox(
-          Location(Double.MinValue, Double.MinValue),
-          Location(Double.MaxValue, Double.MaxValue)
-        )
-      )
-    )
-
-    val result = time {
-      val pbfIS: InputStream = new FileInputStream(osmFile)
-
-
-      fromPbf(pbfIS).foreach {
-        case node: NodeEntity =>
-          rTreeActor ! AddNode(node.id, node.latitude, node.longitude, node.tags)
-        case way: WayEntity =>
-          rTreeActor ! AddWay(way.id, way.nodes, way.tags)
-        case other =>
-          println(s"Ignoring ${other.osmModel} ")
-      }
-
-      implicit val timeout = Timeout(120 minutes)
-      val metrics = rTreeActor ? GetMetrics
-
-      Await.result(metrics, timeout.duration).asInstanceOf[Metrics]
-    }
-
-    println(f"Actor loaded in ${result._1 * 1e-9}%,2.2f with metrics ${result._2}")
-
-    rTreeActor ! PoisonPill
+    case params if params.loadType == "akka" => AKKALoad.load(params.osmFile)
+    case params if params.loadType == "local" => LocalLoad.load(params.osmFile)
   }
 
 }
