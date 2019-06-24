@@ -33,12 +33,11 @@ object LocalLoad {
   val config = ConfigFactory.load()
   var lastPrint = System.currentTimeMillis()
   var lastMetric = Metrics(0, 0)
+  val printMetricsElapseTime = config.getDuration("simplexportal.spatial.metrics.print.elapse").toMillis
 
   private def printMetrics() = {
     val newTimestamp = System.currentTimeMillis()
-    if (newTimestamp - lastPrint > config
-          .getDuration("simplexportal.spatial.metrics.print.elapse")
-          .toMillis) {
+    if (newTimestamp - lastPrint > printMetricsElapseTime) {
       val newMetric = Metrics(tile.ways.size, tile.nodes.size)
       val deltaMetrics = (newMetric.nodes + newMetric.ways) - (lastMetric.nodes + lastMetric.ways)
       println(
@@ -65,11 +64,11 @@ object LocalLoad {
         case other =>
           println(s"Ignoring ${other.osmModel} ")
       }
-      Metrics(tile.nodes.size, tile.ways.size)
+      Metrics(tile.ways.size, tile.nodes.size)
     }
 
     println(
-      f"Actor loaded in ${(result._1 * 1e-9) / 60}%,2.2f minutes with metrics ${result._2}"
+      f"${result._2.nodes} nodes and ${result._2.ways} ways loaded in ${(result._1 * 1e-9)}%,2.2f seconds"
     )
 
   }

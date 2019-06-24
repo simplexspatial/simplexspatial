@@ -20,7 +20,7 @@ lazy val commonSettings = Seq(
   fork := true,
   resolvers += "osm4scala repo" at "http://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.6",
-  scalacOptions ++= Seq(
+/*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding",
     "utf8",
@@ -37,7 +37,8 @@ lazy val commonSettings = Seq(
     "1.8",
     "-target",
     "1.8"
-  )
+  ),*/
+  test in assembly := {}
 )
 
 lazy val akkaVersion = "2.5.21"
@@ -62,6 +63,8 @@ lazy val core = (project in file("core"))
 lazy val loadOSM = (project in file("load_osm"))
   .settings(
     commonSettings,
+    mainClass in assembly := Some("com.simplexportal.spatial.loadosm.Main"),
+    
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
       "org.backuity.clist" %% "clist-core" % "3.5.1",

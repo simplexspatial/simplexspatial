@@ -20,7 +20,6 @@ import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 
 import scala.annotation.tailrec
-import scala.collection.immutable.LongMap
 
 object Tile {
 
@@ -42,8 +41,8 @@ object Tile {
 }
 
 case class Tile(
-    nodes: LongMap[Node] = LongMap.empty,
-    ways: LongMap[Way] = LongMap.empty
+    nodes: Map[Long, Node] = Map.empty,
+    ways: Map[Long, Way] = Map.empty
 ) {
 
   def addNode(
