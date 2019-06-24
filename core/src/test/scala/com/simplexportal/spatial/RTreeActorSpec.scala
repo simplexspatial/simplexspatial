@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-
 // scalastyle:off magic.number
 
 package com.simplexportal.spatial
 
-import akka.actor.{ActorRef, ActorSystem, Kill, PoisonPill, Props}
+import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
 import com.simplexportal.spatial.RTreeActor._
 import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
-import scala.concurrent.duration._
 
 class RTreeActorSpec
     extends TestKit(ActorSystem("RTreeActorSpec"))
@@ -53,13 +50,15 @@ class RTreeActorSpec
 
       expectMsg(akka.Done)
       expectMsg(
-        Some(Node(10, Location(5, 5), Map("nodeAttrKey" -> "nodeAttrValue"))))
+        Some(Node(10, Location(5, 5), Map("nodeAttrKey" -> "nodeAttrValue")))
+      )
       expectMsg(Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
       val rTreeActor =
         system.actorOf(RTreeActor.props("connect-nodes-using-ways-test", bbox))
+
       exampleTileCommands foreach (command => rTreeActor ! command)
 
       ignoreMsg { case msg => msg == akka.Done }
