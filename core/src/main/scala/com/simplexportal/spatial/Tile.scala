@@ -35,7 +35,7 @@ object Tile {
   case class Way(
       id: Long,
       startNode: Long,
-      attributes: Map[String, String] = Map.empty
+      attributes: Attributes = Map.empty
   )
 
 }
@@ -100,7 +100,7 @@ case class Tile(
   def addWay(
       wayId: Long,
       nodeIds: Seq[Long],
-      attributes: Map[String, String]
+      attributes: Attributes
   ): Tile =
     copy(
       ways = ways + (wayId -> Way(wayId, nodeIds.head, attributes)),

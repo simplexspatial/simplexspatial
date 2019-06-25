@@ -17,8 +17,10 @@
 package com.simplexportal.spatial
 
 package object model {
-
   type Attributes = Map[String, String]
+}
+
+package model {
 
   case class Location(lon: Double, lat: Double, alt: Double = 0)
 
