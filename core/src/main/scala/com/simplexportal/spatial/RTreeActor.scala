@@ -81,12 +81,6 @@ class RTreeActor(networkId: String, boundingBox: BoundingBox)
 
   var tile: Tile = Tile()
 
-  val config = ConfigFactory.load()
-  var lastPrint = System.currentTimeMillis()
-  var lastMetric = Metrics(0,0)
-  val printMetricsElapseTime = config.getDuration("simplexportal.spatial.metrics.print.elapse").toMillis
-
-
   override def receiveCommand: Receive = {
 
     case GetNode(id) =>
@@ -101,14 +95,12 @@ class RTreeActor(networkId: String, boundingBox: BoundingBox)
     case AddNode(id, lat, lon, attributes) =>
       persist(NodeAdded(id, lat, lon, attributes)) { node =>
         addNode(node)
-        printMetrics
         sender ! akka.Done
       }
 
     case AddWay(id, nodeIds, attributes) =>
       persist(WayAdded(id, nodeIds, attributes)) { way =>
         addWay(way)
-        printMetrics
         sender ! akka.Done
       }
 
@@ -125,14 +117,4 @@ class RTreeActor(networkId: String, boundingBox: BoundingBox)
   private def addWay(way: WayAdded) =
     tile = tile.addWay(way.id, way.nodeIds, way.attributes)
 
-  private def printMetrics = {
-    val newTimestamp = System.currentTimeMillis()
-    if (newTimestamp - lastPrint > printMetricsElapseTime) {
-      val newMetric = Metrics(tile.ways.size, tile.nodes.size)
-      val deltaMetrics = (newMetric.nodes + newMetric.ways) - (lastMetric.nodes + lastMetric.ways)
-      println(s"Metrics at [${new Date()}] => ways = ${tile.ways.size}, nodes = ${tile.nodes.size} so ${deltaMetrics / ( (newTimestamp - lastPrint)/1000)} entities per second")
-      lastMetric = newMetric
-      lastPrint = System.currentTimeMillis()
-    }
-  }
 }

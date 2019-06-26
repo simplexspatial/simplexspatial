@@ -26,7 +26,7 @@ object Tile {
   case class Node(
       id: Long,
       location: Location,
-      attributes: Attributes = Map.empty, // TODO: Use a dictionary
+      attributes: Map[Int, String] = Map.empty,
       ways: Set[Long] = Set.empty,
       outs: Set[Long] = Set.empty, // TODO: Should be replaced by a set of Node object references??
       ins: Set[Long] = Set.empty // TODO: Should be replaced by a set of Node object references??
@@ -35,23 +35,37 @@ object Tile {
   case class Way(
       id: Long,
       startNode: Long,
-      attributes: Attributes = Map.empty
+      attributes: Map[Int, String] = Map.empty
   )
 
 }
 
 case class Tile(
     nodes: Map[Long, Node] = Map.empty,
-    ways: Map[Long, Way] = Map.empty
+    ways: Map[Long, Way] = Map.empty,
+    tagsDic: Map[Int, String] = Map.empty
 ) {
+
+  private def attributesToDictionary(attributes: Map[String, String]): ( Map[Int, String], Map[Int, String]) =
+    attributes.foldLeft( ( Map.empty[Int, String], Map.empty[Int, String] ) ) {
+      case ( (dic, attrs), attr ) => {
+        val hash = attr._1.hashCode
+        ( dic + (hash -> attr._1), attrs + (hash -> attr._2))
+      }
+    }
 
   def addNode(
       id: Long,
       lat: Double,
       lon: Double,
-      attributes: Attributes
-  ): Tile =
-    copy(nodes = nodes + (id -> Node(id, Location(lat, lon), attributes)))
+      attributes: Map[String, String]
+  ): Tile = {
+    val (dic, attrs) = attributesToDictionary(attributes)
+    copy(
+      nodes = nodes + (id -> Node(id, Location(lat, lon), attrs)),
+      tagsDic = tagsDic ++ dic
+    )
+  }
 
   private def buildNewNode(
       wayId: Long,
@@ -100,17 +114,21 @@ case class Tile(
   def addWay(
       wayId: Long,
       nodeIds: Seq[Long],
-      attributes: Attributes
-  ): Tile =
+      attributes: Map[String, String]
+  ): Tile = {
+    val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> Way(wayId, nodeIds.head, attributes)),
+      ways = ways + (wayId -> Way(wayId, nodeIds.head, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,
         nodeIds.head,
         nodeIds.tail,
         List.empty
-      )
+      ),
+      tagsDic = tagsDic ++ dic
     )
+  }
+
 
 }
