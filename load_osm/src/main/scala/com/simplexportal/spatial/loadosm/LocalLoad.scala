@@ -19,7 +19,7 @@ package com.simplexportal.spatial.loadosm
 import java.util.Date
 
 import com.acervera.osm4scala.model.{NodeEntity, WayEntity}
-import com.simplexportal.spatial.RTreeActor.Metrics
+import com.simplexportal.spatial.TileActor.Metrics
 import com.simplexportal.spatial.Tile
 
 object LocalLoad extends Load {

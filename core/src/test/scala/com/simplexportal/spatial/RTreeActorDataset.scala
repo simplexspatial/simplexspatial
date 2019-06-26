@@ -16,7 +16,7 @@
 
 package com.simplexportal.spatial
 
-import com.simplexportal.spatial.RTreeActor.{AddNode, AddWay, RTreeCommands}
+import com.simplexportal.spatial.TileActor.{AddNode, AddWay, RTreeCommands}
 import com.simplexportal.spatial.model.{BoundingBox, Location}
 
 trait RTreeActorDataset {

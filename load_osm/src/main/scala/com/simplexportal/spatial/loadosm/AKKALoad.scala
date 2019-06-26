@@ -22,8 +22,8 @@ import akka.actor.{ActorSystem, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.acervera.osm4scala.model.{NodeEntity, WayEntity}
-import com.simplexportal.spatial.RTreeActor
-import com.simplexportal.spatial.RTreeActor._
+import com.simplexportal.spatial.TileActor
+import com.simplexportal.spatial.TileActor._
 import com.simplexportal.spatial.model.{BoundingBox, Location}
 
 import scala.concurrent.Await
@@ -33,7 +33,7 @@ object AKKALoad extends Load {
 
   val system = ActorSystem("osm-actor-system")
   val rTreeActor = system.actorOf(
-    RTreeActor.props(
+    TileActor.props(
       "load_and_shutdown_osm",
       BoundingBox(
         Location(Double.MinValue, Double.MinValue),

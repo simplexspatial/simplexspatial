@@ -16,18 +16,15 @@
 
 package com.simplexportal.spatial
 
-import java.util.Date
-
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
-import com.simplexportal.spatial.RTreeActor._
+import com.simplexportal.spatial.TileActor._
 import com.simplexportal.spatial.model._
-import com.typesafe.config.{Config, ConfigFactory}
 
-object RTreeActor {
+object TileActor {
 
   def props(networkId: String, boundingBox: BoundingBox): Props =
-    Props(new RTreeActor(networkId, boundingBox))
+    Props(new TileActor(networkId, boundingBox))
 
   sealed trait RTreeCommands
 
@@ -72,7 +69,7 @@ object RTreeActor {
 
 }
 
-class RTreeActor(networkId: String, boundingBox: BoundingBox)
+class TileActor(networkId: String, boundingBox: BoundingBox)
     extends PersistentActor
     with ActorLogging {
 

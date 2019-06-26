@@ -21,14 +21,14 @@ package com.simplexportal.spatial
 import akka.actor.{ActorRef, ActorSystem, Kill, PoisonPill}
 import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
-import com.simplexportal.spatial.RTreeActor.{GetMetrics, GetWay, Metrics}
+import com.simplexportal.spatial.TileActor.{GetMetrics, GetWay, Metrics}
 import com.simplexportal.spatial.Tile.Way
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 // TODO: Review if the Test is implemented correctly. If I kill the system, why is not necessary to restart it?
 
-class RTreeActorPersistSpec
-    extends TestKit(ActorSystem("RTreeActorPersistSpec"))
+class TileActorPersistSpec
+    extends TestKit(ActorSystem("TileActorPersistSpec"))
     with ImplicitSender
     with Matchers
     with WordSpecLike
@@ -45,7 +45,7 @@ class RTreeActorPersistSpec
     "recover properly" when {
 
       def createActorAndKillIt(networkId: String, kill: ActorRef => Unit): Unit = {
-        val rTreeActor = system.actorOf(RTreeActor.props(networkId, bbox))
+        val rTreeActor = system.actorOf(TileActor.props(networkId, bbox))
         exampleTileCommands foreach (command => rTreeActor ! command)
         receiveN(exampleTileCommands.size)
         kill(rTreeActor)
@@ -56,7 +56,7 @@ class RTreeActorPersistSpec
                              actor => actor ! PoisonPill)
 
         val rTreeActorRecovered =
-          system.actorOf(RTreeActor.props("recover-after-graceful-kill", bbox))
+          system.actorOf(TileActor.props("recover-after-graceful-kill", bbox))
 
         rTreeActorRecovered ! GetMetrics
         rTreeActorRecovered ! GetWay(100)
@@ -68,7 +68,7 @@ class RTreeActorPersistSpec
         createActorAndKillIt("recover-after-failure", actor => actor ! Kill)
 
         val rTreeActorRecovered =
-          system.actorOf(RTreeActor.props("recover-after-failure", bbox))
+          system.actorOf(TileActor.props("recover-after-failure", bbox))
 
         rTreeActorRecovered ! GetMetrics
         rTreeActorRecovered ! GetWay(100)

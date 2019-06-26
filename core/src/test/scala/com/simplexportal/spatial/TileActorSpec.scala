@@ -21,13 +21,13 @@ package com.simplexportal.spatial
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
-import com.simplexportal.spatial.RTreeActor._
+import com.simplexportal.spatial.TileActor._
 import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-class RTreeActorSpec
-    extends TestKit(ActorSystem("RTreeActorSpec"))
+class TileActorSpec
+    extends TestKit(ActorSystem("TileActorSpec"))
     with ImplicitSender
     with Matchers
     with WordSpecLike
@@ -42,7 +42,7 @@ class RTreeActorSpec
   "RTree Actor" should {
 
     "add the nodes" in {
-      val rTreeActor = system.actorOf(RTreeActor.props("add-nodes-test", bbox))
+      val rTreeActor = system.actorOf(TileActor.props("add-nodes-test", bbox))
       rTreeActor ! AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"))
 
       rTreeActor ! GetNode(10)
@@ -57,7 +57,7 @@ class RTreeActorSpec
 
     "connect nodes using ways" in {
       val rTreeActor =
-        system.actorOf(RTreeActor.props("connect-nodes-using-ways-test", bbox))
+        system.actorOf(TileActor.props("connect-nodes-using-ways-test", bbox))
 
       exampleTileCommands foreach (command => rTreeActor ! command)
 
