@@ -32,7 +32,7 @@ class TileSpec extends WordSpecLike with Matchers {
 
       val expected = Tile(
         nodes = LongMap(
-          1L -> Node(1, Location(7, 3), Map("traffic_light" -> "true"), Set(101), Set(2), Set(2)),
+          1L -> Node(1, Location(7, 3), Map(10 -> "true"), Set(101), Set(2), Set(2)),
           2L -> Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
           3L -> Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
           4L -> Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
@@ -40,7 +40,7 @@ class TileSpec extends WordSpecLike with Matchers {
           6L -> Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
         ),
         ways = LongMap(
-          100L -> Way(100, 5, Map("name" -> "Street Name")),
+          100L -> Way(100, 5, Map(10 -> "Street Name")),
           101L -> Way(101, 1)
         )
       )

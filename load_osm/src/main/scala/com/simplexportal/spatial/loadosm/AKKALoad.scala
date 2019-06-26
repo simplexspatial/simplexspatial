@@ -16,59 +16,69 @@
 
 package com.simplexportal.spatial.loadosm
 
-import java.io.{File, FileInputStream, InputStream}
+import java.util.Date
 
 import akka.actor.{ActorSystem, PoisonPill}
-
 import akka.pattern.ask
 import akka.util.Timeout
-
-import scala.concurrent.duration._
-import com.acervera.osm4scala.EntityIterator._
 import com.acervera.osm4scala.model.{NodeEntity, WayEntity}
 import com.simplexportal.spatial.RTreeActor
-import com.simplexportal.spatial.RTreeActor.{AddNode, AddWay, GetMetrics, Metrics}
+import com.simplexportal.spatial.RTreeActor._
 import com.simplexportal.spatial.model.{BoundingBox, Location}
-import com.simplexportal.spatial.utils.Benchmarking
 
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
-object AKKALoad extends Benchmarking {
-  def load(osmFile: File): Unit = {
-    println(s"Loading data from [${osmFile.getAbsolutePath}]")
+object AKKALoad extends Load {
 
-    val system = ActorSystem("osm-actor-system")
-    val rTreeActor = system.actorOf(
-      RTreeActor.props(
-        "load_and_shutdown_osm",
-        BoundingBox(
-          Location(Double.MinValue, Double.MinValue),
-          Location(Double.MaxValue, Double.MaxValue)
-        )
+  val system = ActorSystem("osm-actor-system")
+  val rTreeActor = system.actorOf(
+    RTreeActor.props(
+      "load_and_shutdown_osm",
+      BoundingBox(
+        Location(Double.MinValue, Double.MinValue),
+        Location(Double.MaxValue, Double.MaxValue)
       )
     )
+  )
 
-    val result = time {
-      val pbfIS: InputStream = new FileInputStream(osmFile)
+  var nodes = 0
+  var ways = 0
 
+  override def addNode(node: NodeEntity): Unit = {
+    rTreeActor ! AddNode(
+      node.id,
+      node.latitude,
+      node.longitude,
+      node.tags
+    )
+    nodes = nodes + 1
+  }
 
-      fromPbf(pbfIS).foreach {
-        case node: NodeEntity =>
-          rTreeActor ! AddNode(node.id, node.latitude, node.longitude, node.tags)
-        case way: WayEntity =>
-          rTreeActor ! AddWay(way.id, way.nodes, way.tags)
-        case other =>
-          println(s"Ignoring ${other.osmModel} ")
-      }
+  override def addWay(way: WayEntity): Unit = {
+    rTreeActor ! AddWay(way.id, way.nodes, way.tags)
+    ways = ways + 1
+  }
 
-      implicit val timeout = Timeout(120 minutes)
-      val metrics = rTreeActor ? GetMetrics
+  override def printTotals(time: Long): Unit = {
+    implicit val timeout = Timeout(120 minutes)
+    val metrics = Await
+      .result(rTreeActor ? GetMetrics, timeout.duration)
+      .asInstanceOf[Metrics]
 
-      Await.result(metrics, timeout.duration).asInstanceOf[Metrics]
-    }
+    println(
+      f"${metrics.nodes} nodes and ${metrics.ways} ways loaded in ${((System.currentTimeMillis() - startTime) / 1000)}%,2.2f seconds"
+    )
+  }
 
-    println(f"Actor loaded in ${(result._1 * 1e-9) / 60}%,2.2f  with metrics ${result._2}")
+  override def printPartials(time: Long): Unit = {
+    println(
+      s"Metrics at [${new Date()}] => Sent nodes = ${nodes}, ways = ${ways}."
+    )
+  }
 
-    rTreeActor ! PoisonPill
+  override def clean(): Unit = {
+    println("Killing actor system using Poison Pill.")
+    system.terminate
   }
 }
