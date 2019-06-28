@@ -25,8 +25,6 @@ import com.simplexportal.spatial.TileActor.{GetMetrics, GetWay, Metrics}
 import com.simplexportal.spatial.Tile.Way
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-// TODO: Review if the Test is implemented correctly. If I kill the system, why is not necessary to restart it?
-
 class TileActorPersistSpec
     extends TestKit(ActorSystem("TileActorPersistSpec"))
     with ImplicitSender
