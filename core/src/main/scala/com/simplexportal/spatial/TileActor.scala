@@ -99,14 +99,13 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
       addWayHandler(cmd)
       sender ! akka.Done
 
-    case AddBatch(cmds) => {
-      cmds.foreach {
-        case cmd: AddNode => addNodeHandler(cmd)
-        case cmd: AddWay => addWayHandler(cmd)
-        case _ =>
-      }
+    case AddBatch(cmds) =>
+      addBatchHandler(cmds.flatMap{
+        case cmd: AddNode => Some(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes))
+        case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
+        case _ => None
+      })
       sender ! akka.Done
-    }
   }
 
   private def addNodeHandler(cmd: AddNode) =
@@ -119,6 +118,12 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
       addWay(way)
     }
 
+  private def addBatchHandler(events: Seq[TileEvents]) =
+    persist(events) (events => events.foreach{
+      case node: NodeAdded => addNode(node)
+      case way: WayAdded => addWay(way)
+    })
+
 
   override def receiveRecover: Receive = {
     case event: NodeAdded => addNode(event)
@@ -130,5 +135,6 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
   private def addWay(way: WayAdded) =
     tile = tile.addWay(way.id, way.nodeIds, way.attributes)
+
 
 }

@@ -48,7 +48,7 @@ trait LoadBlocks {
   }
 
   def load(osmFile: File, blockSize: Int): Unit = {
-    println(s"Loading data from [${osmFile.getAbsolutePath}]")
+    println(s"Loading data using batches of ${blockSize} from [${osmFile.getAbsolutePath}]")
 
     val pbfIS: InputStream = new FileInputStream(osmFile)
     fromPbf(pbfIS).grouped(blockSize).foreach( addGroup )
