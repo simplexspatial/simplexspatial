@@ -32,7 +32,7 @@ class TileActorSpec
     with Matchers
     with WordSpecLike
     with BeforeAndAfterAll
-    with RTreeActorDataset {
+    with TileActorDataset {
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
@@ -42,31 +42,45 @@ class TileActorSpec
   "RTree Actor" should {
 
     "add the nodes" in {
-      val rTreeActor = system.actorOf(TileActor.props("add-nodes-test", bbox))
-      rTreeActor ! AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"))
+      val tileActor = system.actorOf(TileActor.props("add-nodes-test", bbox))
+      tileActor ! AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"))
 
-      rTreeActor ! GetNode(10)
-      rTreeActor ! GetMetrics
+      tileActor ! GetNode(10)
+      tileActor ! GetMetrics
 
       expectMsg(akka.Done)
       expectMsg(
-        Some(Node(10, Location(5, 5), Map(10 -> "nodeAttrValue")))
+        Some(Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue")))
       )
       expectMsg(Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
-      val rTreeActor =
+      val tileActor =
         system.actorOf(TileActor.props("connect-nodes-using-ways-test", bbox))
 
-      exampleTileCommands foreach (command => rTreeActor ! command)
+      exampleTileCommands foreach (command => tileActor ! command)
 
       ignoreMsg { case msg => msg == akka.Done }
 
-      rTreeActor ! GetMetrics
-      rTreeActor ! GetWay(100)
+      tileActor ! GetMetrics
+      tileActor ! GetWay(100)
       expectMsg(Metrics(2, 6))
-      expectMsg(Some(Way(100, 5, Map(10 -> "wayAttrValue"))))
+      expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+    }
+
+    "create network using blocks" in {
+      val tileActor =
+        system.actorOf(TileActor.props("create-network-using-blocks-test", bbox))
+
+      tileActor ! AddBatch(exampleTileCommands)
+
+      ignoreMsg { case msg => msg == akka.Done }
+
+      tileActor ! GetMetrics
+      tileActor ! GetWay(100)
+      expectMsg(Metrics(2, 6))
+      expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
     }
 
   }

@@ -21,7 +21,7 @@ package com.simplexportal.spatial
 import akka.actor.{ActorRef, ActorSystem, Kill, PoisonPill}
 import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
-import com.simplexportal.spatial.TileActor.{GetMetrics, GetWay, Metrics}
+import com.simplexportal.spatial.TileActor.{AddBatch, GetMetrics, GetWay, Metrics}
 import com.simplexportal.spatial.Tile.Way
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -31,47 +31,70 @@ class TileActorPersistSpec
     with Matchers
     with WordSpecLike
     with BeforeAndAfterAll
-    with RTreeActorDataset {
+    with TileActorDataset {
+
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
     File("target/journal").delete(true)
   }
 
-  "RTree Actor Persistence" should {
+  "Tile Actor Persistence" should {
 
     "recover properly" when {
 
       def createActorAndKillIt(networkId: String, kill: ActorRef => Unit): Unit = {
-        val rTreeActor = system.actorOf(TileActor.props(networkId, bbox))
-        exampleTileCommands foreach (command => rTreeActor ! command)
+        File("target/journal").delete(true)
+        val tileActor = system.actorOf(TileActor.props(networkId, bbox))
+        exampleTileCommands foreach (command => tileActor ! command)
         receiveN(exampleTileCommands.size)
-        kill(rTreeActor)
+        kill(tileActor)
+      }
+
+      def createActorInBatchAndKillIt(networkId: String, kill: ActorRef => Unit): Unit = {
+        File("target/journal").delete(true)
+        val tileActor = system.actorOf(TileActor.props(networkId, bbox))
+        tileActor ! AddBatch( exampleTileCommands )
+        receiveN(1)
+        kill(tileActor)
       }
 
       "the actor restart" in {
         createActorAndKillIt("recover-after-graceful-kill",
                              actor => actor ! PoisonPill)
 
-        val rTreeActorRecovered =
+        val tileActorRecovered =
           system.actorOf(TileActor.props("recover-after-graceful-kill", bbox))
 
-        rTreeActorRecovered ! GetMetrics
-        rTreeActorRecovered ! GetWay(100)
+        tileActorRecovered ! GetMetrics
+        tileActorRecovered ! GetWay(100)
         expectMsg(Metrics(2, 6))
-        expectMsg(Some(Way(100, 5, Map(10 -> "wayAttrValue"))))
+        expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
       }
 
-      "the actor died because Exception" in {
-        createActorAndKillIt("recover-after-failure", actor => actor ! Kill)
+      "the actor died because Exception" when {
+        "creating using single commands" in {
+          createActorAndKillIt("recover-after-failure", actor => actor ! Kill)
 
-        val rTreeActorRecovered =
-          system.actorOf(TileActor.props("recover-after-failure", bbox))
+          val tileActorRecovered =
+            system.actorOf(TileActor.props("recover-after-failure", bbox))
 
-        rTreeActorRecovered ! GetMetrics
-        rTreeActorRecovered ! GetWay(100)
-        expectMsg(Metrics(2, 6))
-        expectMsg(Some(Way(100, 5, Map(10 -> "wayAttrValue"))))
+          tileActorRecovered ! GetMetrics
+          tileActorRecovered ! GetWay(100)
+          expectMsg(Metrics(2, 6))
+          expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+        }
+        "creating using batch command" in {
+          createActorInBatchAndKillIt("recover-after-failure", actor => actor ! Kill)
+
+          val tileActorRecovered =
+            system.actorOf(TileActor.props("recover-after-failure", bbox))
+
+          tileActorRecovered ! GetMetrics
+          tileActorRecovered ! GetWay(100)
+          expectMsg(Metrics(2, 6))
+          expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+        }
       }
     }
   }
