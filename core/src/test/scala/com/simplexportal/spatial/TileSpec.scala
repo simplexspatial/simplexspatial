@@ -20,8 +20,6 @@ import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
 
-import scala.collection.immutable.LongMap
-
 // scalastyle:off magic.number
 
 class TileSpec extends WordSpecLike with Matchers {
