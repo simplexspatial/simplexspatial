@@ -59,7 +59,7 @@ class TileActorPersistSpec
         rTreeActorRecovered ! GetMetrics
         rTreeActorRecovered ! GetWay(100)
         expectMsg(Metrics(2, 6))
-        expectMsg(Some(Way(100, 5, Map(10 -> "wayAttrValue"))))
+        expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
       }
 
       "the actor died because Exception" in {
@@ -71,7 +71,7 @@ class TileActorPersistSpec
         rTreeActorRecovered ! GetMetrics
         rTreeActorRecovered ! GetWay(100)
         expectMsg(Metrics(2, 6))
-        expectMsg(Some(Way(100, 5, Map(10 -> "wayAttrValue"))))
+        expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
       }
     }
   }

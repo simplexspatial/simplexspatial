@@ -50,7 +50,7 @@ class TileActorSpec
 
       expectMsg(akka.Done)
       expectMsg(
-        Some(Node(10, Location(5, 5), Map(10 -> "nodeAttrValue")))
+        Some(Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue")))
       )
       expectMsg(Metrics(0, 1))
     }
@@ -66,7 +66,7 @@ class TileActorSpec
       rTreeActor ! GetMetrics
       rTreeActor ! GetWay(100)
       expectMsg(Metrics(2, 6))
-      expectMsg(Some(Way(100, 5, Map(10 -> "wayAttrValue"))))
+      expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
     }
 
   }
