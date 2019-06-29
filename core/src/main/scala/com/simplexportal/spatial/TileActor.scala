@@ -26,46 +26,48 @@ object TileActor {
   def props(networkId: String, boundingBox: BoundingBox): Props =
     Props(new TileActor(networkId, boundingBox))
 
-  sealed trait RTreeCommands
+  sealed trait TileCommands
 
   case class AddNode(
       id: Long,
       lat: Double,
       lon: Double,
       attributes: Map[String, String]
-  ) extends RTreeCommands
+  ) extends TileCommands
 
   case class AddWay(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String]
-  ) extends RTreeCommands
+  ) extends TileCommands
 
-  case class GetNode(id: Long) extends RTreeCommands
+  case class AddBatch(cmds: Seq[TileCommands]) extends TileCommands
 
-  case class GetWay(id: Long) extends RTreeCommands
+  case class GetNode(id: Long) extends TileCommands
 
-  object GetMetrics extends RTreeCommands
+  case class GetWay(id: Long) extends TileCommands
+
+  object GetMetrics extends TileCommands
 
   sealed trait RTreeDataTransfer
 
   case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
 
   // Persisted messages.
-  sealed trait RTreeEvents
+  sealed trait TileEvents
 
   case class NodeAdded(
       id: Long,
       lat: Double,
       lon: Double,
       attributes: Map[String, String]
-  ) extends RTreeEvents
+  ) extends TileEvents
 
   case class WayAdded(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String]
-  ) extends RTreeEvents
+  ) extends TileEvents
 
 }
 
@@ -89,19 +91,39 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
     case GetMetrics =>
       sender ! Metrics(tile.ways.size, tile.nodes.size)
 
-    case AddNode(id, lat, lon, attributes) =>
-      persist(NodeAdded(id, lat, lon, attributes)) { node =>
-        addNode(node)
-        sender ! akka.Done
-      }
+    case cmd: AddNode =>
+      addNodeHandler(cmd)
+      sender ! akka.Done
 
-    case AddWay(id, nodeIds, attributes) =>
-      persist(WayAdded(id, nodeIds, attributes)) { way =>
-        addWay(way)
-        sender ! akka.Done
-      }
+    case cmd: AddWay =>
+      addWayHandler(cmd)
+      sender ! akka.Done
 
+    case AddBatch(cmds) =>
+      addBatchHandler(cmds.flatMap{
+        case cmd: AddNode => Some(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes))
+        case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
+        case _ => None
+      })
+      sender ! akka.Done
   }
+
+  private def addNodeHandler(cmd: AddNode) =
+    persist(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes)) { node =>
+      addNode(node)
+    }
+
+  private def addWayHandler(cmd: AddWay) =
+    persist(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes)) { way =>
+      addWay(way)
+    }
+
+  private def addBatchHandler(events: Seq[TileEvents]) =
+    persist(events) (events => events.foreach{
+      case node: NodeAdded => addNode(node)
+      case way: WayAdded => addWay(way)
+    })
+
 
   override def receiveRecover: Receive = {
     case event: NodeAdded => addNode(event)
@@ -113,5 +135,6 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
   private def addWay(way: WayAdded) =
     tile = tile.addWay(way.id, way.nodeIds, way.attributes)
+
 
 }

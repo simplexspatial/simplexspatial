@@ -16,13 +16,13 @@
 
 package com.simplexportal.spatial
 
-import com.simplexportal.spatial.TileActor.{AddNode, AddWay, RTreeCommands}
+import com.simplexportal.spatial.TileActor.{AddNode, AddWay, TileCommands}
 import com.simplexportal.spatial.model.{BoundingBox, Location}
 
-trait RTreeActorDataset {
+trait TileActorDataset {
   val bbox = BoundingBox(Location(1,1), Location(10,10))
 
-  val exampleTileCommands: Seq[RTreeCommands] = Seq(
+  val exampleTileCommands: Seq[TileCommands] = Seq(
     AddNode(1, 7,3, Map("nodeAttrKey" -> "nodeAttrValue")),
     AddNode(2, 7,10, Map.empty),
     AddNode(3, 3, 10, Map.empty),

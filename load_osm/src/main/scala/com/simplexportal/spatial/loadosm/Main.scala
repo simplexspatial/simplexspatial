@@ -16,13 +16,13 @@
 
 package com.simplexportal.spatial.loadosm
 
-import com.simplexportal.spatial.utils.Benchmarking
 import org.backuity.clist.Cli
 
-object Main extends App with Benchmarking {
+object Main extends App {
 
   Cli.parse(args).withCommand(new Parameters) {
     case params if params.loadType == "akka" => AKKALoad.load(params.osmFile)
+    case params if params.loadType == "akka-blocks" => AKKABlocksLoad.load(params.osmFile, params.blockSize)
     case params if params.loadType == "local" => LocalLoad.load(params.osmFile)
     case params => println(s"type ${params} not uspported. Only akka, local supported.")
   }

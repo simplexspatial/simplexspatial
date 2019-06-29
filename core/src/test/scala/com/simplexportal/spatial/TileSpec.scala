@@ -20,8 +20,6 @@ import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
 
-import scala.collection.immutable.LongMap
-
 // scalastyle:off magic.number
 
 class TileSpec extends WordSpecLike with Matchers {
@@ -31,18 +29,19 @@ class TileSpec extends WordSpecLike with Matchers {
     "create a network" when {
 
       val expected = Tile(
-        nodes = LongMap(
-          1L -> Node(1, Location(7, 3), Map(10 -> "true"), Set(101), Set(2), Set(2)),
+        nodes = Map(
+          1L -> Node(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
           2L -> Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
           3L -> Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
           4L -> Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
           5L -> Node(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
           6L -> Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
         ),
-        ways = LongMap(
-          100L -> Way(100, 5, Map(10 -> "Street Name")),
+        ways = Map(
+          100L -> Way(100, 5, Map(3373707 -> "Street Name")),
           101L -> Way(101, 1)
-        )
+        ),
+        Map(206407764 -> "traffic_light", 3373707 -> "name")
       )
 
       "is simple definition" in {
