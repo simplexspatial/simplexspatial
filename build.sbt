@@ -45,7 +45,7 @@ lazy val akkaVersion = "2.5.21"
 lazy val scalatestVersion = "3.0.5"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.7.0"
-lazy val akkaPersistenceNowhereVersion = "0.1.0-SNAPSHOT"
+lazy val akkaPersistenceNowhereVersion = "1.0.1"
 
 lazy val core = (project in file("core"))
   .settings(
