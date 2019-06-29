@@ -24,6 +24,7 @@ object Main extends App with Benchmarking {
   Cli.parse(args).withCommand(new Parameters) {
     case params if params.loadType == "akka" => AKKALoad.load(params.osmFile)
     case params if params.loadType == "local" => LocalLoad.load(params.osmFile)
+    case params => println(s"type ${params} not uspported. Only akka, local supported.")
   }
 
 }
