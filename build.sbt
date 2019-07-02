@@ -66,7 +66,10 @@ lazy val core = (project in file("core"))
     ).map(_ % "test")
   )
 
+
+// FIXME: Don't duplicate proto files.
 lazy val loadOSM = (project in file("load_osm"))
+  .enablePlugins(AkkaGrpcPlugin)
   .settings(
     commonSettings,
     mainClass in assembly := Some("com.simplexportal.spatial.loadosm.Main"),
@@ -76,5 +79,4 @@ lazy val loadOSM = (project in file("load_osm"))
       "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided"
     )
   )
-  .dependsOn(core)
 

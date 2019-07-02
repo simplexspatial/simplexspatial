@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.simplexportal.spatial.api";
+option java_outer_classname = "HelloWorldProto";
+
+package com.simplexportal.spatial.api;
+
+service SimplexSpatialService {
+    rpc AddNode (AddNodeCmd) returns (Done);
+    rpc AddWay (AddWayCmd) returns (Done);
+    rpc ExecuteBatch (ExecuteBatchCmd) returns (Done);
+    rpc GetMetrics (GetMetricsCmd) returns (Metrics);
+}
+
+message Done { }
+
+message AddNodeCmd {
+    int64 id = 1;
+    double lon = 2;
+    double lat = 3;
+    map<string, string> attributes = 4;
+}
+
+message AddWayCmd {
+    int64 id = 1;
+    repeated int64 nodeIds = 2;
+    map<string, string> attributes = 3;
+}
+
+message ExecuteBatchCmd {
+    repeated AddNodeCmd nodes = 1;
+    repeated AddWayCmd ways = 2;
+}
+
+message GetMetricsCmd { }
+
+message Metrics {
+    int64 ways = 1;
+    int64 nodes = 2;
+}
+

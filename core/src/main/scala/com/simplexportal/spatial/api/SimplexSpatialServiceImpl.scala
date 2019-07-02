@@ -28,7 +28,7 @@ import scala.concurrent.duration._
 class SimplexSpatialServiceImpl(tile: ActorRef)(implicit executionContext: ExecutionContext) extends SimplexSpatialService {
 
   // FIXME: Temporal timeout for POC
-  implicit val timeout = Timeout(120 minutes)
+  implicit val timeout = Timeout(15 minutes)
 
   override def addNode(in: AddNodeCmd): Future[Done] = {
     tile ! AddNode(in.id, in.lat, in.lon, in.attributes)
@@ -36,13 +36,11 @@ class SimplexSpatialServiceImpl(tile: ActorRef)(implicit executionContext: Execu
   }
 
   override def addWay(in: AddWayCmd): Future[Done] = {
-    println(s"Adding ways to ${in}")
     tile ! AddWay(in.id, in.nodeIds, in.attributes)
     Future.successful(Done())
   }
 
   override def executeBatch(in: ExecuteBatchCmd): Future[Done] = {
-    println(s"Executing batch. Adding ${in.nodes.size} nodes and ${in.ways.size} ways.")
     val nodesToAdd = in.nodes.map( inNodes => AddNode(inNodes.id, inNodes.lat, inNodes.lon, inNodes.attributes))
     val waysToAdd = in.ways.map( inWay => AddWay(inWay.id, inWay.nodeIds, inWay.attributes))
     tile ! AddBatch(nodesToAdd ++ waysToAdd)

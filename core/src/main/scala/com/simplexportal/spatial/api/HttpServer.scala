@@ -24,7 +24,7 @@ import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.{ActorMaterializer, Materializer}
 import com.simplexportal.spatial.TileActor
 import com.simplexportal.spatial.model.{BoundingBox, Location}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,7 +33,7 @@ object HttpServer {
   def main(args: Array[String]): Unit = {
     // Important: enable HTTP/2 in ActorSystem's config
     // We do it here programmatically, but you can also set it in the application.conf
-    val conf = ConfigFactory
+    implicit val conf = ConfigFactory
       .parseString("akka.http.server.preview.enable-http2 = on")
       .withFallback(ConfigFactory.defaultApplication())
     val system = ActorSystem("SimplexSpatial", conf)
@@ -43,7 +43,7 @@ object HttpServer {
 
 }
 
-class HttpServer(system: ActorSystem) {
+class HttpServer(system: ActorSystem)(implicit config: Config) {
   def run(): Future[Http.ServerBinding] = {
 
     // Akka boot up code
@@ -67,8 +67,8 @@ class HttpServer(system: ActorSystem) {
     // Bind service handler servers to localhost:8080/8081
     val binding = Http().bindAndHandleAsync(
       serviceHandlers,
-      interface = "127.0.0.1",
-      port = 8080,
+      interface = config.getString("simplexportal.spatial.api.interface"),
+      port = config.getInt("simplexportal.spatial.api.port"),
       connectionContext = HttpConnectionContext(http2 = Always))
 
     // report successful binding
