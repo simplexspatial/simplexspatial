@@ -21,7 +21,6 @@ import java.io.File
 import org.backuity.clist._
 
 class Parameters extends Command(description = "Load an osm file into an server") {
-  var loadType = arg[String](description = "type of load: akka or local or akka-blocks")
   var osmFile = arg[File](description = "osm file")
-  var blockSize = opt[Int](description = "Block size")
+  var blockSize = arg[Int](description = "Block size")
 }

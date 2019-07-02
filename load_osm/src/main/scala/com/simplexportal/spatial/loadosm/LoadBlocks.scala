@@ -19,7 +19,7 @@ package com.simplexportal.spatial.loadosm
 import java.io.{File, FileInputStream, InputStream}
 
 import com.acervera.osm4scala.EntityIterator.fromPbf
-import com.acervera.osm4scala.model.{NodeEntity, OSMEntity, WayEntity}
+import com.acervera.osm4scala.model.OSMEntity
 import com.typesafe.config.ConfigFactory
 
 trait LoadBlocks {
@@ -29,7 +29,6 @@ trait LoadBlocks {
   def printPartials(time: Long): Unit
   def clean(): Unit = {}
 
-
   val config = ConfigFactory.load()
   private val printMetricsElapseTime =
     config.getDuration("simplexportal.spatial.metrics.beat").toMillis
@@ -37,7 +36,6 @@ trait LoadBlocks {
   private var nextPrint = lastPrint + printMetricsElapseTime
 
   val startTime = System.currentTimeMillis()
-
 
   def triggerPartials(): Unit = {
     if (System.currentTimeMillis > nextPrint) {
@@ -48,10 +46,12 @@ trait LoadBlocks {
   }
 
   def load(osmFile: File, blockSize: Int): Unit = {
-    println(s"Loading data using batches of ${blockSize} from [${osmFile.getAbsolutePath}]")
+    println(
+      s"Loading data using batches of ${blockSize} from [${osmFile.getAbsolutePath}]"
+    )
 
     val pbfIS: InputStream = new FileInputStream(osmFile)
-    fromPbf(pbfIS).grouped(blockSize).foreach( addGroup )
+    fromPbf(pbfIS).grouped(blockSize).foreach(addGroup)
 
     printTotals(System.currentTimeMillis() - startTime)
 

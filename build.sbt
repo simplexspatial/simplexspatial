@@ -20,7 +20,7 @@ lazy val commonSettings = Seq(
   fork := true,
   resolvers += "osm4scala repo" at "http://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.6",
-/*  scalacOptions ++= Seq(
+  /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding",
     "utf8",
@@ -48,8 +48,12 @@ lazy val betterFilesVersion = "3.7.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.1"
 
 lazy val core = (project in file("core"))
+  .enablePlugins(AkkaGrpcPlugin)
+  .enablePlugins(JavaAgent) // ALPN agent
   .settings(
     commonSettings,
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
+    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
@@ -62,15 +66,17 @@ lazy val core = (project in file("core"))
     ).map(_ % "test")
   )
 
+
+// FIXME: Don't duplicate proto files.
 lazy val loadOSM = (project in file("load_osm"))
+  .enablePlugins(AkkaGrpcPlugin)
   .settings(
     commonSettings,
     mainClass in assembly := Some("com.simplexportal.spatial.loadosm.Main"),
-    
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
       "org.backuity.clist" %% "clist-core" % "3.5.1",
       "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided"
     )
   )
-  .dependsOn(core)
+
