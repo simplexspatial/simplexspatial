@@ -26,4 +26,7 @@ Java13 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 111.45 secon
 // With dictionary for tags (Less memory and GC used)
 Java8 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 129.35 seconds
 Java13 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 107.20 seconds
+
+// Loading in blocks 2000 
+Java13 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 87 seconds
 ```
