@@ -47,13 +47,22 @@ lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.7.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.1"
 
+lazy val protobufApi = (project in file("protobuf-api"))
+  .settings(
+    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+  )
+
 lazy val core = (project in file("core"))
   .enablePlugins(AkkaGrpcPlugin)
   .enablePlugins(JavaAgent) // ALPN agent
   .settings(
+    PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
+    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala)
+  )
+  .settings(
     commonSettings,
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
-    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
+
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
@@ -65,11 +74,15 @@ lazy val core = (project in file("core"))
       "com.github.pathikrit" %% "better-files" % betterFilesVersion
     ).map(_ % "test")
   )
+  .dependsOn(protobufApi)
 
 
-// FIXME: Don't duplicate proto files.
 lazy val loadOSM = (project in file("load_osm"))
   .enablePlugins(AkkaGrpcPlugin)
+  .disablePlugins(sbtassembly.AssemblyPlugin)
+  .settings(
+    PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
+  )
   .settings(
     commonSettings,
     mainClass in assembly := Some("com.simplexportal.spatial.loadosm.Main"),
@@ -79,4 +92,5 @@ lazy val loadOSM = (project in file("load_osm"))
       "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided"
     )
   )
+  .dependsOn(protobufApi)
 
