@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplexportal.spatial.api
+package com.simplexportal.spatial.api.data
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -22,10 +22,10 @@ import akka.util.Timeout
 import com.simplexportal.spatial.TileActor
 import com.simplexportal.spatial.TileActor.{AddBatch, AddNode, AddWay, GetMetrics}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
-class SimplexSpatialServiceImpl(tile: ActorRef)(implicit executionContext: ExecutionContext) extends SimplexSpatialService {
+class DataServiceImpl(tile: ActorRef)(implicit executionContext: ExecutionContext) extends DataService {
 
   // FIXME: Temporal timeout for POC
   implicit val timeout = Timeout(15 minutes)

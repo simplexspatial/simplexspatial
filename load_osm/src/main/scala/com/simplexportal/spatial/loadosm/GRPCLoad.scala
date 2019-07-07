@@ -20,7 +20,7 @@ import akka.actor.ActorSystem
 import akka.grpc.GrpcClientSettings
 import akka.stream.ActorMaterializer
 import com.acervera.osm4scala.model.{NodeEntity, OSMEntity, WayEntity}
-import com.simplexportal.spatial.api._
+import com.simplexportal.spatial.api.data._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -36,13 +36,13 @@ object GRPCLoad extends LoadBlocks {
 
 //  val clientSettings = GrpcClientSettings.fromConfig(SimplexSpatialService.name)
   val clientSettings = GrpcClientSettings
-    .connectToServiceAt(config.getString("simplexportal.spatial.service.host"), config.getInt("simplexportal.spatial.service.port"))
+    .connectToServiceAt(config.getString("simplexportal.spatial.service.interface"), config.getInt("simplexportal.spatial.service.port"))
     .withDeadline(1 hour)
     .withConnectionAttempts(1)
     .withTls(false)
 
 
-  val client: SimplexSpatialService = SimplexSpatialServiceClient(clientSettings)
+  val client: DataService = DataServiceClient(clientSettings)
 
   def toCmd(node: NodeEntity): AddNodeCmd = AddNodeCmd(
     id = node.id,
