@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   fork := true,
   resolvers += "osm4scala repo" at "http://dl.bintray.com/angelcervera/maven",
-  scalaVersion := "2.12.6",
+  scalaVersion := "2.12.8",
   /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding",
@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
   test in assembly := {}
 )
 
-lazy val akkaVersion = "2.5.21"
+lazy val akkaVersion = "2.5.23"
 lazy val scalatestVersion = "3.0.5"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.7.0"
@@ -62,7 +62,7 @@ lazy val core = (project in file("core"))
   .settings(
     commonSettings,
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
-
+    mainClass in assembly := Some("com.simplexportal.spatial.Main"),
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
