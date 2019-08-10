@@ -27,9 +27,15 @@ message AddWayCmd {
     map<string, string> attributes = 3;
 }
 
+message ExecuteCmd {
+    oneof cmd {
+        AddNodeCmd node = 1;
+        AddWayCmd way = 2;
+    }
+}
+
 message ExecuteBatchCmd {
-    repeated AddNodeCmd nodes = 1;
-    repeated AddWayCmd ways = 2;
+    repeated ExecuteCmd commands = 1;
 }
 
 message GetMetricsCmd { }

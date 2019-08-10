@@ -25,6 +25,8 @@ import com.simplexportal.spatial.api.data._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import ExecuteCmd._
+
 object GRPCLoad extends LoadBlocks {
 
   implicit val sys = ActorSystem("GRPC_Loader")
@@ -36,11 +38,13 @@ object GRPCLoad extends LoadBlocks {
 
 //  val clientSettings = GrpcClientSettings.fromConfig(SimplexSpatialService.name)
   val clientSettings = GrpcClientSettings
-    .connectToServiceAt(config.getString("simplexportal.spatial.service.interface"), config.getInt("simplexportal.spatial.service.port"))
+    .connectToServiceAt(
+      config.getString("simplexportal.spatial.service.interface"),
+      config.getInt("simplexportal.spatial.service.port")
+    )
     .withDeadline(1 hour)
     .withConnectionAttempts(1)
     .withTls(false)
-
 
   val client: DataService = DataServiceClient(clientSettings)
 
@@ -58,22 +62,55 @@ object GRPCLoad extends LoadBlocks {
   )
 
   override def addGroup(entities: Seq[OSMEntity]): Unit = {
-    val (nodes, ways) = entities.foldLeft( (Seq[AddNodeCmd](), Seq[AddWayCmd]()) ) { case ((nodes, ways), entity) =>
-      entity match {
-        case node: NodeEntity => (nodes :+ toCmd(node), ways)
-        case way: WayEntity => (nodes, ways :+ AddWayCmd(way.id, way.nodes, way.tags))
-        case _ => (nodes, ways)
+
+    val (
+      localCommands: Seq[ExecuteCmd],
+      nodesLocalCounter: Long,
+      waysLocalCounter: Long,
+      othersLocalCount: Long
+    ) =
+      entities.foldLeft(Seq[ExecuteCmd](), 0L, 0L, 0L) {
+        case ((commands, nodes, ways, others), entity) =>
+          entity match {
+            case node: NodeEntity =>
+              (
+                commands :+ ExecuteCmd(
+                  Cmd.Node(
+                    AddNodeCmd(
+                      node.id,
+                      node.longitude,
+                      node.latitude,
+                      node.tags
+                    )
+                  )
+                ),
+                nodes + 1,
+                ways,
+                others
+              )
+            case way: WayEntity =>
+              (
+                commands :+ ExecuteCmd(
+                  Cmd.Way(AddWayCmd(way.id, way.nodes, way.tags))
+                ),
+                nodes,
+                ways + 1,
+                others
+              )
+            case _ => (commands, nodes, ways, others + 1)
+          }
       }
-    }
-    nodesCounter += 1
-    waysCounter += 1
-    client.executeBatch(ExecuteBatchCmd(nodes, ways))
+
+    nodesCounter += nodesLocalCounter
+    waysCounter += waysLocalCounter
+    client.executeBatch(ExecuteBatchCmd(localCommands))
   }
 
   override def printTotals(time: Long): Unit = {
     println("Asking for metrics .....")
     val metrics = Await.result(client.getMetrics(GetMetricsCmd()), 1 hour)
-    println(s"Added ${metrics.nodes} nodes and ${metrics.ways} ways in ${ (System.currentTimeMillis() - startTime) / 1000} seconds.")
+    println(s"Added ${metrics.nodes} nodes and ${metrics.ways} ways in ${(System
+      .currentTimeMillis() - startTime) / 1000} seconds.")
   }
 
   override def printPartials(time: Long): Unit = {

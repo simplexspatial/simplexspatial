@@ -20,12 +20,20 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import com.simplexportal.spatial.TileActor
-import com.simplexportal.spatial.TileActor.{AddBatch, AddNode, AddWay, GetMetrics}
+import com.simplexportal.spatial.TileActor.{
+  AddBatch,
+  AddNode,
+  AddWay,
+  GetMetrics,
+  TileCommands
+}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-class DataServiceImpl(tile: ActorRef)(implicit executionContext: ExecutionContext) extends DataService {
+class DataServiceImpl(tile: ActorRef)(
+    implicit executionContext: ExecutionContext
+) extends DataService {
 
   // FIXME: Temporal timeout for POC
   implicit val timeout = Timeout(15 minutes)
@@ -41,14 +49,33 @@ class DataServiceImpl(tile: ActorRef)(implicit executionContext: ExecutionContex
   }
 
   override def executeBatch(in: ExecuteBatchCmd): Future[Done] = {
-    val nodesToAdd = in.nodes.map( inNodes => AddNode(inNodes.id, inNodes.lat, inNodes.lon, inNodes.attributes))
-    val waysToAdd = in.ways.map( inWay => AddWay(inWay.id, inWay.nodeIds, inWay.attributes))
-    tile ! AddBatch(nodesToAdd ++ waysToAdd)
+    val commands: Seq[TileCommands] = in.commands.flatMap(
+      executeCmd =>
+        executeCmd.cmd match {
+          case cmd if cmd.isNode =>
+            cmd.node.map(
+              nodeCmd =>
+                AddNode(
+                  nodeCmd.id,
+                  nodeCmd.lat,
+                  nodeCmd.lon,
+                  nodeCmd.attributes
+                )
+            )
+          case cmd if cmd.isWay =>
+            cmd.way.map(
+              wayCmd => AddWay(wayCmd.id, wayCmd.nodeIds, wayCmd.attributes)
+            )
+        }
+    )
+    tile ! AddBatch(commands)
     Future.successful(Done())
   }
 
   override def getMetrics(in: GetMetricsCmd): Future[Metrics] = {
     println(s"Getting metrics")
-    (tile ask GetMetrics).mapTo[TileActor.Metrics].map( m => Metrics(ways = m.ways, nodes = m.nodes))
+    (tile ask GetMetrics)
+      .mapTo[TileActor.Metrics]
+      .map(m => Metrics(ways = m.ways, nodes = m.nodes))
   }
 }
