@@ -49,3 +49,12 @@ Java8  => Blocks of 1000 => 225 seconds
 Java11 => Blocks of  300 => 128 seconds
 
 ```
+
+#### Thru sbt
+```bash
+sbt "core/runMain com.simplexportal.spatial.Main"
+```
+
+```bash
+sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main /home/angelcerveraclaudio/Downloads/osm/andorra-latest.osm.pbf 25"
+```
