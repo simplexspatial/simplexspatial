@@ -93,11 +93,9 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
     case cmd: AddNode =>
       addNodeHandler(cmd)
-      sender ! akka.Done
 
     case cmd: AddWay =>
       addWayHandler(cmd)
-      sender ! akka.Done
 
     case AddBatch(cmds) =>
       addBatchHandler(cmds.flatMap{
@@ -105,7 +103,6 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
         case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
         case _ => None
       })
-      sender ! akka.Done
   }
 
   private def addNodeHandler(cmd: AddNode) =

@@ -4,7 +4,9 @@ Comming soon!!
 
 ## Notes
 
-### Performance Loading
+- Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
+
+## Performance Loading
 
 ```
 sudo update-alternatives --config java
@@ -50,11 +52,11 @@ Java11 => Blocks of  300 => 128 seconds
 
 ```
 
-#### Thru sbt
+## Thru sbt
 ```bash
 sbt "core/runMain com.simplexportal.spatial.Main"
 ```
 
 ```bash
-sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main /home/angelcerveraclaudio/Downloads/osm/andorra-latest.osm.pbf 25"
+sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main /home/angelcerveraclaudio/Downloads/osm/andorra-latest.osm.pbf"
 ```

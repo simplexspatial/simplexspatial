@@ -27,6 +27,7 @@ import scala.concurrent.duration._
 
 import ExecuteCmd._
 
+@deprecated
 object GRPCLoad extends LoadBlocks {
 
   implicit val sys = ActorSystem("GRPC_Loader")

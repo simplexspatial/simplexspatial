@@ -16,23 +16,21 @@
 
 package com.simplexportal.spatial.api.data
 
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.pattern.ask
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
 import com.simplexportal.spatial.TileActor
-import com.simplexportal.spatial.TileActor.{
-  AddBatch,
-  AddNode,
-  AddWay,
-  GetMetrics,
-  TileCommands
-}
+import com.simplexportal.spatial.TileActor._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 class DataServiceImpl(tile: ActorRef)(
-    implicit executionContext: ExecutionContext
+    implicit executionContext: ExecutionContext,
+    materializer: Materializer
 ) extends DataService {
 
   // FIXME: Temporal timeout for POC
@@ -47,6 +45,24 @@ class DataServiceImpl(tile: ActorRef)(
     tile ! AddWay(in.id, in.nodeIds, in.attributes)
     Future.successful(Done())
   }
+
+  override def streamCommands(in: Source[ExecuteCmd, NotUsed]): Future[Done] =
+    in.map(
+        executeCmd =>
+          executeCmd.cmd match {
+            case cmd if cmd.isNode =>
+              cmd.node.map(
+                node => AddNode(node.id, node.lat, node.lon, node.attributes)
+              )
+            case cmd if cmd.isWay =>
+              cmd.way.map(way => AddWay(way.id, way.nodeIds, way.attributes))
+          }
+      )
+      .map(_.map {
+        tile ! _
+      })
+      .runWith(Sink.ignore)
+      .map(_ => Done())
 
   override def executeBatch(in: ExecuteBatchCmd): Future[Done] = {
     val commands: Seq[TileCommands] = in.commands.flatMap(
@@ -73,7 +89,6 @@ class DataServiceImpl(tile: ActorRef)(
   }
 
   override def getMetrics(in: GetMetricsCmd): Future[Metrics] = {
-    println(s"Getting metrics")
     (tile ask GetMetrics)
       .mapTo[TileActor.Metrics]
       .map(m => Metrics(ways = m.ways, nodes = m.nodes))

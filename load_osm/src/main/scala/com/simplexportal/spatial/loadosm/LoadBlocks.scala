@@ -22,6 +22,7 @@ import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.OSMEntity
 import com.typesafe.config.ConfigFactory
 
+@deprecated
 trait LoadBlocks {
 
   def addGroup(entities: Seq[OSMEntity]): Unit
