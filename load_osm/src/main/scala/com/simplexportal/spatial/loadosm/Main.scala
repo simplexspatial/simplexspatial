@@ -21,6 +21,6 @@ import org.backuity.clist.Cli
 object Main extends App {
 
   Cli.parse(args).withCommand(new Parameters)(params => {
-    GRPCLoad.load(params.osmFile, params.blockSize)
+    new LoadStreaming().load(params.osmFile)
   })
 }

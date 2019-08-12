@@ -22,5 +22,4 @@ import org.backuity.clist._
 
 class Parameters extends Command(description = "Load an osm file into an server") {
   var osmFile = arg[File](description = "osm file")
-  var blockSize = arg[Int](description = "Block size")
 }
