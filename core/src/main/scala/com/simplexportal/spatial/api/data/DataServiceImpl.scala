@@ -46,22 +46,41 @@ class DataServiceImpl(tile: ActorRef)(
     Future.successful(Done())
   }
 
+  // sent from actor to stream to "ack" processing of given element
+  val AckMessage = TileActor.Ack
+
+  // sent from stream to actor to indicate start, end or failure of stream:
+  val InitMessage = TileActor.StreamInitialized
+  val OnCompleteMessage = TileActor.StreamCompleted
+  val onErrorMessage = (ex: Throwable) => TileActor.StreamFailure(ex)
+
+  val sink = Sink.actorRefWithAck(
+    tile,
+    onInitMessage = InitMessage,
+    ackMessage = AckMessage,
+    onCompleteMessage = OnCompleteMessage,
+    onFailureMessage = onErrorMessage)
+
   override def streamCommands(in: Source[ExecuteCmd, NotUsed]): Future[Done] =
-    in.map(
+    in
+      .mapAsync(4)( // TODO: Maybe better mapAsync ???
         executeCmd =>
           executeCmd.cmd match {
             case cmd if cmd.isNode =>
-              cmd.node.map(
+              Future(cmd.node.map(
                 node => AddNode(node.id, node.lat, node.lon, node.attributes)
-              )
+              ).orNull)
             case cmd if cmd.isWay =>
-              cmd.way.map(way => AddWay(way.id, way.nodeIds, way.attributes))
+              Future(cmd.way.map(way => AddWay(way.id, way.nodeIds, way.attributes)).orNull)
+            case _ => Future(null)
           }
       )
-      .map(_.map {
-        tile ! _
+      .groupedWithin(300, 1 second)
+//      .map(tile ! AddBatch(_))
+//      .runWith(sink)
+      .runForeach( cmds => {
+        tile ! AddBatch(cmds)
       })
-      .runWith(Sink.ignore)
       .map(_ => Done())
 
   override def executeBatch(in: ExecuteBatchCmd): Future[Done] = {
