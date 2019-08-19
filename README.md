@@ -20,7 +20,7 @@ java -Xms5G -Xmx10G -jar load_osm/target/scala-2.12/loadOSM-assembly-0.0.1-SNAPS
 
 To load, I used osm4scala to read the osm file and pull data into the server.
 
-Using always the Irish OSM network (150MB, 19.426.617 nodes and 2.096.455 ways):
+Using always the Irish OSM network (150MB, 19.426.617 nodes and 2.096.455 ways = 21.523.072 entities):
 
 ```
 // Compiled with Java X and without optimizations
@@ -38,18 +38,30 @@ Java13 => 19426617 nodes and 2096455 ways loaded in 107.20 seconds
 
 // Loading in blocks 2000 directly (same JavaVM) 
 Java13 => 19426617 nodes and 2096455 ways loaded in 87 seconds
-
+```
 // From here, always using -Xms20G  -Xmx24G
 
-// Remote server using gRPC sequential unary calls.
-Java8  => Blocks of  275 => 106 seconds
-Java8  => Blocks of  300 => 100 seconds
+### gRPC
+- Data : Ireland (Republic of Ireland and North Ireland)
+- Size: 19426617 nodes and 2096455 ways = 21523072 entities / 153MB
+
+#### Sequential unary calls.
+```
+Java8  => Blocks of  275 => 106 seconds => 203K/second
+Java8  => Blocks of  300 => 100 seconds => 215K/second
 Java8  => Blocks of  350 => 119 seconds
 Java8  => Blocks of  400 => 125 seconds
 Java8  => Blocks of  500 => 135 seconds
-Java8  => Blocks of 1000 => 225 seconds
+Java8  => Blocks of 1000 => 225 seconds => 96K/second
 Java11 => Blocks of  300 => 128 seconds
+```
 
+#### Streaming Ireland, Java8 
+```
+No blocks => 10 minutes (600 seconds) => 36K/second
+Blocks of 300 in server => 3.4 minutes (205 seconds) => 105K/second
+Blocks of 300 in client =>
+Blocks of 300 in both =>
 ```
 
 ## Thru sbt

@@ -19,6 +19,7 @@ package com.simplexportal.spatial
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import com.simplexportal.spatial.TileActor._
+import com.simplexportal.spatial.api.data.Done
 import com.simplexportal.spatial.model._
 
 object TileActor {
@@ -26,6 +27,7 @@ object TileActor {
   def props(networkId: String, boundingBox: BoundingBox): Props =
     Props(new TileActor(networkId, boundingBox))
 
+  // Commands
   sealed trait TileCommands
 
   case class AddNode(
@@ -53,7 +55,7 @@ object TileActor {
 
   case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
 
-  // Persisted messages.
+  // Events.
   sealed trait TileEvents
 
   case class NodeAdded(
@@ -69,6 +71,12 @@ object TileActor {
       attributes: Map[String, String]
   ) extends TileEvents
 
+  // Other messages
+  case object Ack
+  case object StreamInitialized
+  case object StreamCompleted
+  final case class StreamFailure(ex: Throwable)
+
 }
 
 class TileActor(networkId: String, boundingBox: BoundingBox)
@@ -82,6 +90,16 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
   override def receiveCommand: Receive = {
 
+//    case StreamInitialized =>
+//      log.info("Stream initialized!")
+//      sender ! Ack // ack to allow the stream to proceed sending more elements
+//
+//    case StreamCompleted =>
+//      log.info("Stream completed!")
+//
+//    case StreamFailure(ex) =>
+//      log.error(ex, "Stream failed!")
+
     case GetNode(id) =>
       sender ! tile.nodes.get(id)
 
@@ -93,9 +111,11 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
     case cmd: AddNode =>
       addNodeHandler(cmd)
+      sender ! Done
 
     case cmd: AddWay =>
       addWayHandler(cmd)
+      sender ! Done
 
     case AddBatch(cmds) =>
       addBatchHandler(cmds.flatMap{
@@ -103,6 +123,8 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
         case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
         case _ => None
       })
+    sender ! Done
+
   }
 
   private def addNodeHandler(cmd: AddNode) =
