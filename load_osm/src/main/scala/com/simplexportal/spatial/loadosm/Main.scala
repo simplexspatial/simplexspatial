@@ -21,6 +21,6 @@ import org.backuity.clist.Cli
 object Main extends App {
 
   Cli.parse(args).withCommand(new Parameters)(params => {
-    new LoadStreaming().load(params.osmFile)
+    new LoadStreaming().loadBatches(params.osmFile, params.blockSize)
   })
 }

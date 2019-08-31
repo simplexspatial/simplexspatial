@@ -10,6 +10,7 @@ service DataService {
     rpc AddWay (AddWayCmd) returns (Done);
     rpc ExecuteBatch (ExecuteBatchCmd) returns (Done);
     rpc StreamCommands (stream ExecuteCmd) returns (Done);
+    rpc StreamBatchCommands (stream ExecuteBatchCmd) returns (stream Done);
     rpc GetMetrics (GetMetricsCmd) returns (Metrics);
 }
 

@@ -58,7 +58,32 @@ class LoadStreaming {
     val reply = client.streamCommands(createSource(osmFile))
     reply.onComplete {
       case Success(msg) =>
-        println(s"got single reply for streaming requests: $msg")
+        println(s"got reply for streaming requests: $msg")
+        printTotals
+        sys.terminate()
+      case Failure(e) =>
+        println(s"Error streamingRequest: $e")
+        sys.terminate()
+    }
+  }
+
+  def loadBatches(osmFile: File, blockSize: Int): Unit = {
+
+    println(
+      s"Loading batches data from [${osmFile.getAbsolutePath}]"
+    )
+
+    val reply = client
+      .streamBatchCommands(createBatchSource(osmFile, blockSize))
+      .runForeach(i =>
+        println(
+          s"Sent ${nodes} nodes and ${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds."
+        )
+      )
+
+    reply.onComplete {
+      case Success(msg) =>
+        println(s"got last reply for streaming requests as $msg")
         printTotals
         sys.terminate()
       case Failure(e) =>
@@ -98,6 +123,33 @@ class LoadStreaming {
             AddWayCmd(wayEntity.id, wayEntity.nodes, wayEntity.tags)
           )
       }
+  }
+
+  def createBatchSource(osmFile: File, blockSize: Int): Source[ExecuteBatchCmd, NotUsed] = {
+    val pbfIS: InputStream = new FileInputStream(osmFile)
+
+    Source
+      .fromIterator(() => fromPbf(pbfIS))
+      .filter(osmEntity => osmEntity.osmModel != OSMTypes.Relation)
+      .map {
+        case nodeEntity: NodeEntity =>
+          nodes += 1
+          ExecuteCmd().withNode(
+            AddNodeCmd(
+              nodeEntity.id,
+              nodeEntity.longitude,
+              nodeEntity.latitude,
+              nodeEntity.tags
+            )
+          )
+        case wayEntity: WayEntity =>
+          ways += 1
+          ExecuteCmd().withWay(
+            AddWayCmd(wayEntity.id, wayEntity.nodes, wayEntity.tags)
+          )
+      }
+      .grouped(blockSize)
+      .map(cmds => ExecuteBatchCmd().withCommands(cmds))
   }
 
 }
