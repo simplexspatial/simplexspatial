@@ -46,20 +46,20 @@ class DataServiceImpl(tile: ActorRef)(
     Future.successful(Done())
   }
 
-  // sent from actor to stream to "ack" processing of given element
-  val AckMessage = TileActor.Ack
-
-  // sent from stream to actor to indicate start, end or failure of stream:
-  val InitMessage = TileActor.StreamInitialized
-  val OnCompleteMessage = TileActor.StreamCompleted
-  val onErrorMessage = (ex: Throwable) => TileActor.StreamFailure(ex)
-
-  val sink = Sink.actorRefWithAck(
-    tile,
-    onInitMessage = InitMessage,
-    ackMessage = AckMessage,
-    onCompleteMessage = OnCompleteMessage,
-    onFailureMessage = onErrorMessage)
+//  // sent from actor to stream to "ack" processing of given element
+//  val AckMessage = Done
+//
+//  // sent from stream to actor to indicate start, end or failure of stream:
+//  val InitMessage = TileActor.StreamInitialized
+//  val OnCompleteMessage = TileActor.StreamCompleted
+//  val onErrorMessage = (ex: Throwable) => TileActor.StreamFailure(ex)
+//
+//  val sink = Sink.actorRefWithAck(
+//    tile,
+//    onInitMessage = InitMessage,
+//    ackMessage = AckMessage,
+//    onCompleteMessage = OnCompleteMessage,
+//    onFailureMessage = onErrorMessage)
 
   override def streamCommands(in: Source[ExecuteCmd, NotUsed]): Future[Done] =
     in
@@ -82,6 +82,22 @@ class DataServiceImpl(tile: ActorRef)(
         tile ! AddBatch(cmds)
       })
       .map(_ => Done())
+
+  override def streamBatchCommands(in: Source[ExecuteBatchCmd, NotUsed]): Source[Done, NotUsed] =
+        in.mapConcat(e => e.commands.map(_.cmd).toList)
+          .map {
+            case cmd if cmd.isNode =>
+              cmd.node.map(node => AddNode(node.id, node.lat, node.lon, node.attributes)).orNull
+            case cmd if cmd.isWay =>
+              cmd.way.map(way => AddWay(way.id, way.nodeIds, way.attributes)).orNull
+            case _ => null
+          }
+      .groupedWithin(300, 1 second)
+      .map( cmds => { // TODO: Replace with a actorRefWithAck
+        tile ! AddBatch(cmds)
+        Done()
+        }
+      )
 
   override def executeBatch(in: ExecuteBatchCmd): Future[Done] = {
     val commands: Seq[TileCommands] = in.commands.flatMap(
@@ -112,4 +128,6 @@ class DataServiceImpl(tile: ActorRef)(
       .mapTo[TileActor.Metrics]
       .map(m => Metrics(ways = m.ways, nodes = m.nodes))
   }
+
+
 }
