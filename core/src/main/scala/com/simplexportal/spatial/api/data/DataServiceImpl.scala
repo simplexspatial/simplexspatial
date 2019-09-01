@@ -20,7 +20,7 @@ import akka.NotUsed
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import com.simplexportal.spatial.TileActor
 import com.simplexportal.spatial.TileActor._
@@ -46,27 +46,22 @@ class DataServiceImpl(tile: ActorRef)(
     Future.successful(Done())
   }
 
-  override def streamBatchCommands(in: Source[ExecuteBatchCmd, NotUsed]): Source[Done, NotUsed] =
-      in
-        .map( executeBatchCmd => executeBatchCmd.commands.flatMap(
-          executeCmd =>
-            executeCmd.command match {
-              case ExecuteCmd.Command.Way(way) => Some(AddWay(way.id, way.nodeIds, way.attributes))
-              case ExecuteCmd.Command.Node(node) => Some(AddNode(node.id, node.lat, node.lon, node.attributes))
-              case ExecuteCmd.Command.Empty => None
-            }
-        ))
-        .map( cmds => { // TODO: Replace with a actorRefWithAck
-          tile ? AddBatch(cmds)
-          Done()
-          }
-        )
-
-  override def getMetrics(in: GetMetricsCmd): Future[Metrics] = {
+  override def getMetrics(in: GetMetricsCmd): Future[Metrics] =
     (tile ask GetMetrics)
       .mapTo[TileActor.Metrics]
       .map(m => Metrics(ways = m.ways, nodes = m.nodes))
-  }
 
+  override def streamBatchCommands(in: Source[ExecuteBatchCmd, NotUsed]): Source[Done, NotUsed] =
+    in
+      .map( executeBatchCmd => executeBatchCmd.commands.flatMap(
+        executeCmd =>
+          executeCmd.command match {
+            case ExecuteCmd.Command.Way(way) => Some(AddWay(way.id, way.nodeIds, way.attributes))
+            case ExecuteCmd.Command.Node(node) => Some(AddNode(node.id, node.lat, node.lon, node.attributes))
+            case ExecuteCmd.Command.Empty => None
+          }
+      ))
+      .map(AddBatch(_))
+      .ask[Done](tile) // TODO: Maybe better performance with a actorRefWithAck
 
 }
