@@ -76,7 +76,7 @@ object GRPCLoad extends LoadBlocks {
             case node: NodeEntity =>
               (
                 commands :+ ExecuteCmd(
-                  Cmd.Node(
+                  Command.Node(
                     AddNodeCmd(
                       node.id,
                       node.longitude,
@@ -92,7 +92,7 @@ object GRPCLoad extends LoadBlocks {
             case way: WayEntity =>
               (
                 commands :+ ExecuteCmd(
-                  Cmd.Way(AddWayCmd(way.id, way.nodes, way.tags))
+                  Command.Way(AddWayCmd(way.id, way.nodes, way.tags))
                 ),
                 nodes,
                 ways + 1,

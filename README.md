@@ -24,20 +24,20 @@ Using always the Irish OSM network (150MB, 19.426.617 nodes and 2.096.455 ways =
 
 ```
 // Compiled with Java X and without optimizations
-Java8 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 152.88 seconds
-Java11 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 107.22 seconds
-Java12 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 106.93 seconds
-Java13 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 111.45 seconds
+Java8 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 152.88 seconds (142K/second)
+Java11 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 107.22 seconds (201K/second)
+Java12 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 106.93 seconds (203K/second)
+Java13 -Xms5G  -Xmx10G => 19426617 nodes and 2096455 ways loaded in 111.45 seconds (194K/second)
 
 
 // From here, always using -Xms5G  -Xmx10G
 
 // With dictionary for tags (Less memory and GC used)
-Java8  => 19426617 nodes and 2096455 ways loaded in 129.35 seconds
-Java13 => 19426617 nodes and 2096455 ways loaded in 107.20 seconds
+Java8  => 19426617 nodes and 2096455 ways loaded in 129.35 seconds (167K/second)
+Java13 => 19426617 nodes and 2096455 ways loaded in 107.20 seconds (201K/second)
 
-// Loading in blocks 2000 directly (same JavaVM) 
-Java13 => 19426617 nodes and 2096455 ways loaded in 87 seconds
+// Loading in blocks 2000 directly (**same JavaVM**) 
+Java13 => 19426617 nodes and 2096455 ways loaded in 87 seconds (247K/second)
 ```
 // From here, always using -Xms20G  -Xmx24G
 
@@ -61,7 +61,7 @@ Java11 => Blocks of  300 => 128 seconds
 No blocks => 10 minutes (600 seconds) => 36K/second
 Blocks of 300 in server => 3.4 minutes (205 seconds) => 105K/second
 Blocks of 300 in client =>
-Blocks of 300 in both =>
+Blocks of 300 in both => 1.2 minutes (74 second) => 291K/second
 ```
 
 ## Thru sbt
@@ -70,5 +70,5 @@ sbt "core/runMain com.simplexportal.spatial.Main"
 ```
 
 ```bash
-sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main /home/angelcerveraclaudio/Downloads/osm/andorra-latest.osm.pbf"
+sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main --block-size=300 /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf"
 ```

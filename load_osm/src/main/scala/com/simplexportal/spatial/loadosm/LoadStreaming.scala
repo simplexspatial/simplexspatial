@@ -37,6 +37,8 @@ class LoadStreaming {
 
   var ways = 0
   var nodes = 0
+  var others = 0
+  var blocksSent = 0
 
   // Boot akka
   implicit val sys = ActorSystem("LoadOSMStreaming")
@@ -77,7 +79,7 @@ class LoadStreaming {
       .streamBatchCommands(createBatchSource(osmFile, blockSize))
       .runForeach(i =>
         println(
-          s"Sent ${nodes} nodes and ${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds."
+          s"Sent ${nodes} nodes,  ${ways} ways and ${others} others in ${(System.currentTimeMillis() - startTime) / 1000} seconds.  ${blocksSent} blocks sent. Response: ${i}"
         )
       )
 
@@ -96,7 +98,7 @@ class LoadStreaming {
     println("Asking for metrics .....")
     val metrics = Await.result(client.getMetrics(GetMetricsCmd()), 1 hour)
     println(
-      s"Added ${metrics.nodes}/${nodes} nodes and ${metrics.ways}/${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds."
+      s"Added ${metrics.nodes}/${nodes} nodes and ${metrics.ways}/${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds. ${blocksSent} blocks sent."
     )
   }
 
@@ -147,9 +149,15 @@ class LoadStreaming {
           ExecuteCmd().withWay(
             AddWayCmd(wayEntity.id, wayEntity.nodes, wayEntity.tags)
           )
+        case other =>
+          others += 1
+          null
       }
       .grouped(blockSize)
-      .map(cmds => ExecuteBatchCmd().withCommands(cmds))
+      .map(cmds => {
+        blocksSent += 1
+        ExecuteBatchCmd().withCommands(cmds)
+      })
   }
 
 }

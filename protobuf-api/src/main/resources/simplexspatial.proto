@@ -30,7 +30,7 @@ message AddWayCmd {
 }
 
 message ExecuteCmd {
-    oneof cmd {
+    oneof Command {
         AddNodeCmd node = 1;
         AddWayCmd way = 2;
     }
