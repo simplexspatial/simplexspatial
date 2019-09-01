@@ -51,24 +51,6 @@ class LoadStreaming {
   // Create a client-side stub for the service
   val client: DataService = DataServiceClient(clientSettings)
 
-  def load(osmFile: File): Unit = {
-
-    println(
-      s"Loading data from [${osmFile.getAbsolutePath}]"
-    )
-
-    val reply = client.streamCommands(createSource(osmFile))
-    reply.onComplete {
-      case Success(msg) =>
-        println(s"got reply for streaming requests: $msg")
-        printTotals
-        sys.terminate()
-      case Failure(e) =>
-        println(s"Error streamingRequest: $e")
-        sys.terminate()
-    }
-  }
-
   def loadBatches(osmFile: File, blockSize: Int): Unit = {
 
     println(
@@ -100,31 +82,6 @@ class LoadStreaming {
     println(
       s"Added ${metrics.nodes}/${nodes} nodes and ${metrics.ways}/${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds. ${blocksSent} blocks sent."
     )
-  }
-
-  def createSource(osmFile: File): Source[ExecuteCmd, NotUsed] = {
-    val pbfIS: InputStream = new FileInputStream(osmFile)
-
-    Source
-      .fromIterator(() => fromPbf(pbfIS))
-      .filter(osmEntity => osmEntity.osmModel != OSMTypes.Relation)
-      .map {
-        case nodeEntity: NodeEntity =>
-          nodes += 1
-          ExecuteCmd().withNode(
-            AddNodeCmd(
-              nodeEntity.id,
-              nodeEntity.longitude,
-              nodeEntity.latitude,
-              nodeEntity.tags
-            )
-          )
-        case wayEntity: WayEntity =>
-          ways += 1
-          ExecuteCmd().withWay(
-            AddWayCmd(wayEntity.id, wayEntity.nodes, wayEntity.tags)
-          )
-      }
   }
 
   def createBatchSource(osmFile: File, blockSize: Int): Source[ExecuteBatchCmd, NotUsed] = {
