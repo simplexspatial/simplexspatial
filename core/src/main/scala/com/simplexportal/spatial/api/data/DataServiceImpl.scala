@@ -65,14 +65,10 @@ class DataServiceImpl(tile: ActorRef)(
     in
       .mapAsync(4)( // TODO: Maybe better mapAsync ???
         executeCmd =>
-          executeCmd.cmd match {
-            case cmd if cmd.isNode =>
-              Future(cmd.node.map(
-                node => AddNode(node.id, node.lat, node.lon, node.attributes)
-              ).orNull)
-            case cmd if cmd.isWay =>
-              Future(cmd.way.map(way => AddWay(way.id, way.nodeIds, way.attributes)).orNull)
-            case _ => Future(null)
+          executeCmd.command match {
+            case ExecuteCmd.Command.Way(way) => Future(AddWay(way.id, way.nodeIds, way.attributes))
+            case ExecuteCmd.Command.Node(node) => Future(AddNode(node.id, node.lat, node.lon, node.attributes))
+            case ExecuteCmd.Command.Empty => Future(null)
           }
       )
       .groupedWithin(300, 1 second)
@@ -84,39 +80,27 @@ class DataServiceImpl(tile: ActorRef)(
       .map(_ => Done())
 
   override def streamBatchCommands(in: Source[ExecuteBatchCmd, NotUsed]): Source[Done, NotUsed] =
-        in.mapConcat(e => e.commands.map(_.cmd).toList)
-          .map {
-            case cmd if cmd.isNode =>
-              cmd.node.map(node => AddNode(node.id, node.lat, node.lon, node.attributes)).orNull
-            case cmd if cmd.isWay =>
-              cmd.way.map(way => AddWay(way.id, way.nodeIds, way.attributes)).orNull
-            case _ => null
+      in
+        .map( executeBatchCmd => executeBatchCmd.commands.flatMap(
+          executeCmd =>
+            executeCmd.command match {
+              case ExecuteCmd.Command.Way(way) => Some(AddWay(way.id, way.nodeIds, way.attributes))
+              case ExecuteCmd.Command.Node(node) => Some(AddNode(node.id, node.lat, node.lon, node.attributes))
+              case ExecuteCmd.Command.Empty => None
+            }
+        ))
+        .map( cmds => { // TODO: Replace with a actorRefWithAck
+          tile ? AddBatch(cmds)
+          Done()
           }
-      .groupedWithin(300, 1 second)
-      .map( cmds => { // TODO: Replace with a actorRefWithAck
-        tile ! AddBatch(cmds)
-        Done()
-        }
-      )
+        )
 
   override def executeBatch(in: ExecuteBatchCmd): Future[Done] = {
-    val commands: Seq[TileCommands] = in.commands.flatMap(
-      executeCmd =>
-        executeCmd.cmd match {
-          case cmd if cmd.isNode =>
-            cmd.node.map(
-              nodeCmd =>
-                AddNode(
-                  nodeCmd.id,
-                  nodeCmd.lat,
-                  nodeCmd.lon,
-                  nodeCmd.attributes
-                )
-            )
-          case cmd if cmd.isWay =>
-            cmd.way.map(
-              wayCmd => AddWay(wayCmd.id, wayCmd.nodeIds, wayCmd.attributes)
-            )
+    val commands: Seq[TileCommands] = in.commands.flatMap( executeCmd =>
+        executeCmd.command match {
+          case ExecuteCmd.Command.Way(way) => Some(AddWay(way.id, way.nodeIds, way.attributes))
+          case ExecuteCmd.Command.Node(node) => Some(AddNode(node.id, node.lat, node.lon, node.attributes))
+          case ExecuteCmd.Command.Empty => None
         }
     )
     tile ! AddBatch(commands)

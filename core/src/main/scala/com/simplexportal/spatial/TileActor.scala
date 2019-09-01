@@ -123,7 +123,7 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
         case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
         case _ => None
       })
-    sender ! Done
+      sender ! Done
 
   }
 
