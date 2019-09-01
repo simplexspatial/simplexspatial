@@ -90,16 +90,6 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
   override def receiveCommand: Receive = {
 
-//    case StreamInitialized =>
-//      log.info("Stream initialized!")
-//      sender ! Ack // ack to allow the stream to proceed sending more elements
-//
-//    case StreamCompleted =>
-//      log.info("Stream completed!")
-//
-//    case StreamFailure(ex) =>
-//      log.error(ex, "Stream failed!")
-
     case GetNode(id) =>
       sender ! tile.nodes.get(id)
 
@@ -111,11 +101,11 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
     case cmd: AddNode =>
       addNodeHandler(cmd)
-      sender ! Done
+      sender ! Done()
 
     case cmd: AddWay =>
       addWayHandler(cmd)
-      sender ! Done
+      sender ! Done()
 
     case AddBatch(cmds) =>
       addBatchHandler(cmds.flatMap{
@@ -123,7 +113,7 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
         case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
         case _ => None
       })
-      sender ! Done
+      sender ! Done()
 
   }
 
@@ -154,6 +144,5 @@ class TileActor(networkId: String, boundingBox: BoundingBox)
 
   private def addWay(way: WayAdded) =
     tile = tile.addWay(way.id, way.nodeIds, way.attributes)
-
 
 }
