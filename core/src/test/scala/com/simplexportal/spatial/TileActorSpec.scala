@@ -23,6 +23,7 @@ import akka.testkit.{ImplicitSender, TestKit}
 import better.files.File
 import com.simplexportal.spatial.TileActor._
 import com.simplexportal.spatial.Tile.{Node, Way}
+import com.simplexportal.spatial.api.data.Done
 import com.simplexportal.spatial.model._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -48,7 +49,7 @@ class TileActorSpec
       tileActor ! GetNode(10)
       tileActor ! GetMetrics
 
-      expectMsg(akka.Done)
+      expectMsg(Done())
       expectMsg(
         Some(Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue")))
       )
@@ -61,7 +62,7 @@ class TileActorSpec
 
       exampleTileCommands foreach (command => tileActor ! command)
 
-      ignoreMsg { case msg => msg == akka.Done }
+      ignoreMsg { case msg => msg == Done() }
 
       tileActor ! GetMetrics
       tileActor ! GetWay(100)
@@ -75,7 +76,7 @@ class TileActorSpec
 
       tileActor ! AddBatch(exampleTileCommands)
 
-      ignoreMsg { case msg => msg == akka.Done }
+      ignoreMsg { case msg => msg == Done() }
 
       tileActor ! GetMetrics
       tileActor ! GetWay(100)
