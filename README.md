@@ -64,7 +64,7 @@ Blocks of 300 in client =>
 Blocks of 300 in both => 1.2 minutes (74 second) => 291K/second (Tell pattern)
 Blocks of 300 in both => 1.5 minutes (93 second) => 231K/second (Ask pattern)
 ```
-- With Ask patter, worst performance that with Tell pattern, but more
+- With Ask patter, worst performance than with Tell pattern, but more
   stable.
 - TODO: Replace Flow.ask with Sink.actorReffWithAck
 
