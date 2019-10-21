@@ -41,10 +41,10 @@ lazy val commonSettings = Seq(
   test in assembly := {}
 )
 
-lazy val akkaVersion = "2.5.23"
-lazy val scalatestVersion = "3.0.5"
+lazy val akkaVersion = "2.5.26"
+lazy val scalatestVersion = "3.0.8"
 lazy val leveldbVersion = "1.8"
-lazy val betterFilesVersion = "3.7.0"
+lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.1"
 
 lazy val protobufApi = (project in file("protobuf-api"))
@@ -64,12 +64,13 @@ lazy val core = (project in file("core"))
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
     mainClass in assembly := Some("com.simplexportal.spatial.Main"),
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-      "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+      "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
+      "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
       "com.github.pathikrit" %% "better-files" % betterFilesVersion
     ).map(_ % "test")

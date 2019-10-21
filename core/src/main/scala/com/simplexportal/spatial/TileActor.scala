@@ -16,133 +16,123 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.{ActorLogging, Props}
-import akka.persistence._
-import com.simplexportal.spatial.TileActor._
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
+import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.api.data.Done
-import com.simplexportal.spatial.model._
+
+import scala.concurrent.duration._
+
+// FIXME: Don't use foreign messages in the Actor as the documentation explains.
+// TODO: Implement AddBatch.
+// TODO: Force Reply with https://doc.akka.io/docs/akka/current/typed/persistence.html#replies
 
 object TileActor {
 
-  def props(networkId: String, boundingBox: BoundingBox): Props =
-    Props(new TileActor(networkId, boundingBox))
-
   // Commands
-  sealed trait TileCommands
+  sealed trait Command
 
-  case class AddNode(
+  final case class AddNode(
       id: Long,
       lat: Double,
       lon: Double,
-      attributes: Map[String, String]
-  ) extends TileCommands
+      attributes: Map[String, String],
+      replyTo: ActorRef[Done]
+  ) extends Command
 
-  case class AddWay(
+  final case class AddWay(
       id: Long,
       nodeIds: Seq[Long],
-      attributes: Map[String, String]
-  ) extends TileCommands
+      attributes: Map[String, String],
+      replyTo: ActorRef[Done]
+  ) extends Command
 
-  case class AddBatch(cmds: Seq[TileCommands]) extends TileCommands
+  final case class AddBatch(cmds: Seq[Command]) extends Command
 
-  case class GetNode(id: Long) extends TileCommands
+  final case class GetNode(id: Long, replyTo: ActorRef[Option[Node]]) extends Command
 
-  case class GetWay(id: Long) extends TileCommands
+  final case class GetWay(id: Long, replyTo: ActorRef[Option[Way]]) extends Command
 
-  object GetMetrics extends TileCommands
+  final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
-  sealed trait RTreeDataTransfer
 
-  case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
 
   // Events.
-  sealed trait TileEvents
+  sealed trait Event
 
-  case class NodeAdded(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String]
-  ) extends TileEvents
+  final case class NodeAdded(
+                        id: Long,
+                        lat: Double,
+                        lon: Double,
+                        attributes: Map[String, String]
+                      ) extends Event
 
-  case class WayAdded(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String]
-  ) extends TileEvents
+  final case class WayAdded(
+                       id: Long,
+                       nodeIds: Seq[Long],
+                       attributes: Map[String, String]
+                     ) extends Event
 
-  // Other messages
-  case object Ack
-  case object StreamInitialized
-  case object StreamCompleted
-  final case class StreamFailure(ex: Throwable)
+
+
+  sealed trait RTreeDataTransfer
+  case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
+
+
+  def apply(persistenceId: PersistenceId): Behavior[Command] =
+    EventSourcedBehavior[Command, Event, Tile](
+      persistenceId = persistenceId,
+      emptyState = Tile(),
+      commandHandler = (state, command) => onCommand(state, command),
+      eventHandler = (state, event) => applyEvent(state, event))
+      .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
+
+  private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] = {
+    command match {
+      case GetMetrics(replyTo) =>
+        replyTo ! Metrics(tile.ways.size, tile.nodes.size)
+        Effect.none
+
+      case GetNode(id, replyTo) =>
+        replyTo ! tile.nodes.get(id)
+        Effect.none
+
+      case GetWay(id, replyTo) =>
+        replyTo ! tile.ways.get(id)
+        Effect.none
+
+      case cmd: AddNode =>
+        Effect.persist(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes)).thenRun { _ =>
+          cmd.replyTo ! Done()
+        }
+
+      case cmd: AddWay =>
+        Effect.persist(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes)).thenRun { _ =>
+          cmd.replyTo ! Done()
+        }
+
+      case AddBatch(cmds) =>
+        ???
+    }
+  }
+
+  private def applyEvent(tile: Tile, event: Event): Tile = {
+    event match {
+      case node: NodeAdded => tile.addNode(node.id, node.lat, node.lon, node.attributes)
+      case way: WayAdded => tile.addWay(way.id, way.nodeIds, way.attributes)
+      case _ => ??? // TODO: Implement addBatchHandler
+    }
+  }
+
+
+
+//    private def addBatchHandler(events: Seq[Event]) =
+//      persist(events) (events => events.foreach{
+//        case node: NodeAdded => addNode(node)
+//        case way: WayAdded => addWay(way)
+//      })
+
 
 }
 
-class TileActor(networkId: String, boundingBox: BoundingBox)
-    extends PersistentActor
-    with ActorLogging {
-
-  override def persistenceId: String =
-    s"rtree-${networkId}-[(${boundingBox.min.lon},${boundingBox.min.lat}),(${boundingBox.max.lon},${boundingBox.max.lat})]"
-
-  var tile: Tile = Tile()
-
-  override def receiveCommand: Receive = {
-
-    case GetNode(id) =>
-      sender ! tile.nodes.get(id)
-
-    case GetWay(id) =>
-      sender ! tile.ways.get(id)
-
-    case GetMetrics =>
-      sender ! Metrics(tile.ways.size, tile.nodes.size)
-
-    case cmd: AddNode =>
-      addNodeHandler(cmd)
-      sender ! Done()
-
-    case cmd: AddWay =>
-      addWayHandler(cmd)
-      sender ! Done()
-
-    case AddBatch(cmds) =>
-      addBatchHandler(cmds.flatMap{
-        case cmd: AddNode => Some(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes))
-        case cmd: AddWay => Some(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes))
-        case _ => None
-      })
-      sender ! Done()
-
-  }
-
-  private def addNodeHandler(cmd: AddNode) =
-    persist(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes)) { node =>
-      addNode(node)
-    }
-
-  private def addWayHandler(cmd: AddWay) =
-    persist(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes)) { way =>
-      addWay(way)
-    }
-
-  private def addBatchHandler(events: Seq[TileEvents]) =
-    persist(events) (events => events.foreach{
-      case node: NodeAdded => addNode(node)
-      case way: WayAdded => addWay(way)
-    })
-
-
-  override def receiveRecover: Receive = {
-    case event: NodeAdded => addNode(event)
-    case event: WayAdded  => addWay(event)
-  }
-
-  private def addNode(node: NodeAdded) =
-    tile = tile.addNode(node.id, node.lat, node.lon, node.attributes)
-
-  private def addWay(way: WayAdded) =
-    tile = tile.addWay(way.id, way.nodeIds, way.attributes)
-
-}
