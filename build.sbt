@@ -19,7 +19,7 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   fork := true,
   resolvers += "osm4scala repo" at "http://dl.bintray.com/angelcervera/maven",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding",
