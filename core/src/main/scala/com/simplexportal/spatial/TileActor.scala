@@ -22,10 +22,10 @@ import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.api.data.Done
 
+import scala.collection.breakOut
 import scala.concurrent.duration._
 
 // FIXME: Don't use foreign messages in the Actor as the documentation explains.
-// TODO: Implement AddBatch.
 // TODO: Force Reply with https://doc.akka.io/docs/akka/current/typed/persistence.html#replies
 
 object TileActor {
@@ -74,11 +74,8 @@ object TileActor {
                        attributes: Map[String, String]
                      ) extends Event
 
-
-
   sealed trait RTreeDataTransfer
   case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
-
 
   def apply(persistenceId: PersistenceId): Behavior[Command] =
     EventSourcedBehavior[Command, Event, Tile](
@@ -88,7 +85,7 @@ object TileActor {
       eventHandler = (state, event) => applyEvent(state, event))
       .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
 
-  private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] = {
+  private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] =
     command match {
       case GetMetrics(replyTo) =>
         replyTo ! Metrics(tile.ways.size, tile.nodes.size)
@@ -113,26 +110,20 @@ object TileActor {
         }
 
       case AddBatch(cmds) =>
-        ???
+        Effect.persist(cmds.map {
+          case cmd: AddNode => NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes)
+          case cmd: AddWay => WayAdded(cmd.id, cmd.nodeIds, cmd.attributes)
+        }(breakOut))
     }
-  }
 
-  private def applyEvent(tile: Tile, event: Event): Tile = {
+  private def applyEvent(tile: Tile, event: Event): Tile =
     event match {
-      case node: NodeAdded => tile.addNode(node.id, node.lat, node.lon, node.attributes)
-      case way: WayAdded => tile.addWay(way.id, way.nodeIds, way.attributes)
-      case _ => ??? // TODO: Implement addBatchHandler
+      case NodeAdded(id, lat, lon, attributes) => tile.addNode(id, lat, lon, attributes)
+      case WayAdded(id, nodeIds, attributes) => tile.addWay(id, nodeIds, attributes)
+      case events: Seq[Event] => events.foldLeft(tile)( (tile, event) => event match {
+        case NodeAdded(id, lat, lon, attributes) => tile.addNode(id, lat, lon, attributes)
+        case WayAdded(id, nodeIds, attributes) => tile.addWay(id, nodeIds, attributes)
+      })
     }
-  }
-
-
-
-//    private def addBatchHandler(events: Seq[Event]) =
-//      persist(events) (events => events.foreach{
-//        case node: NodeAdded => addNode(node)
-//        case way: WayAdded => addWay(way)
-//      })
-
 
 }
-
