@@ -69,7 +69,6 @@ lazy val core = (project in file("core"))
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion
     ) ++ Seq(
-      "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
       "com.github.pathikrit" %% "better-files" % betterFilesVersion
