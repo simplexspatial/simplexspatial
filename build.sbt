@@ -41,11 +41,11 @@ lazy val commonSettings = Seq(
   test in assembly := {}
 )
 
-lazy val akkaVersion = "2.5.26"
+lazy val akkaVersion = "2.6.0"
 lazy val scalatestVersion = "3.0.8"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
-lazy val akkaPersistenceNowhereVersion = "1.0.1"
+lazy val akkaPersistenceNowhereVersion = "1.0.2"
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
@@ -66,8 +66,11 @@ lazy val core = (project in file("core"))
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
-      "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion
+      "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
+      "ch.qos.logback" % "logback-classic" % "1.2.3"
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,

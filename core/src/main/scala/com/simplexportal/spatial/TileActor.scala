@@ -21,6 +21,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.api.data.Done
+import com.simplexportal.spatial.model.BoundingBox
 
 import scala.collection.breakOut
 import scala.concurrent.duration._
@@ -38,17 +39,17 @@ object TileActor {
       lat: Double,
       lon: Double,
       attributes: Map[String, String],
-      replyTo: ActorRef[Done]
+      replyTo: Option[ActorRef[Done]] = None
   ) extends Command
 
   final case class AddWay(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String],
-      replyTo: ActorRef[Done]
+      replyTo: Option[ActorRef[Done]] = None
   ) extends Command
 
-  final case class AddBatch(cmds: Seq[Command]) extends Command
+  final case class AddBatch(cmds: Seq[Command], replyTo: Option[ActorRef[Done]] = None) extends Command
 
   final case class GetNode(id: Long, replyTo: ActorRef[Option[Node]]) extends Command
 
@@ -56,7 +57,10 @@ object TileActor {
 
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
-
+  // Reply
+  sealed trait CommandReply
+  case class Metrics(ways: Long, nodes: Long) extends CommandReply
+//  case object Done
 
   // Events.
   sealed trait Event
@@ -74,16 +78,16 @@ object TileActor {
                        attributes: Map[String, String]
                      ) extends Event
 
-  sealed trait RTreeDataTransfer
-  case class Metrics(ways: Long, nodes: Long) extends RTreeDataTransfer
 
-  def apply(persistenceId: PersistenceId): Behavior[Command] =
+
+  def apply(bbox: BoundingBox): Behavior[Command] =
     EventSourcedBehavior[Command, Event, Tile](
-      persistenceId = persistenceId,
+      persistenceId = PersistenceId("TileActor", s"[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"),
       emptyState = Tile(),
       commandHandler = (state, command) => onCommand(state, command),
-      eventHandler = (state, event) => applyEvent(state, event))
-      .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
+      eventHandler = (state, event) => applyEvent(state, event)
+    )
+    .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
 
   private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] =
     command match {
@@ -99,28 +103,30 @@ object TileActor {
         replyTo ! tile.ways.get(id)
         Effect.none
 
-      case cmd: AddNode =>
-        Effect.persist(NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes)).thenRun { _ =>
-          cmd.replyTo ! Done()
+      case AddNode(id, lat, lon, attributes, replyTo) =>
+        Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _  =>
+          replyTo.foreach(_ ! Done())
         }
 
-      case cmd: AddWay =>
-        Effect.persist(WayAdded(cmd.id, cmd.nodeIds, cmd.attributes)).thenRun { _ =>
-          cmd.replyTo ! Done()
+      case AddWay(id, nodeIds, attributes, replyTo) =>
+        Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
+          replyTo.foreach( _ ! Done() )
         }
 
-      case AddBatch(cmds) =>
+      case AddBatch(cmds, replyTo) =>
         Effect.persist(cmds.map {
-          case cmd: AddNode => NodeAdded(cmd.id, cmd.lat, cmd.lon, cmd.attributes)
-          case cmd: AddWay => WayAdded(cmd.id, cmd.nodeIds, cmd.attributes)
-        }(breakOut))
+          case AddNode(id, lat, lon, attributes, _) => NodeAdded(id, lat, lon, attributes)
+          case AddWay(id, nodeIds, attributes, _) => WayAdded(id, nodeIds, attributes)
+        }(breakOut)).thenRun { _ =>
+          replyTo.foreach( _ ! Done() )
+        }
     }
 
   private def applyEvent(tile: Tile, event: Event): Tile =
     event match {
       case NodeAdded(id, lat, lon, attributes) => tile.addNode(id, lat, lon, attributes)
       case WayAdded(id, nodeIds, attributes) => tile.addWay(id, nodeIds, attributes)
-      case events: Seq[Event] => events.foldLeft(tile)( (tile, event) => event match {
+      case events: Seq[Event] => events.foldLeft(tile)( (tile, event) => event match { // FIXME: Seq[Event] is not Event so unreachable code.
         case NodeAdded(id, lat, lon, attributes) => tile.addNode(id, lat, lon, attributes)
         case WayAdded(id, nodeIds, attributes) => tile.addWay(id, nodeIds, attributes)
       })

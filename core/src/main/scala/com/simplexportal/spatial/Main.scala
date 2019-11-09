@@ -16,18 +16,18 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.{ActorSystem, Scheduler}
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.grpc.scaladsl.ServiceHandler
-import akka.http.scaladsl.{Http, HttpConnectionContext}
-import akka.http.scaladsl.UseHttp2.Always
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
+import akka.{Done, actor}
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
-import com.simplexportal.spatial.model.{BoundingBox, Location}
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 object Main extends App {
@@ -39,46 +39,48 @@ object Main extends App {
   val interface = config.getString("simplexportal.spatial.api.http.interface")
   val port = config.getInt("simplexportal.spatial.api.http.port")
 
-  implicit val system = ActorSystem("SimplexSpatial", config)
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext: ExecutionContext = system.dispatcher
+  val system = ActorSystem[Done](Behaviors.setup[Done] { ctx =>
 
-  val tileActor: ActorRef = system.actorOf(
-    TileActor.props(
-      "tileRoot",
-      BoundingBox(
-        Location(Double.MinValue, Double.MinValue),
-        Location(Double.MaxValue, Double.MaxValue)
+    // http doesn't know about akka typed so create untyped system/materializer
+    implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
+    implicit val materializer: ActorMaterializer = ActorMaterializer()(ctx.system.toClassic)
+    implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
+    implicit val scheduler: Scheduler = ctx.system.scheduler
+
+    val tileActor = ctx.spawn(TileActor(???), "TileActor")
+
+    val dataServiceHandler = DataServiceHandler.partial(new DataServiceImpl(tileActor))
+    // val algorithmServiceHandler = ....
+
+    val serviceHandlers: HttpRequest => Future[HttpResponse] =
+      ServiceHandler.concatOrNotFound(
+        dataServiceHandler
+        /*, algorithmServiceHandler*/
       )
-    )
-  )
 
-  val dataServiceHandler = DataServiceHandler.partial(new DataServiceImpl(tileActor))
-  // val algorithmServiceHandler = ....
+    val serverBinding: Future[Http.ServerBinding] = Http()(untypedSystem)
+      .bindAndHandleAsync(
+        serviceHandlers,
+        interface = interface,
+        port = port,
+        connectionContext = HttpConnectionContext())
 
-  val serviceHandlers: HttpRequest => Future[HttpResponse] =
-    ServiceHandler.concatOrNotFound(
-      dataServiceHandler
-      /*, algorithmServiceHandler*/
-    )
+    serverBinding.onComplete {
+      case Success(bound) =>
+        println(
+          s"SimplexSpatial online at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
+        )
+      case Failure(e) =>
+        Console.err.println(s"SimplexSpatial server can not start!")
+        e.printStackTrace()
+        ctx.self ! Done
+    }
 
-  val serverBinding = Http().bindAndHandleAsync(
-    serviceHandlers,
-    interface = config.getString("simplexportal.spatial.api.http.interface"),
-    port = config.getInt("simplexportal.spatial.api.http.port"),
-    connectionContext = HttpConnectionContext(http2 = Always)
-  )
+    Behaviors.receiveMessage {
+      case Done =>
+        Behaviors.stopped
+    }
 
-  serverBinding.onComplete {
-    case Success(bound) =>
-      println(
-        s"SimplexSpatial online at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
-      )
-    case Failure(e) =>
-      Console.err.println(s"SimplexSpatial server can not start!")
-      e.printStackTrace()
-      system.terminate()
-  }
+  }, "SimplexSpatialServer")
 
-  Await.result(system.whenTerminated, Duration.Inf)
 }

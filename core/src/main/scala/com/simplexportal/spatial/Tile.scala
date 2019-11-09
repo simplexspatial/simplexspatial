@@ -40,6 +40,7 @@ object Tile {
 
 }
 
+// TODO: Add BoundingBox
 case class Tile(
     nodes: Map[Long, Node] = Map.empty,
     ways: Map[Long, Way] = Map.empty,
@@ -129,6 +130,5 @@ case class Tile(
       tagsDic = tagsDic ++ dic
     )
   }
-
 
 }
