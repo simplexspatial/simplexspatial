@@ -92,7 +92,8 @@ lazy val loadOSM = (project in file("load_osm"))
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
       "org.backuity.clist" %% "clist-core" % "3.5.1",
-      "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided"
+      "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided",
+      "ch.qos.logback" % "logback-classic" % "1.2.3"
     )
   )
   .dependsOn(protobufApi)
