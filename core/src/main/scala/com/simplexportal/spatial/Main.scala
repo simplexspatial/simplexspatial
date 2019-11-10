@@ -25,6 +25,7 @@ import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import akka.{Done, actor}
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
+import com.simplexportal.spatial.model.BoundingBox
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -47,7 +48,7 @@ object Main extends App {
     implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
     implicit val scheduler: Scheduler = ctx.system.scheduler
 
-    val tileActor = ctx.spawn(TileActor(???), "TileActor")
+    val tileActor = ctx.spawn(TileActor("GridIndex", BoundingBox.MAX), "TileActor")
 
     val dataServiceHandler = DataServiceHandler.partial(new DataServiceImpl(tileActor))
     // val algorithmServiceHandler = ....

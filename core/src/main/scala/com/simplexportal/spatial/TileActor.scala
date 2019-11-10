@@ -82,9 +82,9 @@ object TileActor {
 
 
 
-  def apply(bbox: BoundingBox): Behavior[Command] =
+  def apply(indexId: String, bbox: BoundingBox): Behavior[Command] =
     EventSourcedBehavior[Command, Event, Tile](
-      persistenceId = PersistenceId("TileActor", s"[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"),
+      persistenceId = PersistenceId("TileActor", s"${indexId}_[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"),
       emptyState = Tile(),
       commandHandler = (state, command) => onCommand(state, command),
       eventHandler = (state, event) => applyEvent(state, event)

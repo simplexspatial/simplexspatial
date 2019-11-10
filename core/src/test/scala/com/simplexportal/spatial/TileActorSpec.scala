@@ -19,20 +19,14 @@
 package com.simplexportal.spatial
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import better.files.File
 import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{Matchers, WordSpecLike}
 
 class TileActorSpec extends ScalaTestWithActorTestKit
     with WordSpecLike
     with Matchers
-    with BeforeAndAfterAll
     with TileActorDataset {
-
-  override def afterAll: Unit = {
-    File("target/journal").delete(true)
-  }
 
   "Tile Actor" should {
 
@@ -41,7 +35,7 @@ class TileActorSpec extends ScalaTestWithActorTestKit
       val probeNode = testKit.createTestProbe[Option[Node]]()
       val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      val tileActor = testKit.spawn(TileActor(bbox), "add-nodes-test")
+      val tileActor = testKit.spawn(TileActor("add-nodes-test", bbox), "add-nodes-test")
       tileActor ! TileActor.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
 
       tileActor ! TileActor.GetNode(10, probeNode.ref)
@@ -57,7 +51,7 @@ class TileActorSpec extends ScalaTestWithActorTestKit
       val probeWay = testKit.createTestProbe[Option[Way]]()
       val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      val tileActor = testKit.spawn(TileActor(bbox), "connect-nodes-using-ways-test")
+      val tileActor = testKit.spawn(TileActor("connect-nodes-using-ways-test", bbox), "connect-nodes-using-ways-test")
 
       exampleTileCommands foreach (command => tileActor ! command)
 
@@ -71,7 +65,7 @@ class TileActorSpec extends ScalaTestWithActorTestKit
       val probeWay = testKit.createTestProbe[Option[Way]]()
       val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      val tileActor = testKit.spawn(TileActor(bbox), "create-network-using-blocks-test")
+      val tileActor = testKit.spawn(TileActor("create-network-using-blocks-test", bbox), "create-network-using-blocks-test")
 
       tileActor ! TileActor.AddBatch(exampleTileCommands)
 

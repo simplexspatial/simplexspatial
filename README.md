@@ -12,9 +12,18 @@ Comming soon!!
 sudo update-alternatives --config java
 java --version
 sbt clean assembly
+
+java -Xms20G  -Xmx24G  \
+    -Dcom.sun.management.jmxremote \
+    -Dcom.sun.management.jmxremote.port=9010 \
+    -Dcom.sun.management.jmxremote.authenticate=false \
+    -Dcom.sun.management.jmxremote.ssl=false \
+    -jar core-assembly-0.0.1-SNAPSHOT.jar
+
 java -Xms5G -Xmx10G -jar load_osm/target/scala-2.12/loadOSM-assembly-0.0.1-SNAPSHOT.jar \
     local \
     /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf 
+    
  
 ```
 
