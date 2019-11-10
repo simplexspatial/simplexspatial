@@ -36,23 +36,27 @@ class DataServiceImpl(tile: ActorRef[TileActor.Command])(
   // FIXME: Temporal timeout for POC
   implicit val timeout = Timeout(15 minutes)
 
+  implicit def responseAdapter(node: TileActor.Done): Done = Done()
+
   override def addNode(in: AddNodeCmd): Future[Done] =
-    tile.ask[Done]( ref =>TileActor. AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref)) )
+    tile.ask[TileActor.Done]( ref =>TileActor.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref)) )
+    .map(responseAdapter)
 
   override def addWay(in: AddWayCmd): Future[Done] =
-    tile.ask[Done](ref => TileActor.AddWay(in.id, in.nodeIds, in.attributes, Some(ref)))
+    tile.ask[TileActor.Done](ref => TileActor.AddWay(in.id, in.nodeIds, in.attributes, Some(ref)))
+    .map(responseAdapter)
 
   override def getMetrics(in: GetMetricsCmd): Future[Metrics] =
     tile.ask[TileActor.Metrics](TileActor.GetMetrics(_))
-      .mapTo[TileActor.Metrics]
       .map(m => Metrics(ways = m.ways, nodes = m.nodes))
 
   override def streamBatchCommands(in: Source[ExecuteBatchCmd, NotUsed]): Source[Done, NotUsed] =
     in
       .map(cmd => toAddBatch(cmd))
-      .via(ActorFlow.ask(tile)((commands, replyTo: ActorRef[Done]) => TileActor.AddBatch(commands, Some(replyTo))));
+      .via(ActorFlow.ask(tile)((commands, replyTo: ActorRef[TileActor.Done]) => TileActor.AddBatch(commands, Some(replyTo))))
+      .map(responseAdapter);
 
-  private def toAddBatch(batchCmd: ExecuteBatchCmd): Seq[TileActor.Command] =
+  private def toAddBatch(batchCmd: ExecuteBatchCmd): Seq[TileActor.BatchCommand] =
     batchCmd.commands.flatMap(
       executeCmd =>
         executeCmd.command match {

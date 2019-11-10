@@ -12,7 +12,6 @@ service DataService {
     rpc GetMetrics (GetMetricsCmd) returns (Metrics);
 }
 
-// FIXME: Maybe rename to Ack to avoid misunderstand.
 message Done { }
 
 message AddNodeCmd {
