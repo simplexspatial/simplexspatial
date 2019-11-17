@@ -90,6 +90,7 @@ lazy val core = (project in file("core"))
 
 lazy val loadOSM = (project in file("load_osm"))
   .enablePlugins(AkkaGrpcPlugin)
+  .disablePlugins(sbtassembly.AssemblyPlugin)
   .settings(
     PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
     akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client)
