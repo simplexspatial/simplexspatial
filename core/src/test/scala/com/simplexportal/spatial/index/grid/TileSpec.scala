@@ -5,18 +5,18 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.simplexportal.spatial
+package com.simplexportal.spatial.index.grid
 
-import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
 
@@ -30,16 +30,16 @@ class TileSpec extends WordSpecLike with Matchers {
 
       val expected = Tile(
         nodes = Map(
-          1L -> Node(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
-          2L -> Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
-          3L -> Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
-          4L -> Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
-          5L -> Node(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
-          6L -> Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
+          1L -> Tile.Node(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
+          2L -> Tile.Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
+          3L -> Tile.Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
+          4L -> Tile.Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
+          5L -> Tile.Node(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
+          6L -> Tile.Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
         ),
         ways = Map(
-          100L -> Way(100, 5, Map(3373707 -> "Street Name")),
-          101L -> Way(101, 1)
+          100L -> Tile.Way(100, 5, Map(3373707 -> "Street Name")),
+          101L -> Tile.Way(101, 1)
         ),
         Map(206407764 -> "traffic_light", 3373707 -> "name")
       )

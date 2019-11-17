@@ -23,6 +23,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
+import com.simplexportal.spatial.index.grid.TileActor
 import com.simplexportal.spatial.model.BoundingBox
 import com.typesafe.config.ConfigFactory
 

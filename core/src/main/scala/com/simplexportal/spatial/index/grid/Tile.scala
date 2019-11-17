@@ -5,18 +5,18 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.simplexportal.spatial
+package com.simplexportal.spatial.index.grid
 
-import com.simplexportal.spatial.Tile.{Node, Way}
 import com.simplexportal.spatial.model._
 
 import scala.annotation.tailrec
@@ -42,8 +42,8 @@ object Tile {
 
 // TODO: Add BoundingBox
 case class Tile(
-    nodes: Map[Long, Node] = Map.empty,
-    ways: Map[Long, Way] = Map.empty,
+    nodes: Map[Long, Tile.Node] = Map.empty,
+    ways: Map[Long, Tile.Way] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
 ) {
 
@@ -63,7 +63,7 @@ case class Tile(
   ): Tile = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      nodes = nodes + (id -> Node(id, Location(lat, lon), attrs)),
+      nodes = nodes + (id -> Tile.Node(id, Location(lat, lon), attrs)),
       tagsDic = tagsDic ++ dic
     )
   }
@@ -96,8 +96,8 @@ case class Tile(
       prev: Option[Long],
       current: Long,
       nodeIds: Seq[Long],
-      updated: List[(Long, Node)]
-  ): List[(Long, Node)] =
+      updated: List[(Long, Tile.Node)]
+  ): List[(Long, Tile.Node)] =
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -119,7 +119,7 @@ case class Tile(
   ): Tile = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> Way(wayId, nodeIds.head, attrs)),
+      ways = ways + (wayId -> Tile.Way(wayId, nodeIds.head, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,

@@ -22,7 +22,7 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.simplexportal.spatial.TileActor
+import com.simplexportal.spatial.index.grid.TileActor
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
