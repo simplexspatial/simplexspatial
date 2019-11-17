@@ -18,70 +18,62 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.ActorSystem
-import akka.testkit.{ImplicitSender, TestKit}
-import better.files.File
-import com.simplexportal.spatial.TileActor._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.Tile.{Node, Way}
-import com.simplexportal.spatial.api.data.Done
 import com.simplexportal.spatial.model._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{Matchers, WordSpecLike}
 
-class TileActorSpec
-    extends TestKit(ActorSystem("TileActorSpec"))
-    with ImplicitSender
-    with Matchers
+class TileActorSpec extends ScalaTestWithActorTestKit
     with WordSpecLike
-    with BeforeAndAfterAll
+    with Matchers
     with TileActorDataset {
 
-  override def afterAll: Unit = {
-    TestKit.shutdownActorSystem(system)
-    File("target/journal").delete(true)
-  }
-
-  "RTree Actor" should {
+  "Tile Actor" should {
 
     "add the nodes" in {
-      val tileActor = system.actorOf(TileActor.props("add-nodes-test", bbox))
-      tileActor ! AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"))
+      val probeDone = testKit.createTestProbe[TileActor.Done]()
+      val probeNode = testKit.createTestProbe[Option[Node]]()
+      val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      tileActor ! GetNode(10)
-      tileActor ! GetMetrics
+      val tileActor = testKit.spawn(TileActor("add-nodes-test", bbox), "add-nodes-test")
+      tileActor ! TileActor.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
 
-      expectMsg(Done())
-      expectMsg(
+      tileActor ! TileActor.GetNode(10, probeNode.ref)
+      tileActor ! TileActor.GetMetrics(probeMetrics.ref)
+
+      probeNode.expectMessage(
         Some(Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue")))
       )
-      expectMsg(Metrics(0, 1))
+      probeMetrics.expectMessage(TileActor.Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
-      val tileActor =
-        system.actorOf(TileActor.props("connect-nodes-using-ways-test", bbox))
+      val probeWay = testKit.createTestProbe[Option[Way]]()
+      val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
+
+      val tileActor = testKit.spawn(TileActor("connect-nodes-using-ways-test", bbox), "connect-nodes-using-ways-test")
 
       exampleTileCommands foreach (command => tileActor ! command)
 
-      ignoreMsg { case msg => msg == Done() }
-
-      tileActor ! GetMetrics
-      tileActor ! GetWay(100)
-      expectMsg(Metrics(2, 6))
-      expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+      tileActor ! TileActor.GetMetrics(probeMetrics.ref)
+      tileActor ! TileActor.GetWay(100, probeWay.ref)
+      probeMetrics.expectMessage(TileActor.Metrics(2, 6))
+      probeWay.expectMessage(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
     }
 
     "create network using blocks" in {
-      val tileActor =
-        system.actorOf(TileActor.props("create-network-using-blocks-test", bbox))
+      val probeWay = testKit.createTestProbe[Option[Way]]()
+      val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      tileActor ! AddBatch(exampleTileCommands)
+      val tileActor = testKit.spawn(TileActor("create-network-using-blocks-test", bbox), "create-network-using-blocks-test")
 
-      ignoreMsg { case msg => msg == Done() }
+      tileActor ! TileActor.AddBatch(exampleTileCommands)
 
-      tileActor ! GetMetrics
-      tileActor ! GetWay(100)
-      expectMsg(Metrics(2, 6))
-      expectMsg(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+      tileActor ! TileActor.GetMetrics(probeMetrics.ref)
+      tileActor ! TileActor.GetWay(100, probeWay.ref)
+      probeMetrics.expectMessage(TileActor.Metrics(2, 6))
+      probeWay.expectMessage(Some(Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+
     }
 
   }

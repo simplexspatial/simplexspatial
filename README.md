@@ -6,15 +6,57 @@ Comming soon!!
 
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
 
+## Running thru sbt
+```bash
+sbt "core/runMain com.simplexportal.spatial.Main"
+```
+
+```bash
+sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main --block-size=300 /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf"
+```
+
+## Running thru CLI
+
+```bash
+java \
+    -Xms20G  -Xmx24G  \
+    -Dcom.sun.management.jmxremote \
+    -Dcom.sun.management.jmxremote.port=9010 \
+    -Dcom.sun.management.jmxremote.authenticate=false \
+    -Dcom.sun.management.jmxremote.ssl=false \
+    -jar core-assembly-0.0.1-SNAPSHOT.jar
+```
+
+```bash
+java \
+    -Xms5G -Xmx10G \
+    -jar load_osm/target/scala-2.12/loadOSM-assembly-0.0.1-SNAPSHOT.jar \
+    --block-size=300 \
+    /home/angelcc/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf
+```
+
+
 ## Performance Loading
 
 ```
 sudo update-alternatives --config java
 java --version
 sbt clean assembly
-java -Xms5G -Xmx10G -jar load_osm/target/scala-2.12/loadOSM-assembly-0.0.1-SNAPSHOT.jar \
-    local \
-    /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf 
+
+java \
+    -Xms20G  -Xmx24G  \
+    -Dcom.sun.management.jmxremote \
+    -Dcom.sun.management.jmxremote.port=9010 \
+    -Dcom.sun.management.jmxremote.authenticate=false \
+    -Dcom.sun.management.jmxremote.ssl=false \
+    -jar core-assembly-0.0.1-SNAPSHOT.jar
+
+java \
+    -Xms5G -Xmx10G \
+    -jar load_osm/target/scala-2.12/loadOSM-assembly-0.0.1-SNAPSHOT.jar \
+    --block-size=300 \
+    /home/angelcc/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf
+    
  
 ```
 
@@ -64,15 +106,14 @@ Blocks of 300 in client =>
 Blocks of 300 in both => 1.2 minutes (74 second) => 291K/second (Tell pattern)
 Blocks of 300 in both => 1.5 minutes (93 second) => 231K/second (Ask pattern)
 ```
+
+#### Streaming Ireland, java8, Akka Typed 2.6
+```
+Added 19426617/19426617 nodes and 2096455/2096455 ways in 77 seconds. 71744 blocks sent. => 280K/second
+```
+
 - With Ask patter, worst performance than with Tell pattern, but more
   stable.
 - TODO: Replace Flow.ask with Sink.actorReffWithAck
 
-## Thru sbt
-```bash
-sbt "core/runMain com.simplexportal.spatial.Main"
-```
 
-```bash
-sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main --block-size=300 /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf"
-```

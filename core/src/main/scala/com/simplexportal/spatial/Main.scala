@@ -16,44 +16,43 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.Scheduler
+import akka.actor.typed.scaladsl.adapter._
 import akka.grpc.scaladsl.ServiceHandler
-import akka.http.scaladsl.{Http, HttpConnectionContext}
-import akka.http.scaladsl.UseHttp2.Always
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
-import com.simplexportal.spatial.model.{BoundingBox, Location}
+import com.simplexportal.spatial.model.BoundingBox
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object Main extends App {
 
   val config = ConfigFactory
     .parseString("akka.http.server.preview.enable-http2 = on")
-    .withFallback(ConfigFactory.defaultApplication())
+    .withFallback(ConfigFactory.load())
 
   val interface = config.getString("simplexportal.spatial.api.http.interface")
   val port = config.getInt("simplexportal.spatial.api.http.port")
 
-  implicit val system = ActorSystem("SimplexSpatial", config)
+  // Akka Classic implicits
+  implicit val system = akka.actor.ActorSystem("CounterServer", config)
   implicit val materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  val tileActor: ActorRef = system.actorOf(
-    TileActor.props(
-      "tileRoot",
-      BoundingBox(
-        Location(Double.MinValue, Double.MinValue),
-        Location(Double.MaxValue, Double.MaxValue)
-      )
-    )
-  )
+  // Akka Typed implicits
+  implicit val typedSystem = system.toTyped
+  implicit val scheduler: Scheduler = typedSystem.scheduler
 
-  val dataServiceHandler = DataServiceHandler.partial(new DataServiceImpl(tileActor))
+  val tileActor =
+    system.spawn(TileActor("GridIndex", BoundingBox.MAX), "TileActor")
+
+  val dataServiceHandler =
+    DataServiceHandler.partial(new DataServiceImpl(tileActor))
   // val algorithmServiceHandler = ....
 
   val serviceHandlers: HttpRequest => Future[HttpResponse] =
@@ -62,12 +61,13 @@ object Main extends App {
       /*, algorithmServiceHandler*/
     )
 
-  val serverBinding = Http().bindAndHandleAsync(
-    serviceHandlers,
-    interface = config.getString("simplexportal.spatial.api.http.interface"),
-    port = config.getInt("simplexportal.spatial.api.http.port"),
-    connectionContext = HttpConnectionContext(http2 = Always)
-  )
+  val serverBinding: Future[Http.ServerBinding] = Http()
+    .bindAndHandleAsync(
+      serviceHandlers,
+      interface = interface,
+      port = port,
+      connectionContext = HttpConnectionContext()
+    )
 
   serverBinding.onComplete {
     case Success(bound) =>
@@ -75,10 +75,11 @@ object Main extends App {
         s"SimplexSpatial online at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
       )
     case Failure(e) =>
-      Console.err.println(s"SimplexSpatial server can not start!")
-      e.printStackTrace()
+      Console.err.println("SimplexSpatial server can not start!")
+      system.log.error(e, "SimplexSpatial server can not start!")
       system.terminate()
   }
 
   Await.result(system.whenTerminated, Duration.Inf)
+
 }

@@ -18,12 +18,17 @@
 
 <configuration>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>simplexspatial_loadosm.log</file>
-        <immediateFlush>false</immediateFlush>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>simplexspatial_loadosm_%d{yyyy-MM-dd}.log</fileNamePattern>
-        </rollingPolicy>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%level] [%logger] [%thread] [%X{akkaSource}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>target/simplexspatial-dev.log</file>
         <encoder>
             <pattern>[%date{ISO8601}] [%level] [%logger] [%thread] [%X{akkaSource}] - %msg%n</pattern>
         </encoder>
@@ -36,6 +41,7 @@
     </appender>
 
     <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
         <appender-ref ref="ASYNC"/>
     </root>
 </configuration>
