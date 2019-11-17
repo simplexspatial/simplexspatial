@@ -16,72 +16,70 @@
 
 package com.simplexportal.spatial
 
-import akka.actor.typed.{ActorSystem, Scheduler}
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.adapter._
 import akka.grpc.scaladsl.ServiceHandler
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
-import akka.{Done, actor}
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
 import com.simplexportal.spatial.model.BoundingBox
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object Main extends App {
 
   val config = ConfigFactory
     .parseString("akka.http.server.preview.enable-http2 = on")
-    .withFallback(ConfigFactory.defaultApplication())
+    .withFallback(ConfigFactory.load())
 
   val interface = config.getString("simplexportal.spatial.api.http.interface")
   val port = config.getInt("simplexportal.spatial.api.http.port")
 
-  val system = ActorSystem[Done](Behaviors.setup[Done] { ctx =>
+  // Akka Classic implicits
+  implicit val system = akka.actor.ActorSystem("CounterServer", config)
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContext = system.dispatcher
 
-    // http doesn't know about akka typed so create untyped system/materializer
-    implicit val untypedSystem: actor.ActorSystem = ctx.system.toClassic
-    implicit val materializer: ActorMaterializer = ActorMaterializer()(ctx.system.toClassic)
-    implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
-    implicit val scheduler: Scheduler = ctx.system.scheduler
+  // Akka Typed implicits
+  implicit val typedSystem = system.toTyped
+  implicit val scheduler: Scheduler = typedSystem.scheduler
 
-    val tileActor = ctx.spawn(TileActor("GridIndex", BoundingBox.MAX), "TileActor")
+  val tileActor =
+    system.spawn(TileActor("GridIndex", BoundingBox.MAX), "TileActor")
 
-    val dataServiceHandler = DataServiceHandler.partial(new DataServiceImpl(tileActor))
-    // val algorithmServiceHandler = ....
+  val dataServiceHandler =
+    DataServiceHandler.partial(new DataServiceImpl(tileActor))
+  // val algorithmServiceHandler = ....
 
-    val serviceHandlers: HttpRequest => Future[HttpResponse] =
-      ServiceHandler.concatOrNotFound(
-        dataServiceHandler
-        /*, algorithmServiceHandler*/
+  val serviceHandlers: HttpRequest => Future[HttpResponse] =
+    ServiceHandler.concatOrNotFound(
+      dataServiceHandler
+      /*, algorithmServiceHandler*/
+    )
+
+  val serverBinding: Future[Http.ServerBinding] = Http()
+    .bindAndHandleAsync(
+      serviceHandlers,
+      interface = interface,
+      port = port,
+      connectionContext = HttpConnectionContext()
+    )
+
+  serverBinding.onComplete {
+    case Success(bound) =>
+      println(
+        s"SimplexSpatial online at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
       )
+    case Failure(e) =>
+      Console.err.println("SimplexSpatial server can not start!")
+      system.log.error(e, "SimplexSpatial server can not start!")
+      system.terminate()
+  }
 
-    val serverBinding: Future[Http.ServerBinding] = Http()(untypedSystem)
-      .bindAndHandleAsync(
-        serviceHandlers,
-        interface = interface,
-        port = port,
-        connectionContext = HttpConnectionContext())
-
-    serverBinding.onComplete {
-      case Success(bound) =>
-        println(
-          s"SimplexSpatial online at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
-        )
-      case Failure(e) =>
-        Console.err.println(s"SimplexSpatial server can not start!")
-        e.printStackTrace()
-        ctx.self ! Done
-    }
-
-    Behaviors.receiveMessage {
-      case Done =>
-        Behaviors.stopped
-    }
-
-  }, "SimplexSpatialServer")
+  Await.result(system.whenTerminated, Duration.Inf)
 
 }

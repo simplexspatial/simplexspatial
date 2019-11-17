@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
   )),
   version := "0.0.1-SNAPSHOT",
   fork := true,
-  resolvers += "osm4scala repo" at "http://dl.bintray.com/angelcervera/maven",
+  resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.10",
   /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
@@ -47,6 +47,13 @@ lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
 
+lazy val root = (project in file("."))
+  .disablePlugins(sbtassembly.AssemblyPlugin)
+  .settings(
+
+  )
+  .aggregate(protobufApi, core, loadOSM)
+
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
@@ -57,7 +64,8 @@ lazy val core = (project in file("core"))
   .enablePlugins(JavaAgent) // ALPN agent
   .settings(
     PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
-    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala)
+    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
+    akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server)
   )
   .settings(
     commonSettings,
@@ -82,9 +90,9 @@ lazy val core = (project in file("core"))
 
 lazy val loadOSM = (project in file("load_osm"))
   .enablePlugins(AkkaGrpcPlugin)
-  .disablePlugins(sbtassembly.AssemblyPlugin)
   .settings(
     PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
+    akkaGrpcGeneratedSources := Seq(AkkaGrpc.Client)
   )
   .settings(
     commonSettings,
