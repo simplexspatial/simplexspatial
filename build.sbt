@@ -1,4 +1,4 @@
-import sbt.Keys.startYear
+import sbt.Keys.{description, startYear}
 
 lazy val commonSettings = Seq(
   organization := "com.simplexportal.spatial",
@@ -50,12 +50,16 @@ lazy val akkaPersistenceNowhereVersion = "1.0.2"
 lazy val root = (project in file("."))
   .disablePlugins(sbtassembly.AssemblyPlugin)
   .settings(
-
+    commonSettings,
+    name := "SimplexSpatial",
+    description := "Geospatial distributed server"
   )
   .aggregate(protobufApi, core, loadOSM)
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
+    name := "protobuf-api",
+    description := "Protobuf API definition",
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
   )
 
@@ -69,6 +73,8 @@ lazy val core = (project in file("core"))
   )
   .settings(
     commonSettings,
+    name := "core",
+    description := "Core",
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
     mainClass in assembly := Some("com.simplexportal.spatial.Main"),
     libraryDependencies ++= Seq(
@@ -98,6 +104,8 @@ lazy val loadOSM = (project in file("load_osm"))
   )
   .settings(
     commonSettings,
+    name := "osm-loader",
+    description := "OSM Loader",
     mainClass in assembly := Some("com.simplexportal.spatial.loadosm.Main"),
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
