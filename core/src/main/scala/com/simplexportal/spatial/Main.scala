@@ -23,14 +23,14 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
-import com.simplexportal.spatial.index.grid.TileActor
-import com.simplexportal.spatial.model.BoundingBox
+import com.simplexportal.spatial.index.grid.GridIndexGuardian
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
+// TODO: Create the RootBehavior in a separate object.
 object Main extends App {
 
   val config = ConfigFactory
@@ -49,11 +49,17 @@ object Main extends App {
   implicit val typedSystem = system.toTyped
   implicit val scheduler: Scheduler = typedSystem.scheduler
 
-  val tileActor =
-    system.spawn(TileActor("GridIndex", BoundingBox.MAX), "TileActor")
+// TODO: Add roles to http entrypoint and grid shards.
+//  cluster.selfMember match {
+//    case member if member.roles.contains("http") => ???
+//    case member if member.roles.contains("grid-index") => ???
+//  }
+
+
+  val gridIndexGuardian = system.spawn(GridIndexGuardian("GridIndex").activate(), "GridIndexGuardian");
 
   val dataServiceHandler =
-    DataServiceHandler.partial(new DataServiceImpl(tileActor))
+    DataServiceHandler.partial(new DataServiceImpl(gridIndexGuardian))
   // val algorithmServiceHandler = ....
 
   val serviceHandlers: HttpRequest => Future[HttpResponse] =

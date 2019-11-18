@@ -17,7 +17,9 @@
 
 package com.simplexportal.spatial.index.grid
 
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 import com.simplexportal.spatial.model.BoundingBox
@@ -27,12 +29,12 @@ import scala.concurrent.duration._
 
 object TileActor {
 
-  // From here all possible replies.
+  // From here all possible replies to sent.
   sealed trait Reply
   case class Metrics(ways: Long, nodes: Long) extends Reply
   case class Done() extends Reply
 
-  // From here all possible commands accepted.
+  // From here all possible commands to accept.
   sealed trait Command
   sealed trait BatchCommand extends Command
 
@@ -78,16 +80,24 @@ object TileActor {
 
   final case class BatchAdded(events: Seq[AtomicEvent]) extends Event
 
+  val TypeKey: EntityTypeKey[Command] = EntityTypeKey[Command]("TileGridEntity")
 
+  def tileId(indexId: String, bbox: BoundingBox): String =
+    s"${indexId}_[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"
 
   def apply(indexId: String, bbox: BoundingBox): Behavior[Command] =
-    EventSourcedBehavior[Command, Event, Tile](
-      persistenceId = PersistenceId("TileActor", s"${indexId}_[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"),
-      emptyState = Tile(),
-      commandHandler = (state, command) => onCommand(state, command),
-      eventHandler = (state, event) => applyEvent(state, event)
-    )
-    .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
+    Behaviors.setup { context =>
+      context.log.info("Starting grid shard [{}]", tileId(indexId, bbox) )
+
+      EventSourcedBehavior[Command, Event, Tile](
+        persistenceId = PersistenceId("TileActor", tileId(indexId, bbox)),
+        emptyState = Tile(),
+        commandHandler = (state, command) => onCommand(state, command),
+        eventHandler = (state, event) => applyEvent(state, event)
+      )
+        .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
+    }
+
 
   private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] =
     command match {
