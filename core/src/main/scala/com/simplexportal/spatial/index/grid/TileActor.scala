@@ -22,20 +22,28 @@ import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import com.simplexportal.spatial.model.BoundingBox
+import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 import scala.collection.breakOut
 import scala.concurrent.duration._
 
 object TileActor {
 
+  sealed trait TileActorMessage
+
   // From here all possible replies to sent.
-  sealed trait Reply
+  sealed trait Reply extends TileActorMessage
   case class Metrics(ways: Long, nodes: Long) extends Reply
   case class Done() extends Reply
 
   // From here all possible commands to accept.
-  sealed trait Command
+  sealed trait Command extends TileActorMessage
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+  @JsonSubTypes(
+    Array(
+      new JsonSubTypes.Type(value = classOf[AddNode], name = "AddNode"),
+      new JsonSubTypes.Type(value = classOf[AddWay], name = "AddWay")))
   sealed trait BatchCommand extends Command
 
   final case class AddNode(
@@ -62,7 +70,7 @@ object TileActor {
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
   // From here, all possible events generated.
-  sealed trait Event
+  sealed trait Event extends TileActorMessage
   sealed trait AtomicEvent extends Event
 
   final case class NodeAdded(
@@ -80,17 +88,26 @@ object TileActor {
 
   final case class BatchAdded(events: Seq[AtomicEvent]) extends Event
 
+
+
+
+
+
+
+
+
+
+
+
+
   val TypeKey: EntityTypeKey[Command] = EntityTypeKey[Command]("TileGridEntity")
 
-  def tileId(indexId: String, bbox: BoundingBox): String =
-    s"${indexId}_[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"
-
-  def apply(indexId: String, bbox: BoundingBox): Behavior[Command] =
+  def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
-      context.log.info("Starting grid shard [{}]", tileId(indexId, bbox) )
+      context.log.info("Starting grid shard [{}]", tileId )
 
       EventSourcedBehavior[Command, Event, Tile](
-        persistenceId = PersistenceId("TileActor", tileId(indexId, bbox)),
+        persistenceId = PersistenceId(s"TileActor_${indexId}", tileId),
         emptyState = Tile(),
         commandHandler = (state, command) => onCommand(state, command),
         eventHandler = (state, event) => applyEvent(state, event)
@@ -99,7 +116,8 @@ object TileActor {
     }
 
 
-  private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] =
+  private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] = {
+    println(s"Getting >>>>> ${command}")
     command match {
       case GetMetrics(replyTo) =>
         replyTo ! Metrics(tile.ways.size, tile.nodes.size)
@@ -131,6 +149,7 @@ object TileActor {
           replyTo.foreach( _ ! TileActor.Done() )
         }
     }
+  }
 
   private def applyEvent(tile: Tile, event: Event): Tile =
     event match {

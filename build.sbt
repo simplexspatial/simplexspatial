@@ -36,7 +36,8 @@ lazy val commonSettings = Seq(
     "-source",
     "1.8",
     "-target",
-    "1.8"
+    "1.8",
+    "-parameters"
   ),*/
   test in assembly := {}
 )
@@ -66,6 +67,8 @@ lazy val protobufApi = (project in file("protobuf-api"))
 lazy val core = (project in file("core"))
   .enablePlugins(AkkaGrpcPlugin)
   .enablePlugins(JavaAgent) // ALPN agent
+  .enablePlugins(MultiJvmPlugin)
+  .configs(MultiJvm)
   .settings(
     PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
     akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
@@ -83,6 +86,7 @@ lazy val core = (project in file("core"))
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
       "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
@@ -90,8 +94,9 @@ lazy val core = (project in file("core"))
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.github.pathikrit" %% "better-files" % betterFilesVersion
-    ).map(_ % "test")
+      "com.github.pathikrit" %% "better-files" % betterFilesVersion,
+      "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion
+    ).map(_ % Test)
   )
   .dependsOn(protobufApi)
 

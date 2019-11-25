@@ -36,7 +36,7 @@ class TileActorSpec extends ScalaTestWithActorTestKit
       val probeNode = testKit.createTestProbe[Option[Tile.Node]]()
       val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      val tileActor = testKit.spawn(grid.TileActor("add-nodes-test", bbox), "add-nodes-test")
+      val tileActor = testKit.spawn(grid.TileActor("add-nodes-test", "add-nodes-test"), "add-nodes-test")
       tileActor ! TileActor.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
 
       tileActor ! TileActor.GetNode(10, probeNode.ref)
@@ -52,7 +52,7 @@ class TileActorSpec extends ScalaTestWithActorTestKit
       val probeWay = testKit.createTestProbe[Option[Tile.Way]]()
       val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      val tileActor = testKit.spawn(grid.TileActor("connect-nodes-using-ways-test", bbox), "connect-nodes-using-ways-test")
+      val tileActor = testKit.spawn(grid.TileActor("connect-nodes-using-ways-test", "connect-nodes-using-ways-test"), "connect-nodes-using-ways-test")
 
       exampleTileCommands foreach (command => tileActor ! command)
 
@@ -66,7 +66,7 @@ class TileActorSpec extends ScalaTestWithActorTestKit
       val probeWay = testKit.createTestProbe[Option[Tile.Way]]()
       val probeMetrics = testKit.createTestProbe[TileActor.Metrics]()
 
-      val tileActor = testKit.spawn(grid.TileActor("create-network-using-blocks-test", bbox), "create-network-using-blocks-test")
+      val tileActor = testKit.spawn(grid.TileActor("create-network-using-blocks-test", "create-network-using-blocks-test"), "create-network-using-blocks-test")
 
       tileActor ! TileActor.AddBatch(exampleTileCommands)
 
