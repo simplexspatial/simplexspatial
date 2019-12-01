@@ -21,7 +21,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
-import com.simplexportal.spatial.index.grid.TileActor.Command
 import com.simplexportal.spatial.model.BoundingBox
 
 object GridIndex {
@@ -29,7 +28,7 @@ object GridIndex {
   def tileId(indexId: String, bbox: BoundingBox): String =
     s"${indexId}_[(${bbox.min.lon},${bbox.min.lat}),(${bbox.max.lon},${bbox.max.lat})]"
 
-  def logInfo(context: ActorContext[Command], indexId: String, lonPartitions: Int, latPartitions: Int): Unit =
+  def logInfo(context: ActorContext[TileActor.Command], indexId: String, lonPartitions: Int, latPartitions: Int): Unit =
     context.log.info(
       "Every shard in the index [{}] is going to cover a fixed area of [{}] km2 approx. ",
       indexId,
@@ -40,7 +39,7 @@ object GridIndex {
 
   private def partitionId(message: TileActor.Command): String = "FIXED_SHARD"
 
-  def apply(indexId: String, lonPartitions: Int, latPartitions: Int): Behavior[Command] =
+  def apply(indexId: String, lonPartitions: Int, latPartitions: Int): Behavior[TileActor.Command] =
     Behaviors.setup { context =>
       context.log.info("Starting Guardian sharding [{}]", indexId)
       logInfo(context, indexId, lonPartitions, latPartitions)

@@ -58,8 +58,6 @@ object ShardingSpecConfig extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
       akka.loglevel=ERROR
-      akka.actor.provider = cluster
-      akka.remote.artery.enabled = on
       akka.cluster.seed-nodes = [ "akka://ClusterSystem@127.0.0.1:2551", "akka://ClusterSystem@127.0.0.1:2552" ]
     """).withFallback(ConfigFactory.load()))
 
