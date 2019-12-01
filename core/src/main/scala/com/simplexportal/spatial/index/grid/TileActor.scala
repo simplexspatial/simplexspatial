@@ -18,14 +18,12 @@
 package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 
 import scala.collection.breakOut
-import scala.concurrent.duration._
 
 object TileActor {
 
@@ -39,11 +37,6 @@ object TileActor {
   // From here all possible commands to accept.
   sealed trait Command extends TileActorMessage
 
-  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-  @JsonSubTypes(
-    Array(
-      new JsonSubTypes.Type(value = classOf[AddNode], name = "AddNode"),
-      new JsonSubTypes.Type(value = classOf[AddWay], name = "AddWay")))
   sealed trait BatchCommand extends Command
 
   final case class AddNode(
@@ -104,7 +97,7 @@ object TileActor {
 
   def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
-      context.log.info("Starting grid shard [{}]", tileId )
+      context.log.info("Starting grid tile [{}]", tileId )
 
       EventSourcedBehavior[Command, Event, Tile](
         persistenceId = PersistenceId(s"TileActor_${indexId}", tileId),
@@ -112,7 +105,6 @@ object TileActor {
         commandHandler = (state, command) => onCommand(state, command),
         eventHandler = (state, event) => applyEvent(state, event)
       )
-        .onPersistFailure(SupervisorStrategy.restartWithBackoff(1.second, 30.seconds, 0.2))
     }
 
 

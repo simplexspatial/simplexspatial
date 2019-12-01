@@ -98,7 +98,6 @@ case class Tile(
       nodeIds: Seq[Long],
       updated: List[(Long, Tile.Node)]
   ): List[(Long, Tile.Node)] = {
-    println(s">>>>>>>>>>>>>>> ${nodeIds}")
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated

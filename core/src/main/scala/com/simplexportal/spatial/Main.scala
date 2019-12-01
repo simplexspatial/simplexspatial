@@ -18,13 +18,12 @@ package com.simplexportal.spatial
 
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
 import akka.grpc.scaladsl.ServiceHandler
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
-import com.simplexportal.spatial.index.grid.{GridIndex, TileActor}
+import com.simplexportal.spatial.index.grid.GridIndex
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration

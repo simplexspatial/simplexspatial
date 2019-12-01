@@ -1,3 +1,4 @@
+import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
 import sbt.Keys.{description, startYear}
 
 lazy val commonSettings = Seq(
@@ -20,6 +21,9 @@ lazy val commonSettings = Seq(
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.10",
+//  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+//  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+//  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
   /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding",
@@ -47,6 +51,7 @@ lazy val scalatestVersion = "3.0.8"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
+lazy val akkaKryoSerialization = "1.1.0"
 
 lazy val root = (project in file("."))
   .disablePlugins(sbtassembly.AssemblyPlugin)
@@ -69,6 +74,8 @@ lazy val core = (project in file("core"))
   .enablePlugins(JavaAgent) // ALPN agent
   .enablePlugins(MultiJvmPlugin)
   .configs(MultiJvm)
+  .settings(multiJvmSettings: _*)
+  .settings(parallelExecution in Test := false)
   .settings(
     PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
     akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
@@ -86,7 +93,7 @@ lazy val core = (project in file("core"))
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
-      "com.typesafe.akka" %% "akka-serialization-jackson" % akkaVersion,
+      "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerialization,
       "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,

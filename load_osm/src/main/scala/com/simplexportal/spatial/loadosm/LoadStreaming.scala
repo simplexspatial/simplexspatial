@@ -76,9 +76,9 @@ class LoadStreaming {
     }
   }
 
-  def printTotals: Unit = {
+  def printTotals(): Unit = {
     println("Asking for metrics .....")
-    val metrics = Await.result(client.getMetrics(GetMetricsCmd()), 1 hour)
+    val metrics = Await.result(client.getMetrics(GetMetricsCmd()), 1.hour)
     println(
       s"Added ${metrics.nodes}/${nodes} nodes and ${metrics.ways}/${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds. ${blocksSent} blocks sent."
     )
