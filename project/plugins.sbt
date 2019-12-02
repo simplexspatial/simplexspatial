@@ -15,8 +15,10 @@
  */
 
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.9.1")
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.10")
+//addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.10")
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.5.1")
+
 
 
 // gRPC
@@ -28,3 +30,4 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.0")
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "1.0.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
+
