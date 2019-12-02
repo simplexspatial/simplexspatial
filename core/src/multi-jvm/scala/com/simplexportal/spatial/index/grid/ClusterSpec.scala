@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 // scalastyle:off magic.number
-object ShardingSpecConfig extends MultiNodeConfig {
+object ClusterSpecConfig extends MultiNodeConfig {
 
   val nodes = Map(
     "node0" -> role("node0"),
@@ -63,8 +63,8 @@ object ShardingSpecConfig extends MultiNodeConfig {
 
 }
 
-abstract class ShardingSpec
-  extends MultiNodeSpec(ShardingSpecConfig)
+abstract class ClusterSpec
+  extends MultiNodeSpec(ClusterSpecConfig)
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
@@ -72,7 +72,7 @@ abstract class ShardingSpec
 
   implicit val typedSystem = system.toTyped
 
-  import ShardingSpecConfig._
+  import ClusterSpecConfig._
 
   override def beforeAll(): Unit = multiNodeSpecBeforeAll()
 
@@ -141,6 +141,6 @@ abstract class ShardingSpec
   }
 }
 
-class ShardingSpecMultiJvmNode0 extends ShardingSpec
-class ShardingSpecMultiJvmNode1 extends ShardingSpec
-class ShardingSpecMultiJvmNode2 extends ShardingSpec
+class ClusterSpecMultiJvmNode0 extends ClusterSpec
+class ClusterSpecMultiJvmNode1 extends ClusterSpec
+class ClusterSpecMultiJvmNode2 extends ClusterSpec

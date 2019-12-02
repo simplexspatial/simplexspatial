@@ -19,7 +19,6 @@ package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
 import com.simplexportal.spatial.model.BoundingBox
 
@@ -39,22 +38,39 @@ object GridIndex {
 
   private def partitionId(message: TileActor.Command): String = "FIXED_SHARD"
 
+  private def createNewShardRegion(clusterSharding: ClusterSharding)(indexId: String, lonPartitions: Int, latPartitions: Int) =
+    clusterSharding.init(Entity(TileActor.TypeKey) { entityContext =>
+        TileActor(indexId, entityContext.entityId)
+      }
+    )
+
+
   def apply(indexId: String, lonPartitions: Int, latPartitions: Int): Behavior[TileActor.Command] =
     Behaviors.setup { context =>
       context.log.info("Starting Guardian sharding [{}]", indexId)
       logInfo(context, indexId, lonPartitions, latPartitions)
 
       val sharding = ClusterSharding(context.system)
+//      val newShardRegion = createNewShardRegion(sharding)
 
-      // FIXME: At the moment, only one shard :) This should be
-      val shardRegion = sharding.init(Entity(TileActor.TypeKey) { entityContext =>
-          TileActor(indexId, entityContext.entityId)
-        }
-      )
+      Behaviors.receiveMessage {
+        case addNodeCmd: TileActor.AddNode =>
+          sharding.entityRefFor(TileActor.TypeKey, partitionId(addNodeCmd)) ! addNodeCmd
+          Behaviors.same
+        case addWayCmd: TileActor.AddWay =>
+          sharding.entityRefFor(TileActor.TypeKey, partitionId(addWayCmd)) ! addWayCmd
+          Behaviors.same
+        case addBatchCmd: TileActor.AddBatch =>
+          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd)) ! addBatchCmd
+          Behaviors.same
+        case metricsCmd: TileActor.GetMetrics =>
+          sharding.entityRefFor(TileActor.TypeKey, partitionId(metricsCmd)) ! metricsCmd
+          Behaviors.same
+        case metricsCmd: TileActor.GetNode =>
+          ???
+        case metricsCmd: TileActor.GetWay =>
+          ???
 
-      Behaviors.receiveMessage { message =>
-        shardRegion ! ShardingEnvelope(partitionId(message), message)
-        Behaviors.same
       }
     }
 
