@@ -14,23 +14,56 @@ sbt "core/runMain com.simplexportal.spatial.Main"
 ```bash
 sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main --block-size=300 /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf"
 ```
-
-## Running thru CLI
+## Build
+The following command will generate two distributable zip, one located
+under `core/target/universal` and another under
+`osm-loader/target/universal`.
 
 ```bash
-java \
-    -Xms20G  -Xmx24G  \
-    -Dcom.sun.management.jmxremote \
-    -Dcom.sun.management.jmxremote.port=9010 \
-    -Dcom.sun.management.jmxremote.authenticate=false \
-    -Dcom.sun.management.jmxremote.ssl=false \
-    -jar core-assembly-0.0.1-SNAPSHOT.jar
+sbt clean universal:packageBin
 ```
 
+## Running thru CLI
+Using the previous zip, uncompress it and from the folder where you
+uncompressed:
+
+### Running core
+
 ```bash
-java \
-    -Xms5G -Xmx10G \
-    -jar load_osm/target/scala-2.12/loadOSM-assembly-0.0.1-SNAPSHOT.jar \
+bin/core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9010 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=2550  \
+    -Dsimplexportal.spatial.api.http.port=8080
+
+bin/core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9011 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=2551  \
+    -Dsimplexportal.spatial.api.http.port=8081
+
+bin/core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9012 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=2552  \
+    -Dsimplexportal.spatial.api.http.port=8082
+
+```
+
+### Running osm loader
+
+```bash
+bin/osm-loader \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9009 \
+    -J-Xms1G \
+    -J-Xmx4G  \
     --block-size=300 \
     /home/angelcc/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf
 ```

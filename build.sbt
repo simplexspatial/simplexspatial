@@ -5,11 +5,12 @@ lazy val commonSettings = Seq(
   organization := "com.simplexportal.spatial",
   organizationHomepage := Some(url("http://www.simplexportal.com")),
   organizationName := "SimplexPortal Ltd",
+  maintainer := "angelcervera@simplexportal.com",
   developers := List(
     Developer(
       "angelcervera",
       "Angel Cervera Claudio",
-      "angelcervera@silyan.com",
+      "angelcervera@simplexportal.com",
       url("http://github.com/angelcervera")
     )
   ),
