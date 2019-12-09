@@ -75,22 +75,15 @@ object Grid {
 
       Behaviors.receiveMessage {
         case cmd: TileIndexActor.AddNode =>
-
-          println(">>>>>>>> Sending message to nodeLookUp")
-          sharding.entityRefFor(NodeLookUpTypeKey, nodeLookUpHashFn(cmd.id)) ! NodeLookUpActor.Put(cmd.id, NodeLookUpActor.Hash(0,0), None)
-
-          println(">>>>>> Sending message to tile index")
-          sharding.entityRefFor(TileTypeKey, tileHashFn(cmd.lat, cmd.lon).tileHash) ! cmd
-
-//        val result = addNode(nodeLookUpHashFn(cmd.id), tileHashFn(cmd.lat, cmd.lon), sharding, cmd)
-//          cmd.replyTo.map { clientRef =>
-//            result.onComplete {
-//              case Success(_) => clientRef ! TileIndexActor.Done()
-//              case Failure(ex) =>
-//                context.log.error(s"Error Adding node (${cmd}).", ex)
-//              // TODO: Should be able to response with Done and NotDone, or ACK and NACK.
-//            }
-//          }
+          val result = addNode(nodeLookUpHashFn(cmd.id), tileHashFn(cmd.lat, cmd.lon), sharding, cmd)
+          cmd.replyTo.map { clientRef =>
+            result.onComplete {
+              case Success(_) => clientRef ! TileIndexActor.Done()
+              case Failure(ex) =>
+                context.log.error(s"Error Adding node (${cmd}).", ex)
+              // TODO: Should be able to response with Done and NotDone, or ACK and NACK.
+            }
+          }
           // FIXME: Following code should be executed after the execution of both previous calls?
           // In other case, it is going to consume the next message and downstream. So we can fill create hundreds of ask Actors.
           Behaviors.same
