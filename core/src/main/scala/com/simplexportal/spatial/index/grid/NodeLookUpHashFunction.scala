@@ -17,19 +17,13 @@
 
 package com.simplexportal.spatial.index.grid
 
-import com.simplexportal.spatial.model.{BoundingBox, Location}
+object NodeLookUpHashFunction {
 
-trait TileActorDataset {
-  val bbox = BoundingBox(Location(1,1), Location(10,10))
+  def indexToString(idx: Long): String = s"${idx}"
 
-  val exampleTileCommands: Seq[TileActor.BatchCommand] = Seq(
-    TileActor.AddNode(1, 7,3, Map("nodeAttrKey" -> "nodeAttrValue")),
-    TileActor.AddNode(2, 7,10, Map.empty),
-    TileActor.AddNode(3, 3, 10, Map.empty),
-    TileActor.AddNode(4, 3, 16, Map.empty),
-    TileActor.AddNode(5, 4, 5, Map.empty),
-    TileActor.AddNode(6, 2, 5, Map.empty),
-    TileActor.AddWay(100, Seq(5,6,3), Map("wayAttrKey" -> "wayAttrValue") ),
-    TileActor.AddWay(101, Seq(1,2,3,4), Map.empty ),
-  )
+  def apply(partitions: Int): (Long) => String = {
+    (id: Long) => indexToString(id % partitions)
+  }
 }
+
+

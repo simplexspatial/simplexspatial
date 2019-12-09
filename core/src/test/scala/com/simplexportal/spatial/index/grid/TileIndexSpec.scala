@@ -22,30 +22,30 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 // scalastyle:off magic.number
 
-class TileSpec extends WordSpecLike with Matchers {
+class TileIndexSpec extends WordSpecLike with Matchers {
 
   "Tile" should {
 
     "create a network" when {
 
-      val expected = Tile(
+      val expected = TileIndex(
         nodes = Map(
-          1L -> Tile.Node(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
-          2L -> Tile.Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
-          3L -> Tile.Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
-          4L -> Tile.Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
-          5L -> Tile.Node(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
-          6L -> Tile.Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
+          1L -> TileIndex.Node(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
+          2L -> TileIndex.Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
+          3L -> TileIndex.Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
+          4L -> TileIndex.Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
+          5L -> TileIndex.Node(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
+          6L -> TileIndex.Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
         ),
         ways = Map(
-          100L -> Tile.Way(100, 5, Map(3373707 -> "Street Name")),
-          101L -> Tile.Way(101, 1)
+          100L -> TileIndex.Way(100, 5, Map(3373707 -> "Street Name")),
+          101L -> TileIndex.Way(101, 1)
         ),
         Map(206407764 -> "traffic_light", 3373707 -> "name")
       )
 
       "is simple definition" in {
-        val current = Tile()
+        val current = TileIndex()
           .addNode(2, 7, 10, Map.empty)
           .addNode(1, 7, 3, Map("traffic_light" -> "true"))
           .addNode(3, 3, 10, Map.empty)
@@ -61,7 +61,7 @@ class TileSpec extends WordSpecLike with Matchers {
       }
 
       "Vectors are used as list of nodes" in {
-        val current = Tile()
+        val current = TileIndex()
           .addNode(2, 7, 10, Map.empty)
           .addNode(1, 7, 3, Map("traffic_light" -> "true"))
           .addNode(3, 3, 10, Map.empty)

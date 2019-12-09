@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
-import com.simplexportal.spatial.index.grid.GridIndex
+import com.simplexportal.spatial.index.grid.Grid
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
@@ -57,7 +57,14 @@ object Main extends App {
 
 
   // FIXME: Using a guardian actor could be a performance bottleneck. Try with the sharding object directly.
-  val gridIndex = system.spawn(GridIndex("GridIndex", 1000, 1000), "GridIndex");
+  val gridIndex = system.spawn(
+    Grid(
+      "GridIndex",
+      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.nodes-lookup"),
+      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.latitude"),
+      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.longitude")
+    ),
+    "GridIndex");
 
   val dataServiceHandler =
     DataServiceHandler.partial(new DataServiceImpl(gridIndex))

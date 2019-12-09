@@ -30,27 +30,25 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 // scalastyle:off magic.number
-object ClusterSpecConfig extends MultiNodeConfig {
+object TileIndexClusterSpecConfig extends MultiNodeConfig {
 
-  val nodes = Map(
-    "node0" -> role("node0"),
-    "node1" -> role("node1"),
-    "node2" -> role("node2")
-  )
+  val node0 = role("node0")
+  val node1 = role("node1")
+  val node2 = role("node2")
 
-  nodeConfig(nodes("node0"))(
+  nodeConfig(node0)(
     ConfigFactory.parseString("""
     akka.remote.artery.canonical.port = 2551
     """)
   )
 
-  nodeConfig(nodes("node1"))(
+  nodeConfig(node1)(
     ConfigFactory.parseString("""
     akka.remote.artery.canonical.port = 2552
     """)
   )
 
-  nodeConfig(nodes("node2"))(
+  nodeConfig(node2)(
     ConfigFactory.parseString("""
     akka.remote.artery.canonical.port = 2553
     """)
@@ -58,13 +56,13 @@ object ClusterSpecConfig extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
       akka.loglevel=ERROR
-      akka.cluster.seed-nodes = [ "akka://ClusterSystem@127.0.0.1:2551", "akka://ClusterSystem@127.0.0.1:2552" ]
+      akka.cluster.seed-nodes = [ "akka://TileIndexClusterSpec@localhost:2551" ]
     """).withFallback(ConfigFactory.load()))
 
 }
 
-abstract class ClusterSpec
-  extends MultiNodeSpec(ClusterSpecConfig)
+abstract class TileIndexClusterSpec
+  extends MultiNodeSpec(TileIndexClusterSpecConfig)
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
@@ -72,7 +70,7 @@ abstract class ClusterSpec
 
   implicit val typedSystem = system.toTyped
 
-  import ClusterSpecConfig._
+  import TileIndexClusterSpecConfig._
 
   override def beforeAll(): Unit = multiNodeSpecBeforeAll()
 
@@ -81,15 +79,17 @@ abstract class ClusterSpec
   override def initialParticipants: Int =  roles.size
 
   "The tile index" must {
+    println(s"Running System [${system.name}]")
+
     "wait until all nodes are ready" in within(10.seconds) {
 
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
-      Cluster(system) join node(nodes("node1")).address
+      Cluster(system) join node(node1).address
 
       receiveN(3).collect { case MemberUp(m) => m.address }.toSet should be(
-        nodes.values.map(node(_).address).toSet
+        Set(node(node0).address, node(node1).address, node(node2).address)
       )
 
       Cluster(system).unsubscribe(testActor)
@@ -98,13 +98,13 @@ abstract class ClusterSpec
     }
 
     "be able to add a entities in the a local tile" in within(10.seconds)  {
-      runOn(nodes("node0")) {
+      runOn(node0) {
         val probe = TestProbe[AnyRef]()
-        val localTileActor = system.spawn(TileActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
-        localTileActor ! TileActor.AddNode(0, 0, 0, Map.empty, Some(probe.ref))
-        localTileActor ! TileActor.AddNode(1, 1, 1, Map.empty, Some(probe.ref))
-        localTileActor ! TileActor.AddNode(2, 2, 2, Map.empty, Some(probe.ref))
-        localTileActor ! TileActor.AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
+        val localTileActor = system.spawn(TileIndexActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
+        localTileActor ! TileIndexActor.AddNode(0, 0, 0, Map.empty, Some(probe.ref))
+        localTileActor ! TileIndexActor.AddNode(1, 1, 1, Map.empty, Some(probe.ref))
+        localTileActor ! TileIndexActor.AddNode(2, 2, 2, Map.empty, Some(probe.ref))
+        localTileActor ! TileIndexActor.AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
 
         probe.receiveMessages(4)
       }
@@ -112,14 +112,14 @@ abstract class ClusterSpec
     }
 
     "be able to add a entities in the a remote tile" in within(10.seconds)  {
-      runOn(nodes("node2")) {
+      runOn(node2) {
         val probe = TestProbe[AnyRef]()
-        val remoteTileActor = system.actorSelection(node(nodes("node0")) / "user" / "TileActorNode0")
+        val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
 
-        remoteTileActor ! TileActor.AddNode(10, 10, 10, Map.empty, Some(probe.ref))
-        remoteTileActor ! TileActor.AddNode(11, 11, 11, Map.empty, Some(probe.ref))
-        remoteTileActor ! TileActor.AddNode(12, 12, 12, Map.empty, Some(probe.ref))
-        remoteTileActor ! TileActor.AddWay(11, Seq(10, 11, 12), Map.empty, Some(probe.ref))
+        remoteTileActor ! TileIndexActor.AddNode(10, 10, 10, Map.empty, Some(probe.ref))
+        remoteTileActor ! TileIndexActor.AddNode(11, 11, 11, Map.empty, Some(probe.ref))
+        remoteTileActor ! TileIndexActor.AddNode(12, 12, 12, Map.empty, Some(probe.ref))
+        remoteTileActor ! TileIndexActor.AddWay(11, Seq(10, 11, 12), Map.empty, Some(probe.ref))
 
         probe.receiveMessages(4)
       }
@@ -128,12 +128,12 @@ abstract class ClusterSpec
     }
 
     "retrieve metrics from the remote actor" in {
-      runOn(nodes("node2")) {
+      runOn(node2) {
         val probe = TestProbe[AnyRef]()
-        val remoteTileActor = system.actorSelection(node(nodes("node0")) / "user" / "TileActorNode0")
-        remoteTileActor ! TileActor.GetMetrics(probe.ref)
+        val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
+        remoteTileActor ! TileIndexActor.GetMetrics(probe.ref)
 
-        probe.expectMessage(TileActor.Metrics(2,6))
+        probe.expectMessage(TileIndexActor.Metrics(2,6))
 
       }
     }
@@ -141,6 +141,6 @@ abstract class ClusterSpec
   }
 }
 
-class ClusterSpecMultiJvmNode0 extends ClusterSpec
-class ClusterSpecMultiJvmNode1 extends ClusterSpec
-class ClusterSpecMultiJvmNode2 extends ClusterSpec
+class TileIndexClusterSpecMultiJvmNode0 extends TileIndexClusterSpec
+class TileIndexClusterSpecMultiJvmNode1 extends TileIndexClusterSpec
+class TileIndexClusterSpecMultiJvmNode2 extends TileIndexClusterSpec

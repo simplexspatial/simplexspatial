@@ -21,7 +21,7 @@ import com.simplexportal.spatial.model._
 
 import scala.annotation.tailrec
 
-object Tile {
+object TileIndex {
 
   case class Node(
       id: Long,
@@ -40,11 +40,10 @@ object Tile {
 
 }
 
-// TODO: Add BoundingBox
-case class Tile(
-    nodes: Map[Long, Tile.Node] = Map.empty,
-    ways: Map[Long, Tile.Way] = Map.empty,
-    tagsDic: Map[Int, String] = Map.empty
+case class TileIndex(
+                      nodes: Map[Long, TileIndex.Node] = Map.empty,
+                      ways: Map[Long, TileIndex.Way] = Map.empty,
+                      tagsDic: Map[Int, String] = Map.empty
 ) {
 
   private def attributesToDictionary(attributes: Map[String, String]): ( Map[Int, String], Map[Int, String]) =
@@ -60,10 +59,10 @@ case class Tile(
       lat: Double,
       lon: Double,
       attributes: Map[String, String]
-  ): Tile = {
+  ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      nodes = nodes + (id -> Tile.Node(id, Location(lat, lon), attrs)),
+      nodes = nodes + (id -> TileIndex.Node(id, Location(lat, lon), attrs)),
       tagsDic = tagsDic ++ dic
     )
   }
@@ -96,8 +95,8 @@ case class Tile(
       prev: Option[Long],
       current: Long,
       nodeIds: Seq[Long],
-      updated: List[(Long, Tile.Node)]
-  ): List[(Long, Tile.Node)] = {
+      updated: List[(Long, TileIndex.Node)]
+  ): List[(Long, TileIndex.Node)] = {
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -117,10 +116,10 @@ case class Tile(
       wayId: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String]
-  ): Tile = {
+  ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> Tile.Way(wayId, nodeIds.head, attrs)),
+      ways = ways + (wayId -> TileIndex.Way(wayId, nodeIds.head, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,

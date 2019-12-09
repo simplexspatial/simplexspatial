@@ -19,24 +19,22 @@ package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 
 import scala.collection.breakOut
 
-object TileActor {
+object TileIndexActor {
 
-  sealed trait TileActorMessage
+  sealed trait Message
 
   // From here all possible replies to sent.
-  sealed trait Reply extends TileActorMessage
+  sealed trait Reply extends Message
   case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class Done() extends Reply
+  case class Done() extends Reply  // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
   // From here all possible commands to accept.
-  sealed trait Command extends TileActorMessage
-
+  sealed trait Command extends Message
   sealed trait BatchCommand extends Command
 
   final case class AddNode(
@@ -44,26 +42,26 @@ object TileActor {
       lat: Double,
       lon: Double,
       attributes: Map[String, String],
-      replyTo: Option[ActorRef[TileActor.Done]] = None
+      replyTo: Option[ActorRef[TileIndexActor.Done]] = None
   ) extends BatchCommand
 
   final case class AddWay(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String],
-      replyTo: Option[ActorRef[TileActor.Done]] = None
+      replyTo: Option[ActorRef[TileIndexActor.Done]] = None
   ) extends BatchCommand
 
-  final case class AddBatch(cmds: Seq[BatchCommand], replyTo: Option[ActorRef[TileActor.Done]] = None) extends Command
+  final case class AddBatch(cmds: Seq[BatchCommand], replyTo: Option[ActorRef[TileIndexActor.Done]] = None) extends Command
 
-  final case class GetNode(id: Long, replyTo: ActorRef[Option[Tile.Node]]) extends Command
+  final case class GetNode(id: Long, replyTo: ActorRef[Option[TileIndex.Node]]) extends Command
 
-  final case class GetWay(id: Long, replyTo: ActorRef[Option[Tile.Way]]) extends Command
+  final case class GetWay(id: Long, replyTo: ActorRef[Option[TileIndex.Way]]) extends Command
 
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
   // From here, all possible events generated.
-  sealed trait Event extends TileActorMessage
+  sealed trait Event extends Message
   sealed trait AtomicEvent extends Event
 
   final case class NodeAdded(
@@ -93,22 +91,20 @@ object TileActor {
 
 
 
-  val TypeKey: EntityTypeKey[Command] = EntityTypeKey[Command]("TileGridEntity")
-
   def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
       context.log.info("Starting grid tile [{}]", tileId )
 
-      EventSourcedBehavior[Command, Event, Tile](
-        persistenceId = PersistenceId(s"TileActor_${indexId}", tileId),
-        emptyState = Tile(),
+      EventSourcedBehavior[Command, Event, TileIndex](
+        persistenceId = PersistenceId(s"Tile_${indexId}", tileId),
+        emptyState = TileIndex(),
         commandHandler = (state, command) => onCommand(state, command),
         eventHandler = (state, event) => applyEvent(state, event)
       )
     }
 
 
-  private def onCommand(tile: Tile, command: Command): Effect[Event, Tile] = {
+  private def onCommand(tile: TileIndex, command: Command): Effect[Event, TileIndex] = {
     println(s"Getting >>>>> ${command}")
     command match {
       case GetMetrics(replyTo) =>
@@ -125,12 +121,12 @@ object TileActor {
 
       case AddNode(id, lat, lon, attributes, replyTo) =>
         Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _  =>
-          replyTo.foreach(_ ! TileActor.Done() )
+          replyTo.foreach(_ ! TileIndexActor.Done() )
         }
 
       case AddWay(id, nodeIds, attributes, replyTo) =>
         Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
-          replyTo.foreach( _ ! TileActor.Done() )
+          replyTo.foreach( _ ! TileIndexActor.Done() )
         }
 
       case AddBatch(cmds, replyTo) =>
@@ -138,18 +134,18 @@ object TileActor {
           case AddNode(id, lat, lon, attributes, _) => NodeAdded(id, lat, lon, attributes)
           case AddWay(id, nodeIds, attributes, _) => WayAdded(id, nodeIds, attributes)
         }(breakOut))).thenRun { _ =>
-          replyTo.foreach( _ ! TileActor.Done() )
+          replyTo.foreach( _ ! TileIndexActor.Done() )
         }
     }
   }
 
-  private def applyEvent(tile: Tile, event: Event): Tile =
+  private def applyEvent(tile: TileIndex, event: Event): TileIndex =
     event match {
       case atomicEvent: AtomicEvent => applyAtomicEvent(tile, atomicEvent)
       case BatchAdded(events) => events.foldLeft(tile)( (tile, event) => applyAtomicEvent(tile, event))
     }
 
-  private def applyAtomicEvent(tile: Tile, event: AtomicEvent): Tile =
+  private def applyAtomicEvent(tile: TileIndex, event: AtomicEvent): TileIndex =
     event match {
       case NodeAdded(id, lat, lon, attributes) => tile.addNode(id, lat, lon, attributes)
       case WayAdded(id, nodeIds, attributes) => tile.addWay(id, nodeIds, attributes)

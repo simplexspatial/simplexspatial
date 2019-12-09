@@ -46,7 +46,7 @@ lazy val commonSettings = Seq(
   ),*/
 )
 
-lazy val akkaVersion = "2.6.0"
+lazy val akkaVersion = "2.6.1"
 lazy val scalatestVersion = "3.0.8"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
