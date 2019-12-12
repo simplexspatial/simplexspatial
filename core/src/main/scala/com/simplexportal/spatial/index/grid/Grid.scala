@@ -19,9 +19,11 @@ package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorSystem, Behavior}
+import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import akka.util.Timeout
 import com.simplexportal.spatial.index.grid.NodeLookUpActor.Done
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,14 +51,29 @@ object Grid {
   val TileTypeKey = EntityTypeKey[TileIndexActor.Command]("TileEntity")
   val NodeLookUpTypeKey = EntityTypeKey[NodeLookUpActor.Command]("NodeLookUpEntity")
 
-  def initSharding(indexId: String, system: ActorSystem[_]): ClusterSharding = {
+  def overwriteNumOfShards(numShards: Int, system: ActorSystem[_]) = ClusterShardingSettings.fromConfig(
+    ConfigFactory.parseString(s"number-of-shards = ${numShards}").withFallback(
+      system.settings.config.getConfig("akka.cluster.sharding")
+    )
+  )
+
+  def initSharding(indexId: String, nodeLookUpShards: Int, tileIndexShards: Int, system: ActorSystem[_]): ClusterSharding = {
     val sharding = ClusterSharding(system)
-    sharding.init(Entity(TileTypeKey) { entityContext =>
-      TileIndexActor(indexId, entityContext.entityId)
-    })
-    sharding.init(Entity(NodeLookUpTypeKey) { entityContext =>
-      NodeLookUpActor(indexId, entityContext.entityId)
-    })
+
+    sharding.init(
+      Entity(TileTypeKey) { entityContext =>
+        TileIndexActor(indexId, entityContext.entityId)
+      }
+      withSettings(overwriteNumOfShards(tileIndexShards, system))
+    )
+
+    sharding.init(
+      Entity(NodeLookUpTypeKey) { entityContext =>
+        NodeLookUpActor(indexId, entityContext.entityId)
+      }
+        withSettings (overwriteNumOfShards(nodeLookUpShards, system))
+    )
+
     sharding
   }
 
@@ -65,12 +82,12 @@ object Grid {
       logInfo(context, indexId, nodeLookUpPartitions, latPartitions, lonPartitions)
 
 
-      val nodeLookUpHashFn = NodeLookUpHashFunction(nodeLookUpPartitions)
+      val nodeLookUpHashFn = (id: Long) => id.toString
       val tileHashFn = TileIndexHashFunction(lonPartitions, latPartitions)
 
-      val sharding = initSharding(indexId, context.system)
+      val sharding = initSharding(indexId, nodeLookUpPartitions, latPartitions * lonPartitions, context.system)
       implicit val ctx = context
-      implicit val timeout: Timeout = 15.minutes
+      implicit val timeout: Timeout = 6.seconds
       implicit val scheduler = context.system.executionContext
 
       Behaviors.receiveMessage {
