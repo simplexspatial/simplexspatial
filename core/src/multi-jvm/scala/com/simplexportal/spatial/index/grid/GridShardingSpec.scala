@@ -23,6 +23,7 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
+import com.simplexportal.spatial.model.Location
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -111,7 +112,28 @@ abstract class GridShardingSpec
       enterBarrier("nodes added")
     }
 
-//    "be able to add a ways" in within(10.seconds)  {
+    "be able to retrieve nodes" in {
+      val probe = TestProbe[TileIndexActor.GetNodeResponse]()
+
+      gridIndex ! TileIndexActor.GetNode(999, probe.ref)
+      gridIndex ! TileIndexActor.GetNode(0, probe.ref)
+      gridIndex ! TileIndexActor.GetNode(1, probe.ref)
+      gridIndex ! TileIndexActor.GetNode(2, probe.ref)
+
+      probe.receiveMessages(4, 1.minutes).toSet shouldBe Set(
+        TileIndexActor.GetNodeResponse(None),
+        TileIndexActor.GetNodeResponse(Some(TileIndex.Node(0, Location(-23, -90), Map.empty))),
+        TileIndexActor.GetNodeResponse(Some(TileIndex.Node(1, Location(60, 130), Map.empty))),
+        TileIndexActor.GetNodeResponse(Some(TileIndex.Node(2, Location(-23.3, -90), Map.empty)))
+      )
+
+      enterBarrier("nodes retrieved")
+    }
+
+
+
+
+    //    "be able to add a ways" in within(10.seconds)  {
 //      val probe = TestProbe[AnyRef]()
 //      runOn(node0) {
 //        gridIndex ! TileActor.AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
@@ -119,12 +141,12 @@ abstract class GridShardingSpec
 //      }
 //      enterBarrier("ways added")
 //    }
-//
+
 //    "get right metrics" in within(10.seconds)  {
 //      val probe = TestProbe[AnyRef]()
 //      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>. Asking for metrics")
-//      gridIndex ! TileActor.GetMetrics(probe.ref)
-//      probe.expectMessage(TileActor.Metrics(1,3))
+//      gridIndex ! TileIndexActor.GetMetrics(probe.ref)
+//      probe.expectMessage(TileIndexActor.Metrics(1,3))
 //      enterBarrier("tested metrics in all nodes")
 //    }
 

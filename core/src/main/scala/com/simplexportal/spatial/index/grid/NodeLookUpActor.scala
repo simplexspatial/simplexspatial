@@ -28,22 +28,22 @@ object NodeLookUpActor {
   sealed trait Message
 
   // Using ints for size convenient.
-  case class Hash(latIdx: Int, lon: Int) extends Message
+  case class NodeEntityId(latIdx: Int, lonIdx: Int) extends Message
 
   trait Response extends Message
   case class Done() extends Response
-  case class GetResponse(hash: Option[Hash]) extends Response
+  case class GetResponse(maybeNodeEntityId: Option[NodeEntityId]) extends Response
 
   trait Command extends Message
-  case class Put(id: Long, hash: Hash, replyTo: Option[ActorRef[Done]]) extends Command
+  case class Put(id: Long, nodeEntityId: NodeEntityId, replyTo: Option[ActorRef[Done]]) extends Command
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
 
   trait Event extends Message
-  case class Putted(id: Long, hash: Hash) extends Event
+  case class Putted(id: Long, nodeEntityId: NodeEntityId) extends Event
 
   def apply(indexId: String, partitionId: String): Behavior[Command] =
     Behaviors.setup { context =>
-      EventSourcedBehavior[Command, Event, Map[Long, Hash]](
+      EventSourcedBehavior[Command, Event, Map[Long, NodeEntityId]](
         persistenceId = PersistenceId(s"NodeLookUp_${indexId}", partitionId),
         emptyState = Map.empty,
         commandHandler = (state, command) => onCommand(state, command),
@@ -51,25 +51,25 @@ object NodeLookUpActor {
       )
     }
 
-  private def onCommand(table: Map[Long, Hash], command: Command): Effect[Event, Map[Long, Hash]] = {
+  private def onCommand(table: Map[Long, NodeEntityId], command: Command): Effect[Event, Map[Long, NodeEntityId]] = {
     command match {
       case Get(id, replyTo) =>
         println(s">>>>>>>>>>>>>>>>>>>>>>>>>> Processing ${command} and found ${table.get(id)}")
         replyTo ! GetResponse(table.get(id))
         Effect.none
-      case Put(id, hash, replyTo) =>
+      case Put(id, nodeEntityId, replyTo) =>
         println(s">>>>>>>>>>>>>>>>>>>>>>>>>> Processing ${command}")
-        Effect.persist(Putted(id, hash)).thenRun { _  =>
+        Effect.persist(Putted(id, nodeEntityId)).thenRun { _  =>
           replyTo.foreach(_ ! Done() )
         }
     }
   }
 
-  private def applyEvent(table: Map[Long, Hash], event: Event): Map[Long, Hash] =
+  private def applyEvent(table: Map[Long, NodeEntityId], event: Event): Map[Long, NodeEntityId] =
     event match {
       case put: Putted =>
         println(s">>>>>>>>>>>>>>>>>>>>>>>>>> Applying ${event}")
-        table + (put.id -> put.hash)
+        table + (put.id -> put.nodeEntityId)
     }
 
 }

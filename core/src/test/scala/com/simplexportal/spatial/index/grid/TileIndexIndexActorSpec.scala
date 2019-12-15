@@ -33,7 +33,7 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
 
     "add the nodes" in {
       val probeDone = testKit.createTestProbe[TileIndexActor.Done]()
-      val probeNode = testKit.createTestProbe[Option[TileIndex.Node]]()
+      val probeNode = testKit.createTestProbe[TileIndexActor.GetNodeResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
       val tileActor = testKit.spawn(grid.TileIndexActor("add-nodes-test", "add-nodes-test"), "add-nodes-test")
@@ -43,13 +43,13 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
 
       probeNode.expectMessage(
-        Some(TileIndex.Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue")))
+        TileIndexActor.GetNodeResponse(Some(TileIndex.Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
       )
       probeMetrics.expectMessage(TileIndexActor.Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
-      val probeWay = testKit.createTestProbe[Option[TileIndex.Way]]()
+      val probeWay = testKit.createTestProbe[TileIndexActor.GetWayResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
       val tileActor = testKit.spawn(grid.TileIndexActor("connect-nodes-using-ways-test", "connect-nodes-using-ways-test"), "connect-nodes-using-ways-test")
@@ -59,11 +59,11 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
       tileActor ! TileIndexActor.GetWay(100, probeWay.ref)
       probeMetrics.expectMessage(TileIndexActor.Metrics(2, 6))
-      probeWay.expectMessage(Some(TileIndex.Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+      probeWay.expectMessage(TileIndexActor.GetWayResponse(Some(TileIndex.Way(100, 5, Map(276737215 -> "wayAttrValue")))))
     }
 
     "create network using blocks" in {
-      val probeWay = testKit.createTestProbe[Option[TileIndex.Way]]()
+      val probeWay = testKit.createTestProbe[TileIndexActor.GetWayResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
       val tileActor = testKit.spawn(grid.TileIndexActor("create-network-using-blocks-test", "create-network-using-blocks-test"), "create-network-using-blocks-test")
@@ -73,7 +73,7 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
       tileActor ! TileIndexActor.GetWay(100, probeWay.ref)
       probeMetrics.expectMessage(TileIndexActor.Metrics(2, 6))
-      probeWay.expectMessage(Some(TileIndex.Way(100, 5, Map(276737215 -> "wayAttrValue"))))
+      probeWay.expectMessage(TileIndexActor.GetWayResponse(Some(TileIndex.Way(100, 5, Map(276737215 -> "wayAttrValue")))))
 
     }
 

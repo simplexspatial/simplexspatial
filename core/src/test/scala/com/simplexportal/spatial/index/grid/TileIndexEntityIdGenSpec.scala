@@ -1,11 +1,10 @@
 package com.simplexportal.spatial.index.grid
 
-import com.simplexportal.spatial.index.grid.TileIndexEntityFunction.TileEntityInfo
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.{Matchers, WordSpecLike}
 
 
-class TileIndexEntityFunctionSpec extends WordSpecLike with Matchers {
+class TileIndexEntityIdGenSpec extends WordSpecLike with Matchers {
 
   "GridHashFunctionTest" should {
 
@@ -32,19 +31,19 @@ class TileIndexEntityFunctionSpec extends WordSpecLike with Matchers {
         (1000000, 1000000, 90, 180, TileEntityInfo(1000000,1000000, "1000000_1000000")),
       )
       forAll (coordsHashes) { (latPartitions, lonPartitions, lat, lon, id) =>
-        TileIndexEntityFunction(latPartitions, lonPartitions)(lat, lon) should be(id)
+        new TileIndexEntityIdGen(latPartitions, lonPartitions).info(lat, lon) should be(id)
       }
     }
 
     "throw an error when ask for latitude partitions higher than the precision" in {
       val e = intercept[Exception] {
-        TileIndexEntityFunction(10000000, 1)
+        new TileIndexEntityIdGen(10000000, 1)
       }
       assert(e.getMessage().startsWith("requirement failed: latitude partitions could not be higher"))
     }
     "throw an error when ask for longitude partitions higher than the precision" in {
       val e = intercept[Exception] {
-        TileIndexEntityFunction(1, 10000000)
+        new TileIndexEntityIdGen(1, 10000000)
       }
       assert(e.getMessage().startsWith("requirement failed: longitude partitions could not be higher"))
     }

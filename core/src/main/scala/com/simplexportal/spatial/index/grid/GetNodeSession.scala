@@ -1,0 +1,58 @@
+/*
+ * Copyright 2019 SimplexPortal Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package com.simplexportal.spatial.index.grid
+
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
+
+/**
+  * Get node in two steps:
+  * 1. From the look-up index, retrieve the location of the node.
+  * 2. Send the command to the right shard.
+  */
+object GetNodeSession {
+  def apply(
+      sharding: ClusterSharding,
+      getNode: TileIndexActor.GetNode,
+      tileIndexEntityIdGen: TileIndexEntityIdGen
+  ): Behavior[NodeLookUpActor.GetResponse] =
+    Behaviors
+      .setup { context =>
+        // Search the location of the node.
+        sharding.entityRefFor(
+          NodeLookUpTypeKey,
+          LookUpNodeEntityIdGen.entityId(getNode.id)
+        ) ! NodeLookUpActor.Get(getNode.id, context.self)
+
+        Behaviors.receiveMessage {
+          case NodeLookUpActor.GetResponse(Some(entityId)) =>
+            sharding.entityRefFor(
+              TileTypeKey,
+              tileIndexEntityIdGen.id(entityId.latIdx, entityId.lonIdx)
+            ) ! getNode
+            Behaviors.stopped
+          case NodeLookUpActor.GetResponse(None) =>
+            getNode.replyTo ! TileIndexActor.GetNodeResponse(None)
+            Behaviors.stopped
+          case _ =>
+            Behaviors.unhandled
+        }
+      }
+}

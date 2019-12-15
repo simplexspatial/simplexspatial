@@ -25,7 +25,7 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
-
+import io.jvm.uuid._
 
 object Grid {
 
@@ -68,7 +68,7 @@ object Grid {
       Entity(NodeLookUpTypeKey) { entityContext =>
         NodeLookUpActor(indexId, entityContext.entityId)
       }
-        withSettings (overwriteNumOfShards(nodeLookUpShards, system))
+      .withSettings (overwriteNumOfShards(nodeLookUpShards, system))
     )
 
     sharding
@@ -78,18 +78,20 @@ object Grid {
     Behaviors.setup { context =>
       logInfo(context, indexId, nodeLookUpPartitions, latPartitions, lonPartitions)
 
-
-      val nodeLookUpEntityIdFn = (id: Long) => id.toString
-      val tileEntityFn = TileIndexEntityFunction(lonPartitions, latPartitions)
+      val tileEntityFn = new TileIndexEntityIdGen(lonPartitions, latPartitions)
 
       val sharding = initSharding(indexId, nodeLookUpPartitions, latPartitions * lonPartitions, context.system)
+
       implicit val ctx = context
       implicit val timeout: Timeout = 6.seconds
       implicit val scheduler = context.system.executionContext
 
       Behaviors.receiveMessage {
         case cmd: TileIndexActor.AddNode =>
-          context.spawn(AddNodeSession(sharding, cmd, nodeLookUpEntityIdFn(cmd.id), tileEntityFn(cmd.lat, cmd.lon)), "adding_node_per_session" )
+          context.spawn(
+            AddNodeSession(sharding, cmd, LookUpNodeEntityIdGen.entityId(cmd.id), tileEntityFn.info(cmd.lat, cmd.lon)),
+            s"adding_node_${UUID.randomString}"
+          )
           Behaviors.same
 
         case addWayCmd: TileIndexActor.AddWay =>
@@ -100,12 +102,14 @@ object Grid {
 //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
 //          Behaviors.same
           ???
-        case metricsCmd: TileIndexActor.GetMetrics =>
-//          context.spawn(GetMetricsSession(sharding), "get_metrics_per_session" )
-//          Behaviors.same
+        case TileIndexActor.GetMetrics(replyTo) =>
           ???
-        case metricsCmd: TileIndexActor.GetNode =>
-          ???
+        case getNode: TileIndexActor.GetNode =>
+          context.spawn(
+            GetNodeSession(sharding, getNode, tileEntityFn),
+            s"getting_node_${UUID.randomString}"
+          )
+          Behaviors.same
         case metricsCmd: TileIndexActor.GetWay =>
           ???
 

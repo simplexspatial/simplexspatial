@@ -51,7 +51,9 @@ lazy val scalatestVersion = "3.0.8"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
-lazy val akkaKryoSerialization = "1.1.0"
+lazy val akkaKryoSerializationVersion = "1.1.0"
+lazy val scalaUUIDVersion = "0.3.1"
+
 
 lazy val root = (project in file("."))
   .settings(
@@ -105,11 +107,12 @@ lazy val core = (project in file("core"))
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
-      "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerialization,
+      "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
       "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
+      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,

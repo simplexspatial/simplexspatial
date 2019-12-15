@@ -31,6 +31,8 @@ object TileIndexActor {
   // From here all possible replies to sent.
   sealed trait Reply extends Message
   case class Metrics(ways: Long, nodes: Long) extends Reply
+  case class GetNodeResponse(node: Option[TileIndex.Node]) extends Reply
+  case class GetWayResponse(node: Option[TileIndex.Way]) extends Reply
   case class Done() extends Reply  // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
   // From here all possible commands to accept.
@@ -54,9 +56,9 @@ object TileIndexActor {
 
   final case class AddBatch(cmds: Seq[BatchCommand], replyTo: Option[ActorRef[TileIndexActor.Done]] = None) extends Command
 
-  final case class GetNode(id: Long, replyTo: ActorRef[Option[TileIndex.Node]]) extends Command
+  final case class GetNode(id: Long, replyTo: ActorRef[GetNodeResponse]) extends Command
 
-  final case class GetWay(id: Long, replyTo: ActorRef[Option[TileIndex.Way]]) extends Command
+  final case class GetWay(id: Long, replyTo: ActorRef[GetWayResponse]) extends Command
 
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
@@ -112,11 +114,11 @@ object TileIndexActor {
         Effect.none
 
       case GetNode(id, replyTo) =>
-        replyTo ! tile.nodes.get(id)
+        replyTo ! GetNodeResponse(tile.nodes.get(id))
         Effect.none
 
       case GetWay(id, replyTo) =>
-        replyTo ! tile.ways.get(id)
+        replyTo ! GetWayResponse(tile.ways.get(id))
         Effect.none
 
       case AddNode(id, lat, lon, attributes, replyTo) =>

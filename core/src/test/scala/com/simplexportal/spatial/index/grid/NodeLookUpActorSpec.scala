@@ -34,11 +34,11 @@ class NodeLookUpActorSpec
         NodeLookUpActor("test-index", "add-lookup"),
         "add-lookup-test"
       )
-      lookup ! Put(10, Hash(10, 10), Some(probeResponse.ref))
+      lookup ! Put(10, NodeEntityId(10, 10), Some(probeResponse.ref))
       probeResponse.expectMessage(Done())
 
       lookup ! Get(10, probeResponse.ref)
-      probeResponse.expectMessage(GetResponse(Some(Hash(10, 10))))
+      probeResponse.expectMessage(GetResponse(Some(NodeEntityId(10, 10))))
 
       lookup ! Get(1000, probeResponse.ref)
       probeResponse.expectMessage(GetResponse(None))

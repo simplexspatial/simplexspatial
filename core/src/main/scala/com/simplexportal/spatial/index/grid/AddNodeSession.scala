@@ -22,7 +22,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
-import com.simplexportal.spatial.index.grid.TileIndexEntityFunction.TileEntityInfo
 
 /**
  * AddNode per session actor that update all indices and stop.
@@ -36,12 +35,12 @@ object AddNodeSession {
            ): Behavior[NotUsed] = Behaviors
     .setup[AnyRef] { context =>
       val nodeLookUpActor = sharding.entityRefFor(NodeLookUpTypeKey, nodeEntityId)
-      val tileIndexActor = sharding.entityRefFor(TileTypeKey, tileEntityInfo.tileHash)
+      val tileIndexActor = sharding.entityRefFor(TileTypeKey, tileEntityInfo.entityId)
 
       // Add node in the lookUp index.
       nodeLookUpActor ! NodeLookUpActor.Put(
         addNode.id,
-        NodeLookUpActor.Hash(tileEntityInfo.latIdx, tileEntityInfo.lonIdx),
+        NodeLookUpActor.NodeEntityId(tileEntityInfo.latIdx, tileEntityInfo.lonIdx),
         addNode.replyTo.map(_ => context.self)
       )
 
