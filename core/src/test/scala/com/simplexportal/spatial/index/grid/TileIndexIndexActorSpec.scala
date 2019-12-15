@@ -43,7 +43,7 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
 
       probeNode.expectMessage(
-        TileIndexActor.GetNodeResponse(Some(TileIndex.Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
+        TileIndexActor.GetNodeResponse(10, Some(TileIndex.Node(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
       )
       probeMetrics.expectMessage(TileIndexActor.Metrics(0, 1))
     }

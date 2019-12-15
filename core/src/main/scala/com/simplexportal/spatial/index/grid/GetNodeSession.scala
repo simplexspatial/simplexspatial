@@ -42,14 +42,14 @@ object GetNodeSession {
         ) ! NodeLookUpActor.Get(getNode.id, context.self)
 
         Behaviors.receiveMessage {
-          case NodeLookUpActor.GetResponse(Some(entityId)) =>
+          case NodeLookUpActor.GetResponse(nodeId, Some(entityId)) =>
             sharding.entityRefFor(
               TileTypeKey,
               tileIndexEntityIdGen.id(entityId.latIdx, entityId.lonIdx)
             ) ! getNode
             Behaviors.stopped
-          case NodeLookUpActor.GetResponse(None) =>
-            getNode.replyTo ! TileIndexActor.GetNodeResponse(None)
+          case NodeLookUpActor.GetResponse(nodeId, None) =>
+            getNode.replyTo ! TileIndexActor.GetNodeResponse(nodeId, None)
             Behaviors.stopped
           case _ =>
             Behaviors.unhandled

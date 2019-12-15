@@ -31,7 +31,8 @@ object TileIndexActor {
   // From here all possible replies to sent.
   sealed trait Reply extends Message
   case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class GetNodeResponse(node: Option[TileIndex.Node]) extends Reply
+  case class GetNodeResponse(id: Long, node: Option[TileIndex.Node]) extends Reply
+  case class GetNodesResponse(nodes: Seq[GetNodeResponse]) extends Reply
   case class GetWayResponse(node: Option[TileIndex.Way]) extends Reply
   case class Done() extends Reply  // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
@@ -57,6 +58,8 @@ object TileIndexActor {
   final case class AddBatch(cmds: Seq[BatchCommand], replyTo: Option[ActorRef[TileIndexActor.Done]] = None) extends Command
 
   final case class GetNode(id: Long, replyTo: ActorRef[GetNodeResponse]) extends Command
+
+  final case class GetNodes(ids: Seq[Long], replyTo: ActorRef[GetNodesResponse]) extends Command
 
   final case class GetWay(id: Long, replyTo: ActorRef[GetWayResponse]) extends Command
 
@@ -106,15 +109,18 @@ object TileIndexActor {
     }
 
 
-  private def onCommand(tile: TileIndex, command: Command): Effect[Event, TileIndex] = {
-    println(s"Getting >>>>> ${command}")
+  private def onCommand(tile: TileIndex, command: Command): Effect[Event, TileIndex] =
     command match {
       case GetMetrics(replyTo) =>
         replyTo ! Metrics(tile.ways.size, tile.nodes.size)
         Effect.none
 
       case GetNode(id, replyTo) =>
-        replyTo ! GetNodeResponse(tile.nodes.get(id))
+        replyTo ! GetNodeResponse(id, tile.nodes.get(id))
+        Effect.none
+
+      case GetNodes(ids, replyTo) =>
+        replyTo ! GetNodesResponse(ids.map(id => GetNodeResponse(id, tile.nodes.get(id))))
         Effect.none
 
       case GetWay(id, replyTo) =>
@@ -139,7 +145,7 @@ object TileIndexActor {
           replyTo.foreach( _ ! TileIndexActor.Done() )
         }
     }
-  }
+
 
   private def applyEvent(tile: TileIndex, event: Event): TileIndex =
     event match {

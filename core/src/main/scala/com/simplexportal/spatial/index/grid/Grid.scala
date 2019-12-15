@@ -98,21 +98,32 @@ object Grid {
 //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addWayCmd, lonPartitions, latPartitions)) ! addWayCmd
 //          Behaviors.same
           ???
+
         case addBatchCmd: TileIndexActor.AddBatch =>
 //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
 //          Behaviors.same
           ???
-        case TileIndexActor.GetMetrics(replyTo) =>
-          ???
+
+
         case getNode: TileIndexActor.GetNode =>
           context.spawn(
             GetNodeSession(sharding, getNode, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
-        case metricsCmd: TileIndexActor.GetWay =>
+
+        case getNodes: TileIndexActor.GetNodes =>
+          context.spawn(
+            GetNodesSession(sharding, getNodes, tileEntityFn),
+            s"getting_node_${UUID.randomString}"
+          )
+          Behaviors.same
+
+        case getWay: TileIndexActor.GetWay =>
           ???
 
+        case TileIndexActor.GetMetrics(replyTo) =>
+          ???
       }
     }
 

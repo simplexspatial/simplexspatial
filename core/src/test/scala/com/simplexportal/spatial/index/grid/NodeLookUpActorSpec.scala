@@ -34,14 +34,27 @@ class NodeLookUpActorSpec
         NodeLookUpActor("test-index", "add-lookup"),
         "add-lookup-test"
       )
+
       lookup ! Put(10, NodeEntityId(10, 10), Some(probeResponse.ref))
       probeResponse.expectMessage(Done())
 
+      lookup ! Put(11, NodeEntityId(11, 11), Some(probeResponse.ref))
+      probeResponse.expectMessage(Done())
+
       lookup ! Get(10, probeResponse.ref)
-      probeResponse.expectMessage(GetResponse(Some(NodeEntityId(10, 10))))
+      probeResponse.expectMessage(GetResponse(10, Some(NodeEntityId(10, 10))))
 
       lookup ! Get(1000, probeResponse.ref)
-      probeResponse.expectMessage(GetResponse(None))
+      probeResponse.expectMessage(GetResponse(1000, None))
+
+      lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
+      probeResponse.expectMessage(GetsResponse(
+        Seq(
+          GetResponse(10, Some(NodeEntityId(10,10))),
+          GetResponse(11, Some(NodeEntityId(11,11))),
+          GetResponse(1000, None)
+        )
+      ))
 
     }
   }

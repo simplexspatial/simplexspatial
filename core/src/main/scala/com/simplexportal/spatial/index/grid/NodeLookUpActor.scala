@@ -32,11 +32,13 @@ object NodeLookUpActor {
 
   trait Response extends Message
   case class Done() extends Response
-  case class GetResponse(maybeNodeEntityId: Option[NodeEntityId]) extends Response
+  case class GetResponse(id: Long, maybeNodeEntityId: Option[NodeEntityId]) extends Response
+  case class GetsResponse(gets: Seq[GetResponse]) extends Response
 
   trait Command extends Message
   case class Put(id: Long, nodeEntityId: NodeEntityId, replyTo: Option[ActorRef[Done]]) extends Command
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
+  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse]) extends Command
 
   trait Event extends Message
   case class Putted(id: Long, nodeEntityId: NodeEntityId) extends Event
@@ -54,11 +56,12 @@ object NodeLookUpActor {
   private def onCommand(table: Map[Long, NodeEntityId], command: Command): Effect[Event, Map[Long, NodeEntityId]] = {
     command match {
       case Get(id, replyTo) =>
-        println(s">>>>>>>>>>>>>>>>>>>>>>>>>> Processing ${command} and found ${table.get(id)}")
-        replyTo ! GetResponse(table.get(id))
+        replyTo ! GetResponse(id, table.get(id))
+        Effect.none
+      case Gets(ids, replyTo) =>
+        replyTo ! GetsResponse(ids.map(id => GetResponse(id, table.get(id))))
         Effect.none
       case Put(id, nodeEntityId, replyTo) =>
-        println(s">>>>>>>>>>>>>>>>>>>>>>>>>> Processing ${command}")
         Effect.persist(Putted(id, nodeEntityId)).thenRun { _  =>
           replyTo.foreach(_ ! Done() )
         }
@@ -68,7 +71,6 @@ object NodeLookUpActor {
   private def applyEvent(table: Map[Long, NodeEntityId], event: Event): Map[Long, NodeEntityId] =
     event match {
       case put: Putted =>
-        println(s">>>>>>>>>>>>>>>>>>>>>>>>>> Applying ${event}")
         table + (put.id -> put.nodeEntityId)
     }
 

@@ -132,7 +132,7 @@ abstract class NodeLookUpClusterSpec
         val remoteNodeLookUpActor = system.actorSelection(node(node0) / "user" / "NodeLookUpActorNode0")
         remoteNodeLookUpActor ! NodeLookUpActor.Get(10, probe.ref)
 
-        probe.expectMessage(NodeLookUpActor.GetResponse(Some(NodeEntityId(10,10))))
+        probe.expectMessage(NodeLookUpActor.GetResponse(10, Some(NodeEntityId(10,10))))
 
       }
       enterBarrier("lookup from node2")
