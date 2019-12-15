@@ -22,12 +22,9 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import akka.util.Timeout
-import com.simplexportal.spatial.index.grid.NodeLookUpActor.Done
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 
 object Grid {
@@ -92,17 +89,7 @@ object Grid {
 
       Behaviors.receiveMessage {
         case cmd: TileIndexActor.AddNode =>
-          val result = addNode(nodeLookUpHashFn(cmd.id), tileHashFn(cmd.lat, cmd.lon), sharding, cmd)
-          cmd.replyTo.map { clientRef =>
-            result.onComplete {
-              case Success(_) => clientRef ! TileIndexActor.Done()
-              case Failure(ex) =>
-                context.log.error(s"Error Adding node (${cmd}).", ex)
-              // TODO: Should be able to response with Done and NotDone, or ACK and NACK.
-            }
-          }
-          // FIXME: Following code should be executed after the execution of both previous calls?
-          // In other case, it is going to consume the next message and downstream. So we can fill create hundreds of ask Actors.
+          context.spawn(AddNodeSession(sharding, cmd, nodeLookUpHashFn(cmd.id), tileHashFn(cmd.lat, cmd.lon)), "adding_node" )
           Behaviors.same
 
         case addWayCmd: TileIndexActor.AddWay =>
@@ -125,32 +112,4 @@ object Grid {
       }
     }
 
-  private def addNode
-    (nodeHash: String, tileHash: TileIndexHashFunction.TileHashInfo, sharding: ClusterSharding, cmd: TileIndexActor.AddNode)
-    (implicit context: ActorContext[_], timeout: Timeout, executionContext: ExecutionContext)
-  : Future[TileIndexActor.Done] = {
-
-    val nodeLookUpActor = sharding.entityRefFor(NodeLookUpTypeKey, nodeHash)
-    val tileIndexActor = sharding.entityRefFor(TileTypeKey, tileHash.tileHash)
-
-    println(s">>>>>>>>>>>>>>>>>>>>>. Sending to ${nodeLookUpActor}")
-    val nodeLookUpFuture = nodeLookUpActor.ask[Done](ref =>
-      NodeLookUpActor.Put(
-        cmd.id,
-        NodeLookUpActor.Hash(tileHash.latIdx, tileHash.lonIdx),
-        cmd.replyTo.map(_ => ref)
-      )
-    )
-
-    nodeLookUpFuture.map(r => println(s">>>>>>>>>>>>>> Responding with ${r}"))
-
-    val tileIndexFuture = tileIndexActor.ask[TileIndexActor.Done](ref =>
-      cmd.copy(replyTo = cmd.replyTo.map(_ => ref))
-    )
-
-    for (
-      _ <- nodeLookUpFuture;
-      _ <- tileIndexFuture
-    ) yield TileIndexActor.Done()
-  }
 }

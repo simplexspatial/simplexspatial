@@ -27,6 +27,9 @@ import com.simplexportal.spatial.index.grid.TileIndexActor
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
+// FIXME: This should be not a simple proxy. This should be the responsable to manage the back-pressure. It means that
+//        it needs to itself as replyTo and always ask. After get the response, response to the client allowing next
+//        message.
 class DataServiceImpl(tile: ActorRef[TileIndexActor.Command])(
     implicit
       executionContext: ExecutionContext,
