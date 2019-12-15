@@ -24,9 +24,9 @@ package com.simplexportal.spatial.index.grid
   * All nearest points are going to be located in the same shard.
   *
   */
-object TileIndexHashFunction {
+object TileIndexEntityFunction {
 
-  case class TileHashInfo(latIdx: Int, lonIdx: Int, tileHash: String)
+  case class TileEntityInfo(latIdx: Int, lonIdx: Int, tileHash: String)
 
   /**
    *  Constructor of new Tile Hash functions.
@@ -40,7 +40,7 @@ object TileIndexHashFunction {
              latPartitions: Int,
              lonPartitions: Int,
              roundingDecimals: Byte = 6
-           ): (Double, Double) => TileHashInfo = {
+           ): (Double, Double) => TileEntityInfo = {
 
     val PRECISION_ROUNDING: Int = Math.pow(10, roundingDecimals).toInt
 
@@ -59,13 +59,13 @@ object TileIndexHashFunction {
     def lonPartition(lon: Double): Int =
       ((lon + 180) * PRECISION_ROUNDING).toInt / ((360 * PRECISION_ROUNDING) / lonPartitions)
 
-    def indicesToString(latIdx: Int, lonIdx: Int): String =
+    def id(latIdx: Int, lonIdx: Int): String =
       s"${latIdx}_${lonIdx}"
 
     (lat: Double, lon: Double) => {
       val latIdx = latPartition(lat)
       val lonIdx = lonPartition(lon)
-      TileHashInfo(latIdx, lonIdx, indicesToString(latIdx, lonIdx))
+      TileEntityInfo(latIdx, lonIdx, id(latIdx, lonIdx))
     }
   }
 

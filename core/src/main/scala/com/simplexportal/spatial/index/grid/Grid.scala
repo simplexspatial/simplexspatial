@@ -79,8 +79,8 @@ object Grid {
       logInfo(context, indexId, nodeLookUpPartitions, latPartitions, lonPartitions)
 
 
-      val nodeLookUpHashFn = (id: Long) => id.toString
-      val tileHashFn = TileIndexHashFunction(lonPartitions, latPartitions)
+      val nodeLookUpEntityIdFn = (id: Long) => id.toString
+      val tileEntityFn = TileIndexEntityFunction(lonPartitions, latPartitions)
 
       val sharding = initSharding(indexId, nodeLookUpPartitions, latPartitions * lonPartitions, context.system)
       implicit val ctx = context
@@ -89,7 +89,7 @@ object Grid {
 
       Behaviors.receiveMessage {
         case cmd: TileIndexActor.AddNode =>
-          context.spawn(AddNodeSession(sharding, cmd, nodeLookUpHashFn(cmd.id), tileHashFn(cmd.lat, cmd.lon)), "adding_node" )
+          context.spawn(AddNodeSession(sharding, cmd, nodeLookUpEntityIdFn(cmd.id), tileEntityFn(cmd.lat, cmd.lon)), "adding_node_per_session" )
           Behaviors.same
 
         case addWayCmd: TileIndexActor.AddWay =>
@@ -101,7 +101,7 @@ object Grid {
 //          Behaviors.same
           ???
         case metricsCmd: TileIndexActor.GetMetrics =>
-//          sharding.entityRefFor(TileActor.TypeKey, partitionId(metricsCmd, lonPartitions, latPartitions)) ! metricsCmd
+//          context.spawn(GetMetricsSession(sharding), "get_metrics_per_session" )
 //          Behaviors.same
           ???
         case metricsCmd: TileIndexActor.GetNode =>
