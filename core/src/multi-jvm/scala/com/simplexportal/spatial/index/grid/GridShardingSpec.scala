@@ -139,7 +139,7 @@ abstract class GridShardingSpec
         gridIndex ! TileIndexActor.AddNode(12, 1.000002, 1.000002, Map.empty, None)
         gridIndex ! TileIndexActor.GetNodes(Seq(999, 0, 1, 2, 10, 11, 12), probe.ref)
 
-        Set(
+        Seq(
           TileIndexActor.GetNodeResponse(999, None),
           TileIndexActor.GetNodeResponse(0, Some(TileIndex.Node(0, Location(-23, -90), Map.empty))),
           TileIndexActor.GetNodeResponse(1, Some(TileIndex.Node(1, Location(60, 130), Map.empty))),
@@ -147,7 +147,7 @@ abstract class GridShardingSpec
           TileIndexActor.GetNodeResponse(10, Some(TileIndex.Node(10, Location(1, 1), Map.empty))),
           TileIndexActor.GetNodeResponse(11, Some(TileIndex.Node(11, Location(1.000001, 1.000001), Map.empty))),
           TileIndexActor.GetNodeResponse(12, Some(TileIndex.Node(12, Location(1.000002, 1.000002), Map.empty)))
-        ) shouldBe(probe.receiveMessage().nodes.toSet)
+        ) shouldBe(probe.receiveMessage().nodes)
       }
 
       enterBarrier("nodes retrieved in group")

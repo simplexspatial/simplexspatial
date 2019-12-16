@@ -27,6 +27,11 @@ import com.simplexportal.spatial.index.grid.NodeLookUpActor.{GetResponse, NodeEn
 // FIXME: Fix style
 // scalastyle:off cyclomatic.complexity
 // scalastyle:off method.length
+
+/**
+ * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.
+ * The order in the response is the same that the order in que request.
+ */
 object GetNodesSession {
 
   def apply(
@@ -85,7 +90,7 @@ object GetNodesSession {
             responsesCounter -= 1
             response = TileIndexActor.GetNodesResponse(response.nodes ++ nodes)
             if(responsesCounter == 0) {
-              getNodes.replyTo ! response
+              getNodes.replyTo ! sortResponse(getNodes.ids, response)
               Behaviors.stopped
             } else {
               Behaviors.same
@@ -94,5 +99,13 @@ object GetNodesSession {
             Behaviors.unhandled
         }
       }.narrow[NotUsed]
+
+  def sortResponse(request: Seq[Long], response: TileIndexActor.GetNodesResponse): TileIndexActor.GetNodesResponse = {
+    val nodesLookUp = response.nodes.map { node => node.id -> node.node }.toMap
+    TileIndexActor.GetNodesResponse(
+      request
+        .map { id => TileIndexActor.GetNodeResponse(id, nodesLookUp.getOrElse(id, None)) }
+    )
+  }
 
 }
