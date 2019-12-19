@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 // FIXME: This should be not a simple proxy. This should be the responsable to manage the back-pressure. It means that
 //        it needs to itself as replyTo and always ask. After get the response, response to the client allowing next
 //        message.
-class DataServiceImpl(tile: ActorRef[TileIndexActor.Command])(
+class DataServiceImpl(gridIndex: ActorRef[TileIndexActor.Command])(
     implicit
       executionContext: ExecutionContext,
       scheduler: Scheduler
@@ -42,21 +42,21 @@ class DataServiceImpl(tile: ActorRef[TileIndexActor.Command])(
   implicit def responseAdapter(node: TileIndexActor.Done): Done = Done()
 
   override def addNode(in: AddNodeCmd): Future[Done] =
-    tile.ask[TileIndexActor.Done](ref =>TileIndexActor.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref)) )
+    gridIndex.ask[TileIndexActor.Done](ref =>TileIndexActor.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref)) )
     .map(responseAdapter)
 
   override def addWay(in: AddWayCmd): Future[Done] =
-    tile.ask[TileIndexActor.Done](ref => TileIndexActor.AddWay(in.id, in.nodeIds, in.attributes, Some(ref)))
+    gridIndex.ask[TileIndexActor.Done](ref => TileIndexActor.AddWay(in.id, in.nodeIds, in.attributes, Some(ref)))
     .map(responseAdapter)
 
   override def getMetrics(in: GetMetricsCmd): Future[Metrics] =
-    tile.ask[TileIndexActor.Metrics](TileIndexActor.GetMetrics(_))
+    gridIndex.ask[TileIndexActor.Metrics](TileIndexActor.GetMetrics(_))
       .map(m => Metrics(ways = m.ways, nodes = m.nodes))
 
   override def streamBatchCommands(in: Source[ExecuteBatchCmd, NotUsed]): Source[Done, NotUsed] =
     in
       .map(cmd => toAddBatch(cmd))
-      .via(ActorFlow.ask(tile)((commands, replyTo: ActorRef[TileIndexActor.Done]) => TileIndexActor.AddBatch(commands, Some(replyTo))))
+      .via(ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[TileIndexActor.Done]) => TileIndexActor.AddBatch(commands, Some(replyTo))))
       .map(responseAdapter);
 
   private def toAddBatch(batchCmd: ExecuteBatchCmd): Seq[TileIndexActor.BatchCommand] =
