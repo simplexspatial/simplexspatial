@@ -55,8 +55,6 @@ object Main extends App {
 //    case member if member.roles.contains("grid-index") => ???
 //  }
 
-
-  // FIXME: Using a guardian actor could be a performance bottleneck. Try with the sharding object directly.
   val gridIndex = system.spawn(
     Grid(
       "GridIndex",

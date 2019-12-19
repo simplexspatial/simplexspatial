@@ -27,6 +27,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import io.jvm.uuid._
 
+// TODO: Every context.spawn(*Session(...), ... ) should be replaced by a spawn in the cluster, to start the session in a free node and not in this one.
 object Grid {
 
   def logInfo(context: ActorContext[_], indexId: String, nodeLookUpPartitions: Int, latPartitions: Int, lonPartitions: Int): Unit = {
