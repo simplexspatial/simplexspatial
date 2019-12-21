@@ -73,19 +73,19 @@ case class TileIndex(
       current: Long,
       next: Option[Long]
   ) = {
-    val node = nodes
-      .getOrElse(
-        current,
+
+    nodes.get(current) match {
+      case None =>
         throw new NotImplementedError(
           "Node not found in the Tile is still not implemented."
         )
-      )
-
-    node.copy( // TODO: Calculate directions. Now, all bidirectional.
-      ways = node.ways + wayId,
-      outs = (node.outs ++ next) ++ prev,
-      ins = (node.ins ++ next) ++ prev
-    )
+      case Some(node) =>
+        node.copy( // TODO: Calculate directions. Now, all bidirectional.
+          ways = node.ways + wayId,
+          outs = (node.outs ++ next) ++ prev,
+          ins = (node.ins ++ next) ++ prev
+        )
+    }
   }
 
   // Manage generated list in private scope as List because performance is not bad!
