@@ -154,17 +154,14 @@ abstract class GridShardingSpec
 
     }
 
-
-
-
-    //    "be able to add a ways" in within(10.seconds)  {
-//      val probe = TestProbe[AnyRef]()
-//      runOn(node0) {
-//        gridIndex ! TileActor.AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
-//        probe.receiveMessages(1)
-//      }
-//      enterBarrier("ways added")
-//    }
+    "be able to add a ways in different shards" in {
+      val probe = TestProbe[TileIndexActor.Done]()
+      runOn(node0) {
+        gridIndex ! TileIndexActor.AddWay(1, Seq(0, 1, 2, 10, 11, 12), Map.empty, Some(probe.ref))
+        probe.receiveMessage()
+      }
+      enterBarrier("way added")
+    }
 
 //    "get right metrics" in within(10.seconds)  {
 //      val probe = TestProbe[AnyRef]()

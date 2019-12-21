@@ -25,6 +25,7 @@ package model {
     val MIN_LATITUDE = -90
     val MAX = Location(MAX_LATITUDE, MAX_LONGITUDE)
     val MIN = Location(MIN_LATITUDE, MIN_LONGITUDE)
+    val NIL = Location(Double.NaN, Double.NaN)
   }
 
   case class Location(lat: Double, lon: Double)

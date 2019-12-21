@@ -88,6 +88,7 @@ object Grid {
       implicit val scheduler = context.system.executionContext
 
       Behaviors.receiveMessage {
+
         case cmd: TileIndexActor.AddNode =>
           context.spawn(
             AddNodeSession(sharding, cmd, LookUpNodeEntityIdGen.entityId(cmd.id), tileEntityFn.info(cmd.lat, cmd.lon)),
@@ -95,10 +96,12 @@ object Grid {
           )
           Behaviors.same
 
-        case addWayCmd: TileIndexActor.AddWay =>
-//          sharding.entityRefFor(TileActor.TypeKey, partitionId(addWayCmd, lonPartitions, latPartitions)) ! addWayCmd
-//          Behaviors.same
-          ???
+        case cmd: TileIndexActor.AddWay =>
+          context.spawn(
+            AddWaySession(sharding, cmd, tileEntityFn),
+            s"adding_way_${UUID.randomString}"
+          )
+          Behaviors.same
 
         case addBatchCmd: TileIndexActor.AddBatch =>
 //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
@@ -106,16 +109,16 @@ object Grid {
           ???
 
 
-        case getNode: TileIndexActor.GetNode =>
+        case cmd: TileIndexActor.GetNode =>
           context.spawn(
-            GetNodeSession(sharding, getNode, tileEntityFn),
+            GetNodeSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
-        case getNodes: TileIndexActor.GetNodes =>
+        case cmd: TileIndexActor.GetNodes =>
           context.spawn(
-            GetNodesSession(sharding, getNodes, tileEntityFn),
+            GetNodesSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same

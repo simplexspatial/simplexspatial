@@ -46,6 +46,7 @@ case class TileIndex(
                       tagsDic: Map[Int, String] = Map.empty
 ) {
 
+  // Generate a tuple a map with all tagsIds and another with the value indexed by tagId.
   private def attributesToDictionary(attributes: Map[String, String]): ( Map[Int, String], Map[Int, String]) =
     attributes.foldLeft( ( Map.empty[Int, String], Map.empty[Int, String] ) ) {
       case ( (dic, attrs), attr ) => {
@@ -73,11 +74,14 @@ case class TileIndex(
       current: Long,
       next: Option[Long]
   ) = {
-
     nodes.get(current) match {
-      case None =>
-        throw new NotImplementedError(
-          "Node not found in the Tile is still not implemented."
+      case None => // If it is not in the index, it is because it is a connector.
+        TileIndex.Node( // TODO: Calculate directions. Now, all bidirectional.
+          current,
+          Location.NIL,
+          ways = Set(wayId),
+          outs = (Set.empty ++ next) ++ prev,
+          ins = (Set.empty ++ next) ++ prev
         )
       case Some(node) =>
         node.copy( // TODO: Calculate directions. Now, all bidirectional.
@@ -88,7 +92,6 @@ case class TileIndex(
     }
   }
 
-  // Manage generated list in private scope as List because performance is not bad!
   @tailrec
   private def updateConnections(
       wayId: Long,

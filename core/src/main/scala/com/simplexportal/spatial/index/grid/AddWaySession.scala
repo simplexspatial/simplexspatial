@@ -45,14 +45,30 @@ object AddWaySession {
           s"getting_node_${UUID.randomString}"
         )
 
+        var pendingWaySplits = 0
+
         Behaviors.receiveMessage {
           case TileIndexActor.GetNodesResponse(nodes) =>
             validateNodes(nodes) match {
               case Success(nodes) =>
-//                addConnectors(splitInShards(nodes, tileIndexEntityIdGen))
-                ???
+                splitNodesInShards(nodes, tileIndexEntityIdGen)
+                  .foreach{ case (shardId, nodes) =>
+                    pendingWaySplits += 1
+                    sharding.entityRefFor(Grid.TileTypeKey, shardId) ! addWay.copy(nodeIds = nodes.map(_.id), replyTo = Some(context.self))
+                  }
+                Behaviors.same
               case Failure(exception) =>
-                ??? // FIXME Must return NACK or NotDone
+                // FIXME Must return NACK or NotDone
+                exception.printStackTrace()
+                ???
+            }
+          case _ : TileIndexActor.Done =>
+            pendingWaySplits -= 1
+            if(pendingWaySplits == 0) {
+              addWay.replyTo.foreach( _ ! TileIndexActor.Done())
+              Behaviors.stopped
+            } else {
+              Behaviors.same
             }
           case _ =>
             Behaviors.unhandled
@@ -62,7 +78,8 @@ object AddWaySession {
 
   /**
     * Validate all nodes in the response, and return a validated sequence of nodes.
-    *
+    * Currently, the only validation is check that all nodes are in the database.
+   *
     * @param responses The response with possible don't know nodes.
     * @return Return the right sequence of nodes or error.
     */
@@ -74,6 +91,7 @@ object AddWaySession {
     }
   }
 
+  // TODO: The connector node should be a special class with only the id ???
   /**
    * From a list of nodes, create a list of shards, where every element contains the shard Id and the list of nodes in
    * there.
@@ -86,7 +104,7 @@ object AddWaySession {
    * @param entityIdGen
    * @return
    */
-  def splitInShards(
+  def splitNodesInShards(
       nodes: Seq[TileIndex.Node],
       entityIdGen: TileIndexEntityIdGen
   ): Seq[(String, Seq[TileIndex.Node])] = {
@@ -104,10 +122,11 @@ object AddWaySession {
         case Nil => acc :+ currentShard
         case node :: tail =>
           val entityId = entityIdFrom(node.location)
+          val updated_shard = (currentShard._1, currentShard._2 :+ node)
           if (entityId == currentShard._1) {
-            rec(tail, acc, (currentShard._1, currentShard._2 :+ node))
+            rec(tail, acc, updated_shard)
           } else {
-            rec(tail, acc :+ currentShard, (entityId, Seq(node)))
+            rec(tail, acc :+ updated_shard, (entityId, currentShard._2.last +: Seq(node)))
           }
       }
     }
@@ -117,35 +136,6 @@ object AddWaySession {
       Seq.empty,
       (entityIdFrom(nodes.head.location), Seq(nodes.head))
     )
-  }
-
-  // TODO: The connector node should be a special class with only the id.
-  /**
-   * Add node connectors to every split.
-   *
-   * @param in
-   * @tparam T
-   * @return
-   */
-  def addConnectors[T](in: Seq[Seq[T]]): Seq[Seq[T]] = {
-
-    @tailrec
-    def connectNext(in: Seq[Seq[T]], a: Seq[T], b: Seq[T], acc: Seq[Seq[T]]): Seq[Seq[T]] = {
-      val new_acc = acc :+ (a :+ b.head)
-      val next_a = a.last +: b
-
-      in match {
-        case Nil  => new_acc :+ next_a
-        case next_b :: tail => connectNext(tail, next_a, next_b, new_acc)
-      }
-    }
-
-    in match {
-      case Nil => Nil
-      case a :: Nil => in
-      case a :: b :: tail => connectNext(tail, a, b, Seq.empty)
-    }
-
   }
 
 }
