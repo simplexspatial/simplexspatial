@@ -49,7 +49,7 @@ object AddWaySession {
           case TileIndexActor.GetNodesResponse(nodes) =>
             validateNodes(nodes) match {
               case Success(nodes) =>
-                splitInShards(nodes, tileIndexEntityIdGen)
+//                addConnectors(splitInShards(nodes, tileIndexEntityIdGen))
                 ???
               case Failure(exception) =>
                 ??? // FIXME Must return NACK or NotDone
@@ -117,6 +117,35 @@ object AddWaySession {
       Seq.empty,
       (entityIdFrom(nodes.head.location), Seq(nodes.head))
     )
+  }
+
+  // TODO: The connector node should be a special class with only the id.
+  /**
+   * Add node connectors to every split.
+   *
+   * @param in
+   * @tparam T
+   * @return
+   */
+  def addConnectors[T](in: Seq[Seq[T]]): Seq[Seq[T]] = {
+
+    @tailrec
+    def connectNext(in: Seq[Seq[T]], a: Seq[T], b: Seq[T], acc: Seq[Seq[T]]): Seq[Seq[T]] = {
+      val new_acc = acc :+ (a :+ b.head)
+      val next_a = a.last +: b
+
+      in match {
+        case Nil  => new_acc :+ next_a
+        case next_b :: tail => connectNext(tail, next_a, next_b, new_acc)
+      }
+    }
+
+    in match {
+      case Nil => Nil
+      case a :: Nil => in
+      case a :: b :: tail => connectNext(tail, a, b, Seq.empty)
+    }
+
   }
 
 }

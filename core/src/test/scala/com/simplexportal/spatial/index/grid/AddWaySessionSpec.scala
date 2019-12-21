@@ -30,6 +30,43 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
 
   "AddWaySessionSpec" when {
 
+    "add connector nodes" when {
+
+      "there are only one shard" in {
+        val in = Seq( Seq("A", "B", "C"))
+        val out = Seq( Seq("A", "B", "C"))
+        AddWaySession.addConnectors(in) shouldBe out
+      }
+
+      "there are only two shards" in {
+        val in = Seq(
+          Seq("A", "B", "C"),
+          Seq("D", "E")
+        )
+        val out = Seq(
+          Seq("A", "B", "C", "D"),
+          Seq("C", "D", "E"),
+        )
+        AddWaySession.addConnectors(in) shouldBe out
+      }
+
+      "there are more than two shard" in {
+        val in = Seq(
+          Seq("A", "B", "C"),
+          Seq("D", "E"),
+          Seq("F"),
+          Seq("G", "H")
+        )
+        val out = Seq(
+          Seq("A", "B", "C", "D"),
+          Seq("C", "D", "E", "F"),
+          Seq("E", "F", "G"),
+          Seq("F", "G", "H")
+        )
+        AddWaySession.addConnectors(in) shouldBe out
+      }
+    }
+
     "split list of nodes in shards" should {
 
       "retrieve splits in order 2x2" in {
@@ -59,29 +96,16 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
       }
 
 
-      "retrieve splits in order" in {
-/*
-        val nodes = Seq(
-          node(1, 30, -150), node(2, 50, -100), node(3, 30, -30),
-          node(4, 50, 30),
-          node(5, -30, 30), node(6, -30, 100),
-          node(7, 30, 100), node(8, 30, 150)
+      "retrieve splits in order 4x4" in {
+        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
+          ("1_0", Seq(node(1, 30, -150), node(2, 50, -100))),
+          ("1_1", Seq(node(3, 30, -30))),
+          ("1_2", Seq(node(4, 50, 30))),
+          ("0_2", Seq(node(5, -30, 30))),
+          ("0_3", Seq(node(6, -30, 100))),
+          ("1_3", Seq(node(7, 30, 100), node(8, 30, 150)))
         )
 
-        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
-          ("1_0", Seq( node(1, 30, -150), node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          ("1_1", Seq( node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          ("0_1", Seq( node(4, 50, 30), node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          ("1_1", Seq( node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
-        )
-*/
-
-        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
-          ("1_0", Seq( node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
-          ("1_1", Seq( node(4, 50, 30))),
-          ("0_1", Seq( node(5, -30, 30), node(6, -30, 100))),
-          ("1_1", Seq( node(7, 30, 100), node(8, 30, 150)))
-        )
         val tileEntityFn = new TileIndexEntityIdGen(2, 4)
         val nodes = expectedShardedNodes.flatMap(_._2)
         AddWaySession.splitInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
