@@ -31,7 +31,7 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 
 // scalastyle:off magic.number
-object NodeLookUpClusterSpecConfig extends MultiNodeConfig {
+object LookUpClusterSpecConfig extends MultiNodeConfig {
 
   val node0 = role("node0")
   val node1 = role("node1")
@@ -62,8 +62,8 @@ object NodeLookUpClusterSpecConfig extends MultiNodeConfig {
 
 }
 
-abstract class NodeLookUpClusterSpec
-  extends MultiNodeSpec(NodeLookUpClusterSpecConfig)
+abstract class LookUpClusterSpec
+  extends MultiNodeSpec(LookUpClusterSpecConfig)
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
@@ -71,7 +71,7 @@ abstract class NodeLookUpClusterSpec
 
   implicit val typedSystem = system.toTyped
 
-  import NodeLookUpClusterSpecConfig._
+  import LookUpClusterSpecConfig._
 
   override def beforeAll(): Unit = multiNodeSpecBeforeAll()
 
@@ -101,10 +101,10 @@ abstract class NodeLookUpClusterSpec
     "be able to add a entities in the a local lookup shard" in within(10.seconds)  {
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
-        val localNodeLookUpActor = system.spawn(NodeLookUpActor("NodeLookUpActorIndex", "FIXED_LOOKUP_TEST_NODE0"), "NodeLookUpActorNode0")
-        localNodeLookUpActor ! NodeLookUpActor.Put(0, NodeEntityId(0,0), Some(probe.ref))
-        localNodeLookUpActor ! NodeLookUpActor.Put(1, NodeEntityId(0,0), Some(probe.ref))
-        localNodeLookUpActor ! NodeLookUpActor.Put(2, NodeEntityId(0,0), Some(probe.ref))
+        val localLookUpActor = system.spawn(LookUpActor("LookUpActorIndex", "FIXED_LOOKUP_TEST_NODE0"), "LookUpActorNode0")
+        localLookUpActor ! LookUpActor.Put(0, NodeEntityId(0,0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(1, NodeEntityId(0,0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(2, NodeEntityId(0,0), Some(probe.ref))
 
         probe.receiveMessages(3)
       }
@@ -114,11 +114,11 @@ abstract class NodeLookUpClusterSpec
     "be able to add entities in the a remote lookup node" in within(10.seconds)  {
       runOn(node1) {
         val probe = TestProbe[AnyRef]()
-        val remoteNodeLookUpActor = system.actorSelection(node(node0) / "user" / "NodeLookUpActorNode0")
+        val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")
 
-        remoteNodeLookUpActor ! NodeLookUpActor.Put(10, NodeEntityId(10, 10), Some(probe.ref))
-        remoteNodeLookUpActor ! NodeLookUpActor.Put(11, NodeEntityId(11, 11), Some(probe.ref))
-        remoteNodeLookUpActor ! NodeLookUpActor.Put(12, NodeEntityId(12, 12), Some(probe.ref))
+        remoteLookUpActor ! LookUpActor.Put(10, NodeEntityId(10, 10), Some(probe.ref))
+        remoteLookUpActor ! LookUpActor.Put(11, NodeEntityId(11, 11), Some(probe.ref))
+        remoteLookUpActor ! LookUpActor.Put(12, NodeEntityId(12, 12), Some(probe.ref))
 
         probe.receiveMessages(3)
       }
@@ -129,10 +129,10 @@ abstract class NodeLookUpClusterSpec
     "lookup inserted nodes from the remote actor" in {
       runOn(node2) {
         val probe = TestProbe[AnyRef]()
-        val remoteNodeLookUpActor = system.actorSelection(node(node0) / "user" / "NodeLookUpActorNode0")
-        remoteNodeLookUpActor ! NodeLookUpActor.Get(10, probe.ref)
+        val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")
+        remoteLookUpActor ! LookUpActor.Get(10, probe.ref)
 
-        probe.expectMessage(NodeLookUpActor.GetResponse(10, Some(NodeEntityId(10,10))))
+        probe.expectMessage(LookUpActor.GetResponse(10, Some(NodeEntityId(10,10))))
 
       }
       enterBarrier("lookup from node2")
@@ -141,6 +141,6 @@ abstract class NodeLookUpClusterSpec
   }
 }
 
-class NodeLookUpClusterSpecMultiJvmNode0 extends NodeLookUpClusterSpec
-class NodeLookUpClusterSpecMultiJvmNode1 extends NodeLookUpClusterSpec
-class NodeLookUpClusterSpecMultiJvmNode2 extends NodeLookUpClusterSpec
+class NodeLookUpClusterSpecMultiJvm0 extends LookUpClusterSpec
+class NodeLookUpClusterSpecMultiJvm1 extends LookUpClusterSpec
+class NodeLookUpClusterSpecMultiJvm2 extends LookUpClusterSpec
