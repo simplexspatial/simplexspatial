@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
@@ -23,7 +23,7 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.NodeLookUpActor.NodeEntityId
+import com.simplexportal.spatial.index.grid.TileIdx
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -102,9 +102,9 @@ abstract class LookUpClusterSpec
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
         val localLookUpActor = system.spawn(LookUpActor("LookUpActorIndex", "FIXED_LOOKUP_TEST_NODE0"), "LookUpActorNode0")
-        localLookUpActor ! LookUpActor.Put(0, NodeEntityId(0,0), Some(probe.ref))
-        localLookUpActor ! LookUpActor.Put(1, NodeEntityId(0,0), Some(probe.ref))
-        localLookUpActor ! LookUpActor.Put(2, NodeEntityId(0,0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(0, TileIdx(0,0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(1, TileIdx(0,0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(2, TileIdx(0,0), Some(probe.ref))
 
         probe.receiveMessages(3)
       }
@@ -116,9 +116,9 @@ abstract class LookUpClusterSpec
         val probe = TestProbe[AnyRef]()
         val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")
 
-        remoteLookUpActor ! LookUpActor.Put(10, NodeEntityId(10, 10), Some(probe.ref))
-        remoteLookUpActor ! LookUpActor.Put(11, NodeEntityId(11, 11), Some(probe.ref))
-        remoteLookUpActor ! LookUpActor.Put(12, NodeEntityId(12, 12), Some(probe.ref))
+        remoteLookUpActor ! LookUpActor.Put(10, TileIdx(10, 10), Some(probe.ref))
+        remoteLookUpActor ! LookUpActor.Put(11, TileIdx(11, 11), Some(probe.ref))
+        remoteLookUpActor ! LookUpActor.Put(12, TileIdx(12, 12), Some(probe.ref))
 
         probe.receiveMessages(3)
       }
@@ -132,7 +132,7 @@ abstract class LookUpClusterSpec
         val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")
         remoteLookUpActor ! LookUpActor.Get(10, probe.ref)
 
-        probe.expectMessage(LookUpActor.GetResponse(10, Some(NodeEntityId(10,10))))
+        probe.expectMessage(LookUpActor.GetResponse(10, Some(TileIdx(10,10))))
 
       }
       enterBarrier("lookup from node2")

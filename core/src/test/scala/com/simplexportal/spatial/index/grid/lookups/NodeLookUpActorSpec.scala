@@ -16,10 +16,11 @@
  */
 
 // scalastyle:off magic.number
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import com.simplexportal.spatial.index.grid.NodeLookUpActor._
+import com.simplexportal.spatial.index.grid.TileIdx
+import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor._
 import org.scalatest.{Matchers, WordSpecLike}
 
 class NodeLookUpActorSpec
@@ -35,14 +36,14 @@ class NodeLookUpActorSpec
         "add-lookup-test"
       )
 
-      lookup ! Put(10, NodeEntityId(10, 10), Some(probeResponse.ref))
+      lookup ! Put(10, TileIdx(10, 10), Some(probeResponse.ref))
       probeResponse.expectMessage(Done())
 
-      lookup ! Put(11, NodeEntityId(11, 11), Some(probeResponse.ref))
+      lookup ! Put(11, TileIdx(11, 11), Some(probeResponse.ref))
       probeResponse.expectMessage(Done())
 
       lookup ! Get(10, probeResponse.ref)
-      probeResponse.expectMessage(GetResponse(10, Some(NodeEntityId(10, 10))))
+      probeResponse.expectMessage(GetResponse(10, Some(TileIdx(10, 10))))
 
       lookup ! Get(1000, probeResponse.ref)
       probeResponse.expectMessage(GetResponse(1000, None))
@@ -50,8 +51,8 @@ class NodeLookUpActorSpec
       lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
       probeResponse.expectMessage(GetsResponse(
         Seq(
-          GetResponse(10, Some(NodeEntityId(10,10))),
-          GetResponse(11, Some(NodeEntityId(11,11))),
+          GetResponse(10, Some(TileIdx(10,10))),
+          GetResponse(11, Some(TileIdx(11,11))),
           GetResponse(1000, None)
         )
       ))

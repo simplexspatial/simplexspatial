@@ -21,6 +21,8 @@ import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
+import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.model.Location
 import io.jvm.uuid.UUID
 
@@ -28,6 +30,8 @@ import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 object AddWaySession {
+
+  // scalastyle:off method.length
   def apply(
       sharding: ClusterSharding,
       addWay: TileIndexActor.AddWay,
@@ -35,6 +39,9 @@ object AddWaySession {
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>
+
+        var pendingResponses = 0
+
         // Translate nodes ids into nodes.
         context.spawn(
           GetNodesSession(
@@ -45,26 +52,31 @@ object AddWaySession {
           s"getting_node_${UUID.randomString}"
         )
 
-        var pendingWaySplits = 0
-
         Behaviors.receiveMessage {
           case TileIndexActor.GetNodesResponse(nodes) =>
             validateNodes(nodes) match {
               case Success(nodes) =>
                 splitNodesInShards(nodes, tileIndexEntityIdGen)
-                  .foreach{ case (shardId, nodes) =>
-                    pendingWaySplits += 1
-                    sharding.entityRefFor(Grid.TileTypeKey, shardId) ! addWay.copy(nodeIds = nodes.map(_.id), replyTo = Some(context.self))
+                  .foreach{ case (tileIdx, nodes) =>
+
+                    // Register the node in the the tile index.
+                    pendingResponses += 1
+                    sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay.copy(nodeIds = nodes.map(_.id), replyTo = Some(context.self))
+
+                    // Register in the ways lookup.
+                    pendingResponses += 1
+                    val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
+                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpActor.Put(addWay.id, tileIdx, Some(context.self))
                   }
                 Behaviors.same
               case Failure(exception) =>
-                // FIXME Must return NACK or NotDone
+                // FIXME: Must return NACK or NotDone
                 exception.printStackTrace()
                 ???
             }
-          case _ : TileIndexActor.Done =>
-            pendingWaySplits -= 1
-            if(pendingWaySplits == 0) {
+          case TileIndexActor.Done() | WayLookUpActor.Done() =>
+            pendingResponses -= 1
+            if(pendingResponses == 0) {
               addWay.replyTo.foreach( _ ! TileIndexActor.Done())
               Behaviors.stopped
             } else {
@@ -107,17 +119,17 @@ object AddWaySession {
   def splitNodesInShards(
       nodes: Seq[TileIndex.Node],
       entityIdGen: TileIndexEntityIdGen
-  ): Seq[(String, Seq[TileIndex.Node])] = {
+  ): Seq[(TileIdx, Seq[TileIndex.Node])] = {
 
     def entityIdFrom =
-      (loc: Location) => entityIdGen.info(loc.lat, loc.lon).entityId
+      (loc: Location) => entityIdGen.tileIdx(loc.lat, loc.lon)
 
     @tailrec
     def rec(
-        nodes: Seq[TileIndex.Node],
-        acc: Seq[(String, Seq[TileIndex.Node])],
-        currentShard: (String, Seq[TileIndex.Node])
-    ): Seq[(String, Seq[TileIndex.Node])] = {
+             nodes: Seq[TileIndex.Node],
+             acc: Seq[(TileIdx, Seq[TileIndex.Node])],
+             currentShard: (TileIdx, Seq[TileIndex.Node])
+    ): Seq[(TileIdx, Seq[TileIndex.Node])] = {
       nodes match {
         case Nil => acc :+ currentShard
         case node :: tail =>

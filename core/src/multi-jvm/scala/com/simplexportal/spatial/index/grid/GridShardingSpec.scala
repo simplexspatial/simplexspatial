@@ -82,7 +82,7 @@ abstract class GridShardingSpec
   "The tile index" must {
     println(s"Running System [${system.name}]")
 
-    val gridIndex = system.spawn(Grid("GridIndexTest", 10000, 10000, 10000), "GridIndex")
+    val gridIndex = system.spawn(Grid("GridIndexTest", 10000, 10000, 10000, 10000), "GridIndex")
 
     "wait until all nodes are ready" in within(10.seconds) {
 

@@ -58,6 +58,7 @@ object Main extends App {
   val gridIndex = system.spawn(
     Grid(
       "GridIndex",
+      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.ways-lookup"),
       config.getInt("simplexportal.spatial.indexes.grid-index.partitions.nodes-lookup"),
       config.getInt("simplexportal.spatial.indexes.grid-index.partitions.latitude"),
       config.getInt("simplexportal.spatial.indexes.grid-index.partitions.longitude")

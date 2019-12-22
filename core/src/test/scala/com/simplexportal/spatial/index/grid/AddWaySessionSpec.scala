@@ -39,11 +39,11 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
           node(5, -30, 30), node(6, -30, 100),
           node(7, 30, 100), node(8, 30, 150)
         )
-        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
-          ("1_0", Seq( node(1, 30, -150), node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          ("1_1", Seq( node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          ("0_1", Seq( node(4, 50, 30), node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          ("1_1", Seq( node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+          (TileIdx(1,0), Seq( node(1, 30, -150), node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
+          (TileIdx(1,1), Seq( node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
+          (TileIdx(0,1), Seq( node(4, 50, 30), node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
+          (TileIdx(1,1), Seq( node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
         )
         val tileEntityFn = new TileIndexEntityIdGen(2, 2)
         AddWaySession.splitNodesInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
@@ -58,13 +58,13 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
           node(6, -30, 100),
           node(7, 30, 100), node(8, 30, 150)
         )
-        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
-          ("1_0", Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
-          ("1_1", Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          ("1_2", Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          ("0_2", Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
-          ("0_3", Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          ("1_3", Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+          (TileIdx(1,0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
+          (TileIdx(1,1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
+          (TileIdx(1,2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
+          (TileIdx(0,2), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
+          (TileIdx(0,3), Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
+          (TileIdx(1,3), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
         )
         val tileEntityFn = new TileIndexEntityIdGen(2, 4)
         AddWaySession.splitNodesInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
@@ -80,13 +80,13 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
           node(6, -30, 100),
           node(7, 30, 100), node(8, 30, 150)
         )
-        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
-          ("1_0", Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
-          ("1_1", Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          ("1_2", Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          ("0_2", Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
-          ("0_3", Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          ("1_3", Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+          (TileIdx(1,0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
+          (TileIdx(1,1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
+          (TileIdx(1,2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
+          (TileIdx(0,2), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
+          (TileIdx(0,3), Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
+          (TileIdx(1,3), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
         )
 
         val tileEntityFn = new TileIndexEntityIdGen(2, 4)
@@ -101,8 +101,8 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
             node(4, 31, -31),
             node(5, 32, -32)
         )
-        val expectedShardedNodes: Seq[(String, Seq[TileIndex.Node])] = Seq(
-          ("1_0", Seq(
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+          (TileIdx(1,0), Seq(
             node(1, 30, -150),
             node(2, 50, -100),
             node(3, 30, -30),

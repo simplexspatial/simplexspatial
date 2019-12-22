@@ -15,14 +15,14 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 
-
+@deprecated
 object LookUpActor {
 
   sealed trait LookUpMessage

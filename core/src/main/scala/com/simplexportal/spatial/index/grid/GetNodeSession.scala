@@ -21,6 +21,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 
 /**
   * Get node in two steps:
@@ -42,10 +43,10 @@ object GetNodeSession {
         ) ! NodeLookUpActor.Get(getNode.id, context.self)
 
         Behaviors.receiveMessage {
-          case NodeLookUpActor.GetResponse(nodeId, Some(entityId)) =>
+          case NodeLookUpActor.GetResponse(nodeId, Some(tileIdx)) =>
             sharding.entityRefFor(
               TileTypeKey,
-              tileIndexEntityIdGen.id(entityId.latIdx, entityId.lonIdx)
+              tileIdx.entityId
             ) ! getNode
             Behaviors.stopped
           case NodeLookUpActor.GetResponse(nodeId, None) =>

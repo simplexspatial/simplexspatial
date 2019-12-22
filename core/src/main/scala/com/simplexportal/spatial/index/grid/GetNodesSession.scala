@@ -22,7 +22,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
-import com.simplexportal.spatial.index.grid.NodeLookUpActor.{GetResponse, NodeEntityId}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
+import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.{GetResponse}
 
 // FIXME: Fix style
 // scalastyle:off cyclomatic.complexity
@@ -59,7 +60,7 @@ object GetNodesSession {
         }
 
         // Map that will store nodes locations while arriving.
-        var nodeLocations: Seq[(Long, Option[NodeEntityId] )] = Seq.empty
+        var nodeLocations: Seq[(Long, Option[TileIdx] )] = Seq.empty
 
         var responsesCounter = 0
         var response = TileIndexActor.GetNodesResponse(Seq.empty)
@@ -73,11 +74,11 @@ object GetNodesSession {
                 .groupBy(_._2)
                 .map( e => e._1 -> e._2.map { case (id, _) => id })
                 .foreach {
-                  case(Some(entityId), ids) =>
+                  case(Some(tileIdx), ids) =>
                     responsesCounter += 1
                     sharding.entityRefFor(
                       TileTypeKey,
-                      tileIndexEntityIdGen.id(entityId.latIdx, entityId.lonIdx)
+                      tileIdx.entityId
                     ) ! TileIndexActor.GetNodes(ids, context.self)
                   case(None, ids) =>
                     response = TileIndexActor.GetNodesResponse(

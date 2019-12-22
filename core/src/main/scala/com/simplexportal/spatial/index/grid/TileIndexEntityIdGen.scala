@@ -17,7 +17,9 @@
 
 package com.simplexportal.spatial.index.grid
 
-// scalastyle:off magic.number
+case class TileIdx(latIdx: Int, lonIdx: Int) {
+  def entityId: String = s"${latIdx}_${lonIdx}"
+}
 
 /**
   * Shaping the cluster as a grid of latPartitions x lonPartitions.
@@ -52,16 +54,7 @@ class TileIndexEntityIdGen(
   def lonPartition(lon: Double): Int =
     ((lon + 180) * PRECISION_ROUNDING).toInt / ((360 * PRECISION_ROUNDING) / lonPartitions)
 
-  def id(latIdx: Int, lonIdx: Int): String =
-    s"${latIdx}_${lonIdx}"
-
-  def info(lat: Double, lon: Double): TileEntityInfo = {
-    val latIdx = latPartition(lat)
-    val lonIdx = lonPartition(lon)
-    TileEntityInfo(latIdx, lonIdx, id(latIdx, lonIdx))
-  }
+  def tileIdx(lat: Double, lon: Double): TileIdx = TileIdx(latPartition(lat), lonPartition(lon))
 
 }
-
-case class TileEntityInfo(latIdx: Int, lonIdx: Int, entityId: String)
 

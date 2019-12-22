@@ -22,6 +22,7 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import akka.util.Timeout
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor, WayLookUpActor}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -48,6 +49,7 @@ object Grid {
 
   val TileTypeKey = EntityTypeKey[TileIndexActor.Command]("TileEntity")
   val NodeLookUpTypeKey = EntityTypeKey[NodeLookUpActor.Command]("NodeLookUpEntity")
+  val WayLookUpTypeKey = EntityTypeKey[WayLookUpActor.Command]("WayLookUpEntity")
 
   def overwriteNumOfShards(numShards: Int, system: ActorSystem[_]) = ClusterShardingSettings.fromConfig(
     ConfigFactory.parseString(s"number-of-shards = ${numShards}").withFallback(
@@ -55,7 +57,7 @@ object Grid {
     )
   )
 
-  def initSharding(indexId: String, nodeLookUpShards: Int, tileIndexShards: Int, system: ActorSystem[_]): ClusterSharding = {
+  def initSharding(indexId: String, wayLookUpShards: Int, nodeLookUpShards: Int, tileIndexShards: Int, system: ActorSystem[_]): ClusterSharding = {
     val sharding = ClusterSharding(system)
 
     sharding.init(
@@ -72,16 +74,23 @@ object Grid {
       .withSettings (overwriteNumOfShards(nodeLookUpShards, system))
     )
 
+    sharding.init(
+      Entity(WayLookUpTypeKey) { entityContext =>
+        WayLookUpActor(indexId, entityContext.entityId)
+      }
+      .withSettings (overwriteNumOfShards(wayLookUpShards, system))
+    )
+
     sharding
   }
 
-  def apply(indexId: String, nodeLookUpPartitions: Int, latPartitions: Int, lonPartitions: Int): Behavior[TileIndexActor.Command] =
+  def apply(indexId: String, wayLookUpPartitions: Int, nodeLookUpPartitions: Int, latPartitions: Int, lonPartitions: Int): Behavior[TileIndexActor.Command] =
     Behaviors.setup { context =>
       logInfo(context, indexId, nodeLookUpPartitions, latPartitions, lonPartitions)
 
       val tileEntityFn = new TileIndexEntityIdGen(lonPartitions, latPartitions)
 
-      val sharding = initSharding(indexId, nodeLookUpPartitions, latPartitions * lonPartitions, context.system)
+      val sharding = initSharding(indexId, wayLookUpPartitions, nodeLookUpPartitions, latPartitions * lonPartitions, context.system)
 
       implicit val ctx = context
       implicit val timeout: Timeout = 6.seconds
@@ -91,7 +100,7 @@ object Grid {
 
         case cmd: TileIndexActor.AddNode =>
           context.spawn(
-            AddNodeSession(sharding, cmd, LookUpNodeEntityIdGen.entityId(cmd.id), tileEntityFn.info(cmd.lat, cmd.lon)),
+            AddNodeSession(sharding, cmd, LookUpNodeEntityIdGen.entityId(cmd.id), tileEntityFn.tileIdx(cmd.lat, cmd.lon)),
             s"adding_node_${UUID.randomString}"
           )
           Behaviors.same
@@ -123,7 +132,7 @@ object Grid {
           )
           Behaviors.same
 
-        case getWay: TileIndexActor.GetWay =>
+        case cmd: TileIndexActor.GetWay =>
           ???
 
         case TileIndexActor.GetMetrics(replyTo) =>

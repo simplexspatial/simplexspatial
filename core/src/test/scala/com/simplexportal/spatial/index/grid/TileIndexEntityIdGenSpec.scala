@@ -11,27 +11,27 @@ class TileIndexEntityIdGenSpec extends WordSpecLike with Matchers {
     "create the right hash" in {
       val coordsHashes = Table(
         ("lat_parts", "lon_parts", "lat", "lon", "Hash"),
-        (4, 4, -90, -180, TileEntityInfo(0,0, "0_0")),
-        (4, 4, -60, -120, TileEntityInfo(0,0, "0_0")),
-        (4, 4, -45, -90, TileEntityInfo(1,1, "1_1")),
-        (4, 4, -20, -30, TileEntityInfo(1,1, "1_1")),
-        (4, 4, 0, 0, TileEntityInfo(2,2, "2_2")),
-        (4, 4, 20, 30, TileEntityInfo(2,2, "2_2")),
-        (4, 4, 45, 90, TileEntityInfo(3,3, "3_3")),
-        (4, 4, 60, 120, TileEntityInfo(3,3, "3_3")),
-        (4, 4, 90, 180, TileEntityInfo(4,4, "4_4")),
+        (4, 4, -90, -180, TileIdx(0,0)),
+        (4, 4, -60, -120, TileIdx(0,0)),
+        (4, 4, -45, -90, TileIdx(1,1)),
+        (4, 4, -20, -30, TileIdx(1,1)),
+        (4, 4, 0, 0, TileIdx(2,2)),
+        (4, 4, 20, 30, TileIdx(2,2)),
+        (4, 4, 45, 90, TileIdx(3,3)),
+        (4, 4, 60, 120, TileIdx(3,3)),
+        (4, 4, 90, 180, TileIdx(4,4)),
 
-        (180, 4, 90, 180, TileEntityInfo(180, 4, "180_4")),
+        (180, 4, 90, 180, TileIdx(180, 4)),
 
-        (10000, 10000, -90, -180, TileEntityInfo(0,0, "0_0")),
-        (180, 90, 90, 180, TileEntityInfo(180,90, "180_90")),
-        (180, 360, 90, 180, TileEntityInfo(180,360, "180_360")),
-        (181, 361, 90, 180, TileEntityInfo(181,361, "181_361")),
-        (1000, 1000, 90, 180, TileEntityInfo(1000,1000, "1000_1000")),
-        (1000000, 1000000, 90, 180, TileEntityInfo(1000000,1000000, "1000000_1000000")),
+        (10000, 10000, -90, -180, TileIdx(0,0)),
+        (180, 90, 90, 180, TileIdx(180,90)),
+        (180, 360, 90, 180, TileIdx(180,360)),
+        (181, 361, 90, 180, TileIdx(181,361)),
+        (1000, 1000, 90, 180, TileIdx(1000,1000)),
+        (1000000, 1000000, 90, 180, TileIdx(1000000,1000000)),
       )
-      forAll (coordsHashes) { (latPartitions, lonPartitions, lat, lon, id) =>
-        new TileIndexEntityIdGen(latPartitions, lonPartitions).info(lat, lon) should be(id)
+      forAll (coordsHashes) { (latPartitions, lonPartitions, lat, lon, tileIdx) =>
+        new TileIndexEntityIdGen(latPartitions, lonPartitions).tileIdx(lat, lon) should be(tileIdx)
       }
     }
 

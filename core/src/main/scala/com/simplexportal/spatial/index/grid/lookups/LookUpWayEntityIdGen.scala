@@ -15,10 +15,8 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.lookups
 
-// scalastyle:off magic.number
-
-object LookUpNodeEntityIdGen {
+object LookUpWayEntityIdGen {
   def entityId(long: Long): String = long.toString
 }
