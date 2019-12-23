@@ -62,7 +62,7 @@ class LookUpActorSpec
 
     "Put and Get correctly with Nodes" in {
 
-      def node(id: Long) = TileIndex.Node(id, Location(id, id))
+      def node(id: Long) = TileIndex.InternalNode(id, Location(id, id))
 
       val probeResponse = testKit.createTestProbe[LookUpActor.Response]()
       val lookup = testKit.spawn(
@@ -83,7 +83,7 @@ class LookUpActorSpec
       probeResponse.expectMessage(GetResponse(1000, None))
 
       lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
-      probeResponse.expectMessage(GetsResponse[Int, TileIndex.Node](
+      probeResponse.expectMessage(GetsResponse[Int, TileIndex.InternalNode](
         Seq(
           GetResponse(10, Some(node(10))),
           GetResponse(11, Some(node(11))),

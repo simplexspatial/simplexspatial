@@ -32,13 +32,13 @@ class GetNodesSessionSpec extends WordSpecLike with Matchers {
       val ids = Seq[Long](0, 1, 2, 30, 4, 30, 5 )
       val expectedResponse = TileIndexActor.GetNodesResponse(
         Seq(
-          TileIndexActor.GetNodeResponse(0, Some(TileIndex.Node(0, Location(0,0)))),
+          TileIndexActor.GetNodeResponse(0, Some(TileIndex.InternalNode(0, Location(0,0)))),
           TileIndexActor.GetNodeResponse(1, None),
-          TileIndexActor.GetNodeResponse(2, Some(TileIndex.Node(2, Location(2,2)))),
-          TileIndexActor.GetNodeResponse(30, Some(TileIndex.Node(30, Location(30,30)))),
-          TileIndexActor.GetNodeResponse(4, Some(TileIndex.Node(4, Location(4,4)))),
-          TileIndexActor.GetNodeResponse(30, Some(TileIndex.Node(30, Location(30,30)))),
-          TileIndexActor.GetNodeResponse(5, Some(TileIndex.Node(5, Location(5,5)))),
+          TileIndexActor.GetNodeResponse(2, Some(TileIndex.InternalNode(2, Location(2,2)))),
+          TileIndexActor.GetNodeResponse(30, Some(TileIndex.InternalNode(30, Location(30,30)))),
+          TileIndexActor.GetNodeResponse(4, Some(TileIndex.InternalNode(4, Location(4,4)))),
+          TileIndexActor.GetNodeResponse(30, Some(TileIndex.InternalNode(30, Location(30,30)))),
+          TileIndexActor.GetNodeResponse(5, Some(TileIndex.InternalNode(5, Location(5,5)))),
         )
       )
 

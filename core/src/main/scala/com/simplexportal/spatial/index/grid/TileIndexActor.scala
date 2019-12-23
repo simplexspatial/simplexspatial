@@ -31,10 +31,11 @@ object TileIndexActor {
   // From here all possible replies to sent.
   sealed trait Reply extends Message
   case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class GetNodeResponse(id: Long, node: Option[TileIndex.Node]) extends Reply
+  case class GetNodeResponse(id: Long, node: Option[TileIndex.InternalNode])
+      extends Reply
   case class GetNodesResponse(nodes: Seq[GetNodeResponse]) extends Reply
-  case class GetWayResponse(node: Option[TileIndex.Way]) extends Reply
-  case class Done() extends Reply  // TODO: Should be able to response with Done or NotDone, or ACK and NACK
+  case class GetWayResponse(node: Option[TileIndex.InternalWay]) extends Reply
+  case class Done() extends Reply // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
   // From here all possible commands to accept.
   sealed trait Command extends Message
@@ -55,13 +56,19 @@ object TileIndexActor {
       replyTo: Option[ActorRef[TileIndexActor.Done]] = None
   ) extends BatchCommand
 
-  final case class AddBatch(cmds: Seq[BatchCommand], replyTo: Option[ActorRef[TileIndexActor.Done]] = None) extends Command
+  final case class AddBatch(
+      cmds: Seq[BatchCommand],
+      replyTo: Option[ActorRef[TileIndexActor.Done]] = None
+  ) extends Command
 
-  final case class GetNode(id: Long, replyTo: ActorRef[GetNodeResponse]) extends Command
+  final case class GetNode(id: Long, replyTo: ActorRef[GetNodeResponse])
+      extends Command
 
-  final case class GetNodes(ids: Seq[Long], replyTo: ActorRef[GetNodesResponse]) extends Command
+  final case class GetNodes(ids: Seq[Long], replyTo: ActorRef[GetNodesResponse])
+      extends Command
 
-  final case class GetWay(id: Long, replyTo: ActorRef[GetWayResponse]) extends Command
+  final case class GetWay(id: Long, replyTo: ActorRef[GetWayResponse])
+      extends Command
 
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
@@ -70,35 +77,23 @@ object TileIndexActor {
   sealed trait AtomicEvent extends Event
 
   final case class NodeAdded(
-                        id: Long,
-                        lat: Double,
-                        lon: Double,
-                        attributes: Map[String, String]
-                      ) extends AtomicEvent
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Map[String, String]
+  ) extends AtomicEvent
 
   final case class WayAdded(
-                       id: Long,
-                       nodeIds: Seq[Long],
-                       attributes: Map[String, String]
-                     ) extends AtomicEvent
+      id: Long,
+      nodeIds: Seq[Long],
+      attributes: Map[String, String]
+  ) extends AtomicEvent
 
   final case class BatchAdded(events: Seq[AtomicEvent]) extends Event
 
-
-
-
-
-
-
-
-
-
-
-
-
   def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
-      context.log.info("Starting grid tile [{}]", tileId )
+      context.log.info("Starting grid tile [{}]", tileId)
 
       EventSourcedBehavior[Command, Event, TileIndex](
         persistenceId = PersistenceId(s"Tile_${indexId}", tileId),
@@ -108,8 +103,10 @@ object TileIndexActor {
       )
     }
 
-
-  private def onCommand(tile: TileIndex, command: Command): Effect[Event, TileIndex] =
+  private def onCommand(
+      tile: TileIndex,
+      command: Command
+  ): Effect[Event, TileIndex] =
     command match {
       case GetMetrics(replyTo) =>
         replyTo ! Metrics(tile.ways.size, tile.nodes.size)
@@ -120,7 +117,9 @@ object TileIndexActor {
         Effect.none
 
       case GetNodes(ids, replyTo) =>
-        replyTo ! GetNodesResponse(ids.map(id => GetNodeResponse(id, tile.nodes.get(id))))
+        replyTo ! GetNodesResponse(
+          ids.map(id => GetNodeResponse(id, tile.nodes.get(id)))
+        )
         Effect.none
 
       case GetWay(id, replyTo) =>
@@ -128,35 +127,41 @@ object TileIndexActor {
         Effect.none
 
       case AddNode(id, lat, lon, attributes, replyTo) =>
-        Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _  =>
-          replyTo.foreach(_ ! TileIndexActor.Done() )
+        Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _ =>
+          replyTo.foreach(_ ! TileIndexActor.Done())
         }
 
       case AddWay(id, nodeIds, attributes, replyTo) =>
         Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
-          replyTo.foreach( _ ! TileIndexActor.Done() )
+          replyTo.foreach(_ ! TileIndexActor.Done())
         }
 
       case AddBatch(cmds, replyTo) =>
-        Effect.persist(BatchAdded(cmds.map {
-          case AddNode(id, lat, lon, attributes, _) => NodeAdded(id, lat, lon, attributes)
-          case AddWay(id, nodeIds, attributes, _) => WayAdded(id, nodeIds, attributes)
-        }(breakOut))).thenRun { _ =>
-          replyTo.foreach( _ ! TileIndexActor.Done() )
-        }
+        Effect
+          .persist(BatchAdded(cmds.map {
+            case AddNode(id, lat, lon, attributes, _) =>
+              NodeAdded(id, lat, lon, attributes)
+            case AddWay(id, nodeIds, attributes, _) =>
+              WayAdded(id, nodeIds, attributes)
+          }(breakOut)))
+          .thenRun { _ =>
+            replyTo.foreach(_ ! TileIndexActor.Done())
+          }
     }
-
 
   private def applyEvent(tile: TileIndex, event: Event): TileIndex =
     event match {
       case atomicEvent: AtomicEvent => applyAtomicEvent(tile, atomicEvent)
-      case BatchAdded(events) => events.foldLeft(tile)( (tile, event) => applyAtomicEvent(tile, event))
+      case BatchAdded(events) =>
+        events.foldLeft(tile)((tile, event) => applyAtomicEvent(tile, event))
     }
 
   private def applyAtomicEvent(tile: TileIndex, event: AtomicEvent): TileIndex =
     event match {
-      case NodeAdded(id, lat, lon, attributes) => tile.addNode(id, lat, lon, attributes)
-      case WayAdded(id, nodeIds, attributes) => tile.addWay(id, nodeIds, attributes)
+      case NodeAdded(id, lat, lon, attributes) =>
+        tile.addNode(id, lat, lon, attributes)
+      case WayAdded(id, nodeIds, attributes) =>
+        tile.addWay(id, nodeIds, attributes)
     }
 
 }

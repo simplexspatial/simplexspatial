@@ -26,21 +26,21 @@ import scala.util.Success
 // scalastyle:off magic.number
 class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
 
-  def node(id: Long, lat: Double, lon: Double): TileIndex.Node =
-    TileIndex.Node(id, Location(lat, lon))
+  def node(id: Long, lat: Double, lon: Double): TileIndex.InternalNode =
+    TileIndex.InternalNode(id, Location(lat, lon))
 
   "AddWaySessionSpec" when {
 
     "split list of nodes in shards" should {
 
       "retrieve splits in order 2x2" in {
-        val nodes: Seq[TileIndex.Node] = Seq(
+        val nodes: Seq[TileIndex.InternalNode] = Seq(
           node(1, 30, -150), node(2, 50, -100), node(3, 30, -30),
           node(4, 50, 30),
           node(5, -30, 30), node(6, -30, 100),
           node(7, 30, 100), node(8, 30, 150)
         )
-        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
           (TileIdx(1,0), Seq( node(1, 30, -150), node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
           (TileIdx(1,1), Seq( node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
           (TileIdx(0,1), Seq( node(4, 50, 30), node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
@@ -51,7 +51,7 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
       }
 
       "retrieve splits in order 2x4" in {
-        val nodes: Seq[TileIndex.Node] = Seq(
+        val nodes: Seq[TileIndex.InternalNode] = Seq(
           node(1, 30, -150), node(2, 50, -100),
           node(3, 30, -30),
           node(4, 50, 30),
@@ -59,7 +59,7 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
           node(6, -30, 100),
           node(7, 30, 100), node(8, 30, 150)
         )
-        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
           (TileIdx(1,0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
           (TileIdx(1,1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
           (TileIdx(1,2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
@@ -73,7 +73,7 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
 
 
       "retrieve splits in order 4x4" in {
-        val nodes: Seq[TileIndex.Node] = Seq(
+        val nodes: Seq[TileIndex.InternalNode] = Seq(
           node(1, 30, -150), node(2, 50, -100),
           node(3, 30, -30),
           node(4, 50, 30),
@@ -81,7 +81,7 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
           node(6, -30, 100),
           node(7, 30, 100), node(8, 30, 150)
         )
-        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
           (TileIdx(1,0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
           (TileIdx(1,1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
           (TileIdx(1,2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
@@ -95,14 +95,14 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
       }
 
       "retrieve splits in order even if all is in one shard" in {
-        val nodes: Seq[TileIndex.Node] = Seq(
+        val nodes: Seq[TileIndex.InternalNode] = Seq(
             node(1, 30, -150),
             node(2, 50, -100),
             node(3, 30, -30),
             node(4, 31, -31),
             node(5, 32, -32)
         )
-        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.Node])] = Seq(
+        val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
           (TileIdx(1,0), Seq(
             node(1, 30, -150),
             node(2, 50, -100),
@@ -124,20 +124,20 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
           Seq(
             TileIndexActor.GetNodeResponse(
               10,
-              Some(TileIndex.Node(10, Location(10, 10)))
+              Some(TileIndex.InternalNode(10, Location(10, 10)))
             ),
             TileIndexActor.GetNodeResponse(
               11,
-              Some(TileIndex.Node(11, Location(11, 11)))
+              Some(TileIndex.InternalNode(11, Location(11, 11)))
             ),
             TileIndexActor
-              .GetNodeResponse(12, Some(TileIndex.Node(12, Location(12, 12))))
+              .GetNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
           )
         ) shouldBe Success(
           Seq(
-            TileIndex.Node(10, Location(10, 10)),
-            TileIndex.Node(11, Location(11, 11)),
-            TileIndex.Node(12, Location(12, 12))
+            TileIndex.InternalNode(10, Location(10, 10)),
+            TileIndex.InternalNode(11, Location(11, 11)),
+            TileIndex.InternalNode(12, Location(12, 12))
           )
         )
       }
@@ -148,14 +148,14 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
             Seq(
               TileIndexActor.GetNodeResponse(
                 10,
-                Some(TileIndex.Node(10, Location(10, 10)))
+                Some(TileIndex.InternalNode(10, Location(10, 10)))
               ),
               TileIndexActor.GetNodeResponse(
                 11,
                 None
               ),
               TileIndexActor
-                .GetNodeResponse(12, Some(TileIndex.Node(12, Location(12, 12))))
+                .GetNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
             )
           )
           .failure

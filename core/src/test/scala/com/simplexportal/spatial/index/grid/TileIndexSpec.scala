@@ -30,16 +30,16 @@ class TileIndexSpec extends WordSpecLike with Matchers {
 
       val expected = TileIndex(
         nodes = Map(
-          1L -> TileIndex.Node(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
-          2L -> TileIndex.Node(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
-          3L -> TileIndex.Node(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
-          4L -> TileIndex.Node(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
-          5L -> TileIndex.Node(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
-          6L -> TileIndex.Node(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
+          1L -> TileIndex.InternalNode(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
+          2L -> TileIndex.InternalNode(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
+          3L -> TileIndex.InternalNode(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
+          4L -> TileIndex.InternalNode(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
+          5L -> TileIndex.InternalNode(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
+          6L -> TileIndex.InternalNode(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
         ),
         ways = Map(
-          100L -> TileIndex.Way(100, 5, Map(3373707 -> "Street Name")),
-          101L -> TileIndex.Way(101, 1)
+          100L -> TileIndex.InternalWay(100, 5, Map(3373707 -> "Street Name")),
+          101L -> TileIndex.InternalWay(101, 1)
         ),
         Map(206407764 -> "traffic_light", 3373707 -> "name")
       )

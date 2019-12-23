@@ -23,7 +23,7 @@ import scala.annotation.tailrec
 
 object TileIndex {
 
-  case class Node(
+  case class InternalNode(
       id: Long,
       location: Location,
       attributes: Map[Int, String] = Map.empty,
@@ -32,7 +32,7 @@ object TileIndex {
       ins: Set[Long] = Set.empty // TODO: Should be replaced by a set of Node object references??
   )
 
-  case class Way(
+  case class InternalWay(
       id: Long,
       startNode: Long,
       attributes: Map[Int, String] = Map.empty
@@ -41,17 +41,19 @@ object TileIndex {
 }
 
 case class TileIndex(
-                      nodes: Map[Long, TileIndex.Node] = Map.empty,
-                      ways: Map[Long, TileIndex.Way] = Map.empty,
-                      tagsDic: Map[Int, String] = Map.empty
+    nodes: Map[Long, TileIndex.InternalNode] = Map.empty,
+    ways: Map[Long, TileIndex.InternalWay] = Map.empty,
+    tagsDic: Map[Int, String] = Map.empty
 ) {
 
   // Generate a tuple a map with all tagsIds and another with the value indexed by tagId.
-  private def attributesToDictionary(attributes: Map[String, String]): ( Map[Int, String], Map[Int, String]) =
-    attributes.foldLeft( ( Map.empty[Int, String], Map.empty[Int, String] ) ) {
-      case ( (dic, attrs), attr ) => {
+  private def attributesToDictionary(
+      attributes: Map[String, String]
+  ): (Map[Int, String], Map[Int, String]) =
+    attributes.foldLeft((Map.empty[Int, String], Map.empty[Int, String])) {
+      case ((dic, attrs), attr) => {
         val hash = attr._1.hashCode
-        ( dic + (hash -> attr._1), attrs + (hash -> attr._2))
+        (dic + (hash -> attr._1), attrs + (hash -> attr._2))
       }
     }
 
@@ -63,7 +65,8 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      nodes = nodes + (id -> TileIndex.Node(id, Location(lat, lon), attrs)),
+      nodes = nodes + (id -> TileIndex
+        .InternalNode(id, Location(lat, lon), attrs)),
       tagsDic = tagsDic ++ dic
     )
   }
@@ -76,13 +79,14 @@ case class TileIndex(
   ) = {
     nodes.get(current) match {
       case None => // If it is not in the index, it is because it is a connector.
-        TileIndex.Node( // TODO: Calculate directions. Now, all bidirectional.
-          current,
-          Location.NIL,
-          ways = Set(wayId),
-          outs = (Set.empty ++ next) ++ prev,
-          ins = (Set.empty ++ next) ++ prev
-        )
+        TileIndex
+          .InternalNode( // TODO: Calculate directions. Now, all bidirectional.
+            current,
+            Location.NIL,
+            ways = Set(wayId),
+            outs = (Set.empty ++ next) ++ prev,
+            ins = (Set.empty ++ next) ++ prev
+          )
       case Some(node) =>
         node.copy( // TODO: Calculate directions. Now, all bidirectional.
           ways = node.ways + wayId,
@@ -98,8 +102,8 @@ case class TileIndex(
       prev: Option[Long],
       current: Long,
       nodeIds: Seq[Long],
-      updated: List[(Long, TileIndex.Node)]
-  ): List[(Long, TileIndex.Node)] = {
+      updated: List[(Long, TileIndex.InternalNode)]
+  ): List[(Long, TileIndex.InternalNode)] = {
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -122,7 +126,8 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> TileIndex.Way(wayId, nodeIds.head, attrs)),
+      ways = ways + (wayId -> TileIndex
+        .InternalWay(wayId, nodeIds.head, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,

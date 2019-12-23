@@ -122,9 +122,9 @@ abstract class GridShardingSpec
 
       probe.receiveMessages(4, 1.minutes).toSet shouldBe Set(
         TileIndexActor.GetNodeResponse(999, None),
-        TileIndexActor.GetNodeResponse(0, Some(TileIndex.Node(0, Location(-23, -90), Map.empty))),
-        TileIndexActor.GetNodeResponse(1, Some(TileIndex.Node(1, Location(60, 130), Map.empty))),
-        TileIndexActor.GetNodeResponse(2, Some(TileIndex.Node(2, Location(-23.3, -90), Map.empty)))
+        TileIndexActor.GetNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
+        TileIndexActor.GetNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
+        TileIndexActor.GetNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty)))
       )
 
       enterBarrier("nodes retrieved")
@@ -141,12 +141,12 @@ abstract class GridShardingSpec
 
         Seq(
           TileIndexActor.GetNodeResponse(999, None),
-          TileIndexActor.GetNodeResponse(0, Some(TileIndex.Node(0, Location(-23, -90), Map.empty))),
-          TileIndexActor.GetNodeResponse(1, Some(TileIndex.Node(1, Location(60, 130), Map.empty))),
-          TileIndexActor.GetNodeResponse(2, Some(TileIndex.Node(2, Location(-23.3, -90), Map.empty))),
-          TileIndexActor.GetNodeResponse(10, Some(TileIndex.Node(10, Location(1, 1), Map.empty))),
-          TileIndexActor.GetNodeResponse(11, Some(TileIndex.Node(11, Location(1.000001, 1.000001), Map.empty))),
-          TileIndexActor.GetNodeResponse(12, Some(TileIndex.Node(12, Location(1.000002, 1.000002), Map.empty)))
+          TileIndexActor.GetNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
+          TileIndexActor.GetNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
+          TileIndexActor.GetNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty))),
+          TileIndexActor.GetNodeResponse(10, Some(TileIndex.InternalNode(10, Location(1, 1), Map.empty))),
+          TileIndexActor.GetNodeResponse(11, Some(TileIndex.InternalNode(11, Location(1.000001, 1.000001), Map.empty))),
+          TileIndexActor.GetNodeResponse(12, Some(TileIndex.InternalNode(12, Location(1.000002, 1.000002), Map.empty)))
         ) shouldBe(probe.receiveMessage().nodes)
       }
 

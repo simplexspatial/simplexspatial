@@ -24,7 +24,10 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import io.jvm.uuid.UUID
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
 import com.simplexportal.spatial.index.grid._
-import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
+import com.simplexportal.spatial.index.grid.lookups.{
+  LookUpWayEntityIdGen,
+  WayLookUpActor
+}
 import com.simplexportal.spatial.model.Location
 
 import scala.annotation.tailrec
@@ -40,7 +43,6 @@ object AddWaySession {
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>
-
         var pendingResponses = 0
 
         // Translate nodes ids into nodes.
@@ -58,16 +60,21 @@ object AddWaySession {
             validateNodes(nodes) match {
               case Success(nodes) =>
                 splitNodesInShards(nodes, tileIndexEntityIdGen)
-                  .foreach{ case (tileIdx, nodes) =>
+                  .foreach {
+                    case (tileIdx, nodes) =>
+                      // Register the node in the the tile index.
+                      pendingResponses += 1
+                      sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay
+                        .copy(
+                          nodeIds = nodes.map(_.id),
+                          replyTo = Some(context.self)
+                        )
 
-                    // Register the node in the the tile index.
-                    pendingResponses += 1
-                    sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay.copy(nodeIds = nodes.map(_.id), replyTo = Some(context.self))
-
-                    // Register in the ways lookup.
-                    pendingResponses += 1
-                    val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
-                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpActor.Put(addWay.id, tileIdx, Some(context.self))
+                      // Register in the ways lookup.
+                      pendingResponses += 1
+                      val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
+                      sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpActor
+                        .Put(addWay.id, tileIdx, Some(context.self))
                   }
                 Behaviors.same
               case Failure(exception) =>
@@ -77,8 +84,8 @@ object AddWaySession {
             }
           case TileIndexActor.Done() | WayLookUpActor.Done() =>
             pendingResponses -= 1
-            if(pendingResponses == 0) {
-              addWay.replyTo.foreach( _ ! TileIndexActor.Done())
+            if (pendingResponses == 0) {
+              addWay.replyTo.foreach(_ ! TileIndexActor.Done())
               Behaviors.stopped
             } else {
               Behaviors.same
@@ -92,13 +99,13 @@ object AddWaySession {
   /**
     * Validate all nodes in the response, and return a validated sequence of nodes.
     * Currently, the only validation is check that all nodes are in the database.
-   *
+    *
     * @param responses The response with possible don't know nodes.
     * @return Return the right sequence of nodes or error.
     */
   def validateNodes(
       responses: Seq[TileIndexActor.GetNodeResponse]
-  ): Try[Seq[TileIndex.Node]] = Try {
+  ): Try[Seq[TileIndex.InternalNode]] = Try {
     responses.map { resp =>
       resp.node.getOrElse(throw new Exception(s"Node [${resp.id}] not found."))
     }
@@ -106,31 +113,31 @@ object AddWaySession {
 
   // TODO: The connector node should be a special class with only the id ???
   /**
-   * From a list of nodes, create a list of shards, where every element contains the shard Id and the list of nodes in
-   * there.
-   * Also, it add at the end and at the begining the "connector nodes", that are the connection with the next/previous
-   * node in the other shard.
-   *
-   * Let's suppose the one way is not going to have the same node as connector in the same shard.
-   *
-   * @param nodes
-   * @param entityIdGen
-   * @return
-   */
+    * From a list of nodes, create a list of shards, where every element contains the shard Id and the list of nodes in
+    * there.
+    * Also, it add at the end and at the begining the "connector nodes", that are the connection with the next/previous
+    * node in the other shard.
+    *
+    * Let's suppose the one way is not going to have the same node as connector in the same shard.
+    *
+    * @param nodes
+    * @param entityIdGen
+    * @return
+    */
   def splitNodesInShards(
-      nodes: Seq[TileIndex.Node],
+      nodes: Seq[TileIndex.InternalNode],
       entityIdGen: TileIndexEntityIdGen
-  ): Seq[(TileIdx, Seq[TileIndex.Node])] = {
+  ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] = {
 
     def entityIdFrom =
       (loc: Location) => entityIdGen.tileIdx(loc.lat, loc.lon)
 
     @tailrec
     def rec(
-             nodes: Seq[TileIndex.Node],
-             acc: Seq[(TileIdx, Seq[TileIndex.Node])],
-             currentShard: (TileIdx, Seq[TileIndex.Node])
-    ): Seq[(TileIdx, Seq[TileIndex.Node])] = {
+        nodes: Seq[TileIndex.InternalNode],
+        acc: Seq[(TileIdx, Seq[TileIndex.InternalNode])],
+        currentShard: (TileIdx, Seq[TileIndex.InternalNode])
+    ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] = {
       nodes match {
         case Nil => acc :+ currentShard
         case node :: tail =>
@@ -139,7 +146,11 @@ object AddWaySession {
           if (entityId == currentShard._1) {
             rec(tail, acc, updated_shard)
           } else {
-            rec(tail, acc :+ updated_shard, (entityId, currentShard._2.last +: Seq(node)))
+            rec(
+              tail,
+              acc :+ updated_shard,
+              (entityId, currentShard._2.last +: Seq(node))
+            )
           }
       }
     }
