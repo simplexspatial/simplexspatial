@@ -15,16 +15,17 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import io.jvm.uuid.UUID
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
+import com.simplexportal.spatial.index.grid._
 import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.model.Location
-import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}

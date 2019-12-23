@@ -23,6 +23,7 @@ import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import akka.util.Timeout
 import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor, WayLookUpActor}
+import com.simplexportal.spatial.index.grid.sessions.{AddNodeSession, AddWaySession, GetNodeSession, GetNodesSession}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._

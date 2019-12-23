@@ -15,8 +15,9 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.sessions
 
+import com.simplexportal.spatial.index.grid.{TileIdx, TileIndex, TileIndexActor, TileIndexEntityIdGen}
 import com.simplexportal.spatial.model.Location
 import org.scalatest.{Matchers, TryValues, WordSpecLike}
 

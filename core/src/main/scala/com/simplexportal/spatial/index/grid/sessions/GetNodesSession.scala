@@ -15,19 +15,16 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
+import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.GetResponse
 import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
-import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.{GetResponse}
-
-// FIXME: Fix style
-// scalastyle:off cyclomatic.complexity
-// scalastyle:off method.length
+import com.simplexportal.spatial.index.grid.{TileIdx, TileIndexActor, TileIndexEntityIdGen}
 
 /**
  * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.

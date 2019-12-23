@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
 import akka.actor.typed.Behavior
@@ -23,6 +23,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor
+import com.simplexportal.spatial.index.grid.{TileIdx, TileIndexActor}
 
 /**
  * AddNode per session actor that update all indices and stop.
