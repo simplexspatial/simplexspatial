@@ -59,7 +59,7 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
       tileActor ! TileIndexActor.GetWay(100, probeWay.ref)
       probeMetrics.expectMessage(TileIndexActor.Metrics(2, 6))
-      probeWay.expectMessage(TileIndexActor.GetWayResponse(Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      probeWay.expectMessage(TileIndexActor.GetWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
     }
 
     "create network using blocks" in {
@@ -72,8 +72,7 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
 
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
       tileActor ! TileIndexActor.GetWay(100, probeWay.ref)
-      probeMetrics.expectMessage(TileIndexActor.Metrics(2, 6))
-      probeWay.expectMessage(TileIndexActor.GetWayResponse(Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      probeWay.expectMessage(TileIndexActor.GetWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
 
     }
 

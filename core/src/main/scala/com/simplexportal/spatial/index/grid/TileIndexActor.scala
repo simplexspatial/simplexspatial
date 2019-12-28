@@ -34,7 +34,7 @@ object TileIndexActor {
   case class GetNodeResponse(id: Long, node: Option[TileIndex.InternalNode])
       extends Reply
   case class GetNodesResponse(nodes: Seq[GetNodeResponse]) extends Reply
-  case class GetWayResponse(node: Option[TileIndex.InternalWay]) extends Reply
+  case class GetWayResponse(id: Long, way: Option[TileIndex.InternalWay]) extends Reply
   case class Done() extends Reply // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
   // From here all possible commands to accept.
@@ -123,7 +123,7 @@ object TileIndexActor {
         Effect.none
 
       case GetWay(id, replyTo) =>
-        replyTo ! GetWayResponse(tile.ways.get(id))
+        replyTo ! GetWayResponse(id, tile.ways.get(id))
         Effect.none
 
       case AddNode(id, lat, lon, attributes, replyTo) =>
