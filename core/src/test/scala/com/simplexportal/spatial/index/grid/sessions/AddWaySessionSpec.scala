@@ -19,6 +19,7 @@ package com.simplexportal.spatial.index.grid.sessions
 
 import com.simplexportal.spatial.index.grid.{TileIdx, TileIndex, TileIndexActor, TileIndexEntityIdGen}
 import com.simplexportal.spatial.model.Location
+import TileIndexActor._
 import org.scalatest.{Matchers, TryValues, WordSpecLike}
 
 import scala.util.Success
@@ -122,16 +123,16 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
       "return a list of validated nodes, unpacked from Option" in {
         AddWaySession.validateNodes(
           Seq(
-            TileIndexActor.GetNodeResponse(
+            GetInternalNodeResponse(
               10,
               Some(TileIndex.InternalNode(10, Location(10, 10)))
             ),
-            TileIndexActor.GetNodeResponse(
+            GetInternalNodeResponse(
               11,
               Some(TileIndex.InternalNode(11, Location(11, 11)))
             ),
             TileIndexActor
-              .GetNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
+              .GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
           )
         ) shouldBe Success(
           Seq(
@@ -146,16 +147,16 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
         AddWaySession
           .validateNodes(
             Seq(
-              TileIndexActor.GetNodeResponse(
+              GetInternalNodeResponse(
                 10,
                 Some(TileIndex.InternalNode(10, Location(10, 10)))
               ),
-              TileIndexActor.GetNodeResponse(
+              GetInternalNodeResponse(
                 11,
                 None
               ),
               TileIndexActor
-                .GetNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
+                .GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
             )
           )
           .failure

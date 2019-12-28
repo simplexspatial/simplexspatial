@@ -30,19 +30,19 @@ class GetNodesSessionSpec extends WordSpecLike with Matchers {
 
     "order the response" in {
       val ids = Seq[Long](0, 1, 2, 30, 4, 30, 5 )
-      val expectedResponse = TileIndexActor.GetNodesResponse(
+      val expectedResponse = TileIndexActor.GetInternalNodesResponse(
         Seq(
-          TileIndexActor.GetNodeResponse(0, Some(TileIndex.InternalNode(0, Location(0,0)))),
-          TileIndexActor.GetNodeResponse(1, None),
-          TileIndexActor.GetNodeResponse(2, Some(TileIndex.InternalNode(2, Location(2,2)))),
-          TileIndexActor.GetNodeResponse(30, Some(TileIndex.InternalNode(30, Location(30,30)))),
-          TileIndexActor.GetNodeResponse(4, Some(TileIndex.InternalNode(4, Location(4,4)))),
-          TileIndexActor.GetNodeResponse(30, Some(TileIndex.InternalNode(30, Location(30,30)))),
-          TileIndexActor.GetNodeResponse(5, Some(TileIndex.InternalNode(5, Location(5,5)))),
+          TileIndexActor.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(0,0)))),
+          TileIndexActor.GetInternalNodeResponse(1, None),
+          TileIndexActor.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(2,2)))),
+          TileIndexActor.GetInternalNodeResponse(30, Some(TileIndex.InternalNode(30, Location(30,30)))),
+          TileIndexActor.GetInternalNodeResponse(4, Some(TileIndex.InternalNode(4, Location(4,4)))),
+          TileIndexActor.GetInternalNodeResponse(30, Some(TileIndex.InternalNode(30, Location(30,30)))),
+          TileIndexActor.GetInternalNodeResponse(5, Some(TileIndex.InternalNode(5, Location(5,5)))),
         )
       )
 
-      val unorderedResponse = TileIndexActor.GetNodesResponse(Random.shuffle(expectedResponse.nodes))
+      val unorderedResponse = TileIndexActor.GetInternalNodesResponse(Random.shuffle(expectedResponse.nodes))
 
       GetNodesSession.sortResponse(ids, unorderedResponse) shouldBe expectedResponse
     }

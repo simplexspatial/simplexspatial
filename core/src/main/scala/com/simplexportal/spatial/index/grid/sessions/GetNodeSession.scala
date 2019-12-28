@@ -20,9 +20,18 @@ package com.simplexportal.spatial.index.grid.sessions
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
-import com.simplexportal.spatial.index.grid.{TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.Grid.{
+  NodeLookUpTypeKey,
+  TileTypeKey
+}
+import com.simplexportal.spatial.index.grid.lookups.{
+  LookUpNodeEntityIdGen,
+  NodeLookUpActor
+}
+import com.simplexportal.spatial.index.grid.{
+  TileIndexActor,
+  TileIndexEntityIdGen
+}
 
 /**
   * Get node in two steps:
@@ -32,7 +41,7 @@ import com.simplexportal.spatial.index.grid.{TileIndexActor, TileIndexEntityIdGe
 object GetNodeSession {
   def apply(
       sharding: ClusterSharding,
-      getNode: TileIndexActor.GetNode,
+      getNode: TileIndexActor.GetInternalNode,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NodeLookUpActor.GetResponse] =
     Behaviors
@@ -51,7 +60,8 @@ object GetNodeSession {
             ) ! getNode
             Behaviors.stopped
           case NodeLookUpActor.GetResponse(nodeId, None) =>
-            getNode.replyTo ! TileIndexActor.GetNodeResponse(nodeId, None)
+            getNode.replyTo ! TileIndexActor.GetInternalNodeResponse(nodeId,
+                                                                     None)
             Behaviors.stopped
           case _ =>
             Behaviors.unhandled

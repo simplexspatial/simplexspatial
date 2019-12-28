@@ -119,21 +119,21 @@ object Grid {
           ???
 
 
-        case cmd: TileIndexActor.GetNode =>
+        case cmd: TileIndexActor.GetInternalNode =>
           context.spawn(
             GetNodeSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
-        case cmd: TileIndexActor.GetNodes =>
+        case cmd: TileIndexActor.GetInternalNodes =>
           context.spawn(
             GetNodesSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
-        case cmd: TileIndexActor.GetWay =>
+        case cmd: TileIndexActor.GetInternalWay =>
           ???
 
         case TileIndexActor.GetMetrics(replyTo) =>

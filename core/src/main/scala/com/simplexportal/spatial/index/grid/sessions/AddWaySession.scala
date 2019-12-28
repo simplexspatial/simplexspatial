@@ -28,6 +28,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpWayEntityIdGen,
   WayLookUpActor
 }
+import TileIndexActor._
 import com.simplexportal.spatial.model.Location
 
 import scala.annotation.tailrec
@@ -38,7 +39,7 @@ object AddWaySession {
   // scalastyle:off method.length
   def apply(
       sharding: ClusterSharding,
-      addWay: TileIndexActor.AddWay,
+      addWay: AddWay,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
     Behaviors
@@ -49,14 +50,14 @@ object AddWaySession {
         context.spawn(
           GetNodesSession(
             sharding,
-            TileIndexActor.GetNodes(addWay.nodeIds, context.self),
+            GetInternalNodes(addWay.nodeIds, context.self),
             tileIndexEntityIdGen
           ),
           s"getting_node_${UUID.randomString}"
         )
 
         Behaviors.receiveMessage {
-          case TileIndexActor.GetNodesResponse(nodes) =>
+          case GetInternalNodesResponse(nodes) =>
             validateNodes(nodes) match {
               case Success(nodes) =>
                 splitNodesInShards(nodes, tileIndexEntityIdGen)
@@ -82,10 +83,10 @@ object AddWaySession {
                 exception.printStackTrace()
                 ???
             }
-          case TileIndexActor.Done() | WayLookUpActor.Done() =>
+          case Done() | WayLookUpActor.Done() =>
             pendingResponses -= 1
             if (pendingResponses == 0) {
-              addWay.replyTo.foreach(_ ! TileIndexActor.Done())
+              addWay.replyTo.foreach(_ ! Done())
               Behaviors.stopped
             } else {
               Behaviors.same
@@ -104,7 +105,7 @@ object AddWaySession {
     * @return Return the right sequence of nodes or error.
     */
   def validateNodes(
-      responses: Seq[TileIndexActor.GetNodeResponse]
+      responses: Seq[GetInternalNodeResponse]
   ): Try[Seq[TileIndex.InternalNode]] = Try {
     responses.map { resp =>
       resp.node.getOrElse(throw new Exception(s"Node [${resp.id}] not found."))

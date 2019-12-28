@@ -21,73 +21,88 @@ import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
+import com.simplexportal.spatial.index.grid.Grid.{
+  NodeLookUpTypeKey,
+  TileTypeKey
+}
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.GetResponse
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
-import com.simplexportal.spatial.index.grid.{TileIdx, TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.lookups.{
+  LookUpNodeEntityIdGen,
+  NodeLookUpActor
+}
+import com.simplexportal.spatial.index.grid.{
+  TileIdx,
+  TileIndexActor,
+  TileIndexEntityIdGen
+}
 
 /**
- * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.
- * The order in the response is the same that the order in que request.
- */
+  * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.
+  * The order in the response is the same that the order in que request.
+  */
 object GetNodesSession {
 
+  // scalastyle:off cyclomatic.complexity
+  // scalastyle:off method.length
   def apply(
       sharding: ClusterSharding,
-      getNodes: TileIndexActor.GetNodes,
+      getNodes: TileIndexActor.GetInternalNodes,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
-
     Behaviors
       .setup[AnyRef] { context =>
-
-      // Request locations of every node in the tile index.
-      val uniqueNodes = getNodes.ids.distinct
+        // Request locations of every node in the tile index.
+        val uniqueNodes = getNodes.ids.distinct
 
         // Group by look-up entity id to get node locations.
-      uniqueNodes
-        .map(id => (id, LookUpNodeEntityIdGen.entityId(id)))
-        .groupBy(_._2)
-        .map( e => e._1 -> e._2.map(_._1))
-        .foreach { case (entityId, ids) =>
-            sharding.entityRefFor(
-              NodeLookUpTypeKey,
-              entityId
-            ) ! NodeLookUpActor.Gets(ids, context.self)
-        }
+        uniqueNodes
+          .map(id => (id, LookUpNodeEntityIdGen.entityId(id)))
+          .groupBy(_._2)
+          .map(e => e._1 -> e._2.map(_._1))
+          .foreach {
+            case (entityId, ids) =>
+              sharding.entityRefFor(
+                NodeLookUpTypeKey,
+                entityId
+              ) ! NodeLookUpActor.Gets(ids, context.self)
+          }
 
         // Map that will store nodes locations while arriving.
-        var nodeLocations: Seq[(Long, Option[TileIdx] )] = Seq.empty
+        var nodeLocations: Seq[(Long, Option[TileIdx])] = Seq.empty
 
         var responsesCounter = 0
-        var response = TileIndexActor.GetNodesResponse(Seq.empty)
+        var response = TileIndexActor.GetInternalNodesResponse(Seq.empty)
 
         Behaviors.receiveMessage {
           case NodeLookUpActor.GetsResponse(nodeEntities) =>
-            nodeLocations = nodeLocations ++ nodeEntities.map {case GetResponse(id, entityId) => (id, entityId)}
-            if(nodeLocations.size == uniqueNodes.size) {
+            nodeLocations = nodeLocations ++ nodeEntities.map {
+              case GetResponse(id, entityId) => (id, entityId)
+            }
+            if (nodeLocations.size == uniqueNodes.size) {
               // All nodes locations arrived, so group per tile entity id and get node value.
               nodeLocations
                 .groupBy(_._2)
-                .map( e => e._1 -> e._2.map { case (id, _) => id })
+                .map(e => e._1 -> e._2.map { case (id, _) => id })
                 .foreach {
-                  case(Some(tileIdx), ids) =>
+                  case (Some(tileIdx), ids) =>
                     responsesCounter += 1
                     sharding.entityRefFor(
                       TileTypeKey,
                       tileIdx.entityId
-                    ) ! TileIndexActor.GetNodes(ids, context.self)
-                  case(None, ids) =>
-                    response = TileIndexActor.GetNodesResponse(
-                      response.nodes ++ ids.map(TileIndexActor.GetNodeResponse(_, None))
+                    ) ! TileIndexActor.GetInternalNodes(ids, context.self)
+                  case (None, ids) =>
+                    response = TileIndexActor.GetInternalNodesResponse(
+                      response.nodes ++ ids.map(
+                        TileIndexActor.GetInternalNodeResponse(_, None))
                     )
                 }
             }
             Behaviors.same
-          case TileIndexActor.GetNodesResponse(nodes) =>
+          case TileIndexActor.GetInternalNodesResponse(nodes) =>
             responsesCounter -= 1
-            response = TileIndexActor.GetNodesResponse(response.nodes ++ nodes)
-            if(responsesCounter == 0) {
+            response =
+              TileIndexActor.GetInternalNodesResponse(response.nodes ++ nodes)
+            if (responsesCounter == 0) {
               getNodes.replyTo ! sortResponse(getNodes.ids, response)
               Behaviors.stopped
             } else {
@@ -96,13 +111,21 @@ object GetNodesSession {
           case _ =>
             Behaviors.unhandled
         }
-      }.narrow[NotUsed]
+      }
+      .narrow[NotUsed]
 
-  def sortResponse(request: Seq[Long], response: TileIndexActor.GetNodesResponse): TileIndexActor.GetNodesResponse = {
-    val nodesLookUp = response.nodes.map { node => node.id -> node.node }.toMap
-    TileIndexActor.GetNodesResponse(
+  def sortResponse(request: Seq[Long],
+                   response: TileIndexActor.GetInternalNodesResponse)
+    : TileIndexActor.GetInternalNodesResponse = {
+    val nodesLookUp = response.nodes.map { node =>
+      node.id -> node.node
+    }.toMap
+    TileIndexActor.GetInternalNodesResponse(
       request
-        .map { id => TileIndexActor.GetNodeResponse(id, nodesLookUp.getOrElse(id, None)) }
+        .map { id =>
+          TileIndexActor
+            .GetInternalNodeResponse(id, nodesLookUp.getOrElse(id, None))
+        }
     )
   }
 

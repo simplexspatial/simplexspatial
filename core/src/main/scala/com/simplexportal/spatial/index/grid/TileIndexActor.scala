@@ -31,10 +31,9 @@ object TileIndexActor {
   // From here all possible replies to sent.
   sealed trait Reply extends Message
   case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class GetNodeResponse(id: Long, node: Option[TileIndex.InternalNode])
-      extends Reply
-  case class GetNodesResponse(nodes: Seq[GetNodeResponse]) extends Reply
-  case class GetWayResponse(id: Long, way: Option[TileIndex.InternalWay]) extends Reply
+  case class GetInternalNodeResponse(id: Long, node: Option[TileIndex.InternalNode]) extends Reply
+  case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse]) extends Reply
+  case class GetInternalWayResponse(id: Long, way: Option[TileIndex.InternalWay]) extends Reply
   case class Done() extends Reply // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
   // From here all possible commands to accept.
@@ -61,13 +60,13 @@ object TileIndexActor {
       replyTo: Option[ActorRef[TileIndexActor.Done]] = None
   ) extends Command
 
-  final case class GetNode(id: Long, replyTo: ActorRef[GetNodeResponse])
+  final case class GetInternalNode(id: Long, replyTo: ActorRef[GetInternalNodeResponse])
       extends Command
 
-  final case class GetNodes(ids: Seq[Long], replyTo: ActorRef[GetNodesResponse])
+  final case class GetInternalNodes(ids: Seq[Long], replyTo: ActorRef[GetInternalNodesResponse])
       extends Command
 
-  final case class GetWay(id: Long, replyTo: ActorRef[GetWayResponse])
+  final case class GetInternalWay(id: Long, replyTo: ActorRef[GetInternalWayResponse])
       extends Command
 
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
@@ -112,18 +111,18 @@ object TileIndexActor {
         replyTo ! Metrics(tile.ways.size, tile.nodes.size)
         Effect.none
 
-      case GetNode(id, replyTo) =>
-        replyTo ! GetNodeResponse(id, tile.nodes.get(id))
+      case GetInternalNode(id, replyTo) =>
+        replyTo ! GetInternalNodeResponse(id, tile.nodes.get(id))
         Effect.none
 
-      case GetNodes(ids, replyTo) =>
-        replyTo ! GetNodesResponse(
-          ids.map(id => GetNodeResponse(id, tile.nodes.get(id)))
+      case GetInternalNodes(ids, replyTo) =>
+        replyTo ! GetInternalNodesResponse(
+          ids.map(id => GetInternalNodeResponse(id, tile.nodes.get(id)))
         )
         Effect.none
 
-      case GetWay(id, replyTo) =>
-        replyTo ! GetWayResponse(id, tile.ways.get(id))
+      case GetInternalWay(id, replyTo) =>
+        replyTo ! GetInternalWayResponse(id, tile.ways.get(id))
         Effect.none
 
       case AddNode(id, lat, lon, attributes, replyTo) =>

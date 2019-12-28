@@ -24,7 +24,7 @@ import com.simplexportal.spatial.index.grid
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
 
-class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
+class TileIndexActorSpec extends ScalaTestWithActorTestKit
     with WordSpecLike
     with Matchers
     with TileIndexActorDataset {
@@ -33,23 +33,23 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
 
     "add the nodes" in {
       val probeDone = testKit.createTestProbe[TileIndexActor.Done]()
-      val probeNode = testKit.createTestProbe[TileIndexActor.GetNodeResponse]()
+      val probeNode = testKit.createTestProbe[TileIndexActor.GetInternalNodeResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
       val tileActor = testKit.spawn(grid.TileIndexActor("add-nodes-test", "add-nodes-test"), "add-nodes-test")
       tileActor ! TileIndexActor.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
 
-      tileActor ! TileIndexActor.GetNode(10, probeNode.ref)
+      tileActor ! TileIndexActor.GetInternalNode(10, probeNode.ref)
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
 
       probeNode.expectMessage(
-        TileIndexActor.GetNodeResponse(10, Some(TileIndex.InternalNode(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
+        TileIndexActor.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
       )
       probeMetrics.expectMessage(TileIndexActor.Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
-      val probeWay = testKit.createTestProbe[TileIndexActor.GetWayResponse]()
+      val probeWay = testKit.createTestProbe[TileIndexActor.GetInternalWayResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
       val tileActor = testKit.spawn(grid.TileIndexActor("connect-nodes-using-ways-test", "connect-nodes-using-ways-test"), "connect-nodes-using-ways-test")
@@ -57,13 +57,13 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       exampleTileCommands foreach (command => tileActor ! command)
 
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
-      tileActor ! TileIndexActor.GetWay(100, probeWay.ref)
+      tileActor ! TileIndexActor.GetInternalWay(100, probeWay.ref)
       probeMetrics.expectMessage(TileIndexActor.Metrics(2, 6))
-      probeWay.expectMessage(TileIndexActor.GetWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      probeWay.expectMessage(TileIndexActor.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
     }
 
     "create network using blocks" in {
-      val probeWay = testKit.createTestProbe[TileIndexActor.GetWayResponse]()
+      val probeWay = testKit.createTestProbe[TileIndexActor.GetInternalWayResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
       val tileActor = testKit.spawn(grid.TileIndexActor("create-network-using-blocks-test", "create-network-using-blocks-test"), "create-network-using-blocks-test")
@@ -71,8 +71,8 @@ class TileIndexIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! TileIndexActor.AddBatch(exampleTileCommands)
 
       tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
-      tileActor ! TileIndexActor.GetWay(100, probeWay.ref)
-      probeWay.expectMessage(TileIndexActor.GetWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      tileActor ! TileIndexActor.GetInternalWay(100, probeWay.ref)
+      probeWay.expectMessage(TileIndexActor.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
 
     }
 
