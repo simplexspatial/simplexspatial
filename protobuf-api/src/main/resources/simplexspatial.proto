@@ -12,7 +12,12 @@ service DataService {
     rpc GetMetrics (GetMetricsCmd) returns (Metrics);
 }
 
-message Done { }
+message Done {
+}
+
+message NotDone {
+    string clue = 1;
+}
 
 message AddNodeCmd {
     uint64 id = 1;
@@ -38,7 +43,8 @@ message ExecuteBatchCmd {
     repeated ExecuteCmd commands = 1;
 }
 
-message GetMetricsCmd { }
+message GetMetricsCmd {
+}
 
 message Metrics {
     uint64 ways = 1;
