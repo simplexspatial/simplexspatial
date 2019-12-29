@@ -59,7 +59,7 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
       tileActor ! tile.GetMetrics(probeMetrics.ref)
       tileActor ! tile.GetInternalWay(100, probeWay.ref)
       probeMetrics.expectMessage(tile.Metrics(2, 6))
-      probeWay.expectMessage(tile.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      probeWay.expectMessage(tile.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, Seq(5, 6, 3), Map(276737215 -> "wayAttrValue")))))
     }
 
     "create network using blocks" in {
@@ -72,7 +72,32 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
 
       tileActor ! tile.GetMetrics(probeMetrics.ref)
       tileActor ! tile.GetInternalWay(100, probeWay.ref)
-      probeWay.expectMessage(tile.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      probeWay.expectMessage(tile.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, Seq(5, 6, 3), Map(276737215 -> "wayAttrValue")))))
+
+    }
+
+    "retrieve a way from the network" in {
+      val probeWay = testKit.createTestProbe[tile.GetWayResponse]()
+
+      val tileActor = testKit.spawn(tile.TileIndexActor("retrieve-way-from-network-test", "retrieve-way-from-network-test"), "retrieve-way-from-network-test")
+
+      tileActor ! tile.AddBatch(exampleTileCommands)
+
+      tileActor ! tile.GetWay(100, probeWay.ref)
+      probeWay.expectMessage(tile.GetWayResponse(100, Some(
+        Way(
+          100,
+          Seq(
+            Node(5, Location(4, 5)),
+            Node(6, Location(2, 5)),
+            Node(3, Location(3, 10))
+          ),
+          Map("wayAttrKey" -> "wayAttrValue")
+        )
+      )))
+
+      tileActor ! tile.GetWay(10, probeWay.ref)
+      probeWay.expectMessage(tile.GetWayResponse(10, None))
 
     }
 

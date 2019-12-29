@@ -25,7 +25,7 @@ package model {
     val MIN_LATITUDE = -90
     val MAX = Location(MAX_LATITUDE, MAX_LONGITUDE)
     val MIN = Location(MIN_LATITUDE, MIN_LONGITUDE)
-    val NIL = Location(Double.NaN, Double.NaN)
+    val NaL = Location(Double.NaN, Double.NaN)
   }
 
   case class Location(lat: Double, lon: Double)
@@ -35,5 +35,17 @@ package model {
   }
 
   case class BoundingBox(min: Location, max: Location)
+
+  case class Node(
+      id: Long,
+      location: Location,
+      attributes: Map[String, String] = Map.empty
+  )
+
+  case class Way(
+      id: Long,
+      nodes: Seq[Node],
+      attributes: Map[String, String] = Map.empty
+  )
 
 }

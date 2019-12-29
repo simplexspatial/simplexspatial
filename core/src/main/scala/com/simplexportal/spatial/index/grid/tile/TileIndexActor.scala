@@ -69,6 +69,9 @@ object TileIndexActor {
       replyTo ! GetInternalWayResponse(id, tile.ways.get(id))
       Effect.none
 
+    case GetWay(id, replyTo) =>
+      replyTo ! GetWayResponse(id, tile.getWay(id))
+      Effect.none
   }
 
   private def applyAction(

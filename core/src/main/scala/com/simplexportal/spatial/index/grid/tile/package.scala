@@ -68,6 +68,11 @@ package tile {
       replyTo: ActorRef[GetInternalWayResponse]
   ) extends Query
 
+  final case class GetWay(
+      id: Long,
+      replyTo: ActorRef[GetWayResponse]
+  ) extends Query
+
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Query
 
   sealed trait BatchActions extends Action

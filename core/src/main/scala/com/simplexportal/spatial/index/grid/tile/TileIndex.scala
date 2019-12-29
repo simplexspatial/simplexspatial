@@ -18,6 +18,7 @@
 package com.simplexportal.spatial.index.grid.tile
 
 import com.simplexportal.spatial.model._
+import com.simplexportal.spatial.index.grid.tile.TileIndex._
 
 import scala.annotation.tailrec
 
@@ -28,21 +29,21 @@ object TileIndex {
       location: Location,
       attributes: Map[Int, String] = Map.empty,
       ways: Set[Long] = Set.empty,
-      outs: Set[Long] = Set.empty, // TODO: Should be replaced by a set of Node object references??
-      ins: Set[Long] = Set.empty // TODO: Should be replaced by a set of Node object references??
+      outs: Set[Long] = Set.empty,
+      ins: Set[Long] = Set.empty
   )
 
   case class InternalWay(
       id: Long,
-      startNode: Long,
+      nodeIds: Seq[Long],
       attributes: Map[Int, String] = Map.empty
   )
 
 }
 
 case class TileIndex(
-    nodes: Map[Long, TileIndex.InternalNode] = Map.empty,
-    ways: Map[Long, TileIndex.InternalWay] = Map.empty,
+    nodes: Map[Long, InternalNode] = Map.empty,
+    ways: Map[Long, InternalWay] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
 ) {
 
@@ -65,8 +66,7 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      nodes = nodes + (id -> TileIndex
-        .InternalNode(id, Location(lat, lon), attrs)),
+      nodes = nodes + (id -> InternalNode(id, Location(lat, lon), attrs)),
       tagsDic = tagsDic ++ dic
     )
   }
@@ -79,14 +79,13 @@ case class TileIndex(
   ) = {
     nodes.get(current) match {
       case None => // If it is not in the index, it is because it is a connector.
-        TileIndex
-          .InternalNode( // TODO: Calculate directions. Now, all bidirectional.
-            current,
-            Location.NIL,
-            ways = Set(wayId),
-            outs = (Set.empty ++ next) ++ prev,
-            ins = (Set.empty ++ next) ++ prev
-          )
+        InternalNode( // TODO: Calculate directions. Now, all bidirectional.
+          current,
+          Location.NaL,
+          ways = Set(wayId),
+          outs = (Set.empty ++ next) ++ prev,
+          ins = (Set.empty ++ next) ++ prev
+        )
       case Some(node) =>
         node.copy( // TODO: Calculate directions. Now, all bidirectional.
           ways = node.ways + wayId,
@@ -102,8 +101,8 @@ case class TileIndex(
       prev: Option[Long],
       current: Long,
       nodeIds: Seq[Long],
-      updated: List[(Long, TileIndex.InternalNode)]
-  ): List[(Long, TileIndex.InternalNode)] = {
+      updated: List[(Long, InternalNode)]
+  ): List[(Long, InternalNode)] = {
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -126,8 +125,7 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> TileIndex
-        .InternalWay(wayId, nodeIds.head, attrs)),
+      ways = ways + (wayId -> InternalWay(wayId, nodeIds, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,
@@ -136,6 +134,22 @@ case class TileIndex(
         List.empty
       ),
       tagsDic = tagsDic ++ dic
+    )
+  }
+
+  def getWay(id: Long): Option[Way] = ways.get(id).map { iWay =>
+    Way(
+      id,
+      iWay.nodeIds
+        .map { nodeId =>
+          val iNode = nodes(nodeId)
+          Node(
+            iNode.id,
+            iNode.location,
+            iNode.attributes.map(attr => tagsDic(attr._1) -> attr._2)
+          )
+        },
+      iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
     )
   }
 
