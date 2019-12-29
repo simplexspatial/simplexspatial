@@ -161,8 +161,8 @@ object Grid {
           Behaviors.same
 
         case addBatchCmd: AddBatch =>
-//          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
-//          Behaviors.same
+          //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
+          //          Behaviors.same
           ???
 
         case cmd: GetInternalNode =>

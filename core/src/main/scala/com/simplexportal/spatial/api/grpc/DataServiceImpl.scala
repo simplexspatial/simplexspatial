@@ -71,7 +71,7 @@ class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
 
   private def toAddBatch(
       batchCmd: ExecuteBatchCmd
-  ): Seq[tile.BatchCommand] =
+  ): Seq[tile.BatchActions] =
     batchCmd.commands.flatMap(
       executeCmd =>
         executeCmd.command match {

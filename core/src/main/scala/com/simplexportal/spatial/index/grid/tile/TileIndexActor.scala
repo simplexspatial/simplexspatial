@@ -41,48 +41,62 @@ object TileIndexActor {
   private def onCommand(
       tile: TileIndex,
       command: Command
-  ): Effect[Event, TileIndex] =
-    command match {
-      case GetMetrics(replyTo) =>
-        replyTo ! Metrics(tile.ways.size, tile.nodes.size)
-        Effect.none
+  ): Effect[Event, TileIndex] = command match {
+    case q: Query  => applyQueries(tile, q)
+    case a: Action => applyAction(tile, a)
+  }
 
-      case GetInternalNode(id, replyTo) =>
-        replyTo ! GetInternalNodeResponse(id, tile.nodes.get(id))
-        Effect.none
+  private def applyQueries(
+      tile: TileIndex,
+      query: Query
+  ): Effect[Event, TileIndex] = query match {
 
-      case GetInternalNodes(ids, replyTo) =>
-        replyTo ! GetInternalNodesResponse(
-          ids.map(id => GetInternalNodeResponse(id, tile.nodes.get(id)))
-        )
-        Effect.none
+    case GetMetrics(replyTo) =>
+      replyTo ! Metrics(tile.ways.size, tile.nodes.size)
+      Effect.none
 
-      case GetInternalWay(id, replyTo) =>
-        replyTo ! GetInternalWayResponse(id, tile.ways.get(id))
-        Effect.none
+    case GetInternalNode(id, replyTo) =>
+      replyTo ! GetInternalNodeResponse(id, tile.nodes.get(id))
+      Effect.none
 
-      case AddNode(id, lat, lon, attributes, replyTo) =>
-        Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _ =>
+    case GetInternalNodes(ids, replyTo) =>
+      replyTo ! GetInternalNodesResponse(
+        ids.map(id => GetInternalNodeResponse(id, tile.nodes.get(id)))
+      )
+      Effect.none
+
+    case GetInternalWay(id, replyTo) =>
+      replyTo ! GetInternalWayResponse(id, tile.ways.get(id))
+      Effect.none
+
+  }
+
+  private def applyAction(
+      tile: TileIndex,
+      action: Action
+  ): Effect[Event, TileIndex] = action match {
+    case AddNode(id, lat, lon, attributes, replyTo) =>
+      Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _ =>
+        replyTo.foreach(_ ! Done())
+      }
+
+    case AddWay(id, nodeIds, attributes, replyTo) =>
+      Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
+        replyTo.foreach(_ ! Done())
+      }
+
+    case AddBatch(cmds, replyTo) =>
+      Effect
+        .persist(BatchAdded(cmds.map {
+          case AddNode(id, lat, lon, attributes, _) =>
+            NodeAdded(id, lat, lon, attributes)
+          case AddWay(id, nodeIds, attributes, _) =>
+            WayAdded(id, nodeIds, attributes)
+        }(breakOut)))
+        .thenRun { _ =>
           replyTo.foreach(_ ! Done())
         }
-
-      case AddWay(id, nodeIds, attributes, replyTo) =>
-        Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
-          replyTo.foreach(_ ! Done())
-        }
-
-      case AddBatch(cmds, replyTo) =>
-        Effect
-          .persist(BatchAdded(cmds.map {
-            case AddNode(id, lat, lon, attributes, _) =>
-              NodeAdded(id, lat, lon, attributes)
-            case AddWay(id, nodeIds, attributes, _) =>
-              WayAdded(id, nodeIds, attributes)
-          }(breakOut)))
-          .thenRun { _ =>
-            replyTo.foreach(_ ! Done())
-          }
-    }
+  }
 
   private def applyEvent(tile: TileIndex, event: Event): TileIndex =
     event match {

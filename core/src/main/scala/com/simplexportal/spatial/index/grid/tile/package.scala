@@ -18,12 +18,22 @@
 package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.ActorRef
+import com.simplexportal.spatial.model.Way
 
 package tile {
+
   sealed trait Message
   sealed trait Reply extends Message
   sealed trait Command extends Message
+  sealed trait Query extends Command
+  sealed trait Action extends Command
   protected[tile] sealed trait Event extends Message
+
+  case class Metrics(ways: Long, nodes: Long) extends Reply
+
+  case class Done() extends Reply
+
+  case class NotDone() extends Reply
 
   case class GetInternalNodeResponse(
       id: Long,
@@ -38,20 +48,49 @@ package tile {
       way: Option[TileIndex.InternalWay]
   ) extends Reply
 
+  case class GetWayResponse(
+      id: Long,
+      way: Option[Way]
+  ) extends Reply
+
   final case class GetInternalNode(
       id: Long,
       replyTo: ActorRef[GetInternalNodeResponse]
-  ) extends Command
+  ) extends Query
 
   final case class GetInternalNodes(
       ids: Seq[Long],
       replyTo: ActorRef[GetInternalNodesResponse]
-  ) extends Command
+  ) extends Query
 
   final case class GetInternalWay(
       id: Long,
       replyTo: ActorRef[GetInternalWayResponse]
-  ) extends Command
+  ) extends Query
+
+  final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Query
+
+  sealed trait BatchActions extends Action
+
+  final case class AddNode(
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Map[String, String],
+      replyTo: Option[ActorRef[Done]] = None
+  ) extends BatchActions
+
+  final case class AddWay(
+      id: Long,
+      nodeIds: Seq[Long],
+      attributes: Map[String, String],
+      replyTo: Option[ActorRef[Done]] = None
+  ) extends BatchActions
+
+  final case class AddBatch(
+      cmds: Seq[BatchActions],
+      replyTo: Option[ActorRef[Done]] = None
+  ) extends Action
 
   protected[tile] sealed trait AtomicEvent extends Event
 
@@ -70,33 +109,5 @@ package tile {
 
   protected[tile] final case class BatchAdded(events: Seq[AtomicEvent])
       extends Event
-
-  case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class Done() extends Reply
-  case class NotDone() extends Reply
-
-  sealed trait BatchCommand extends Command
-
-  final case class AddNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String],
-      replyTo: Option[ActorRef[Done]] = None
-  ) extends BatchCommand
-
-  final case class AddWay(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String],
-      replyTo: Option[ActorRef[Done]] = None
-  ) extends BatchCommand
-
-  final case class AddBatch(
-      cmds: Seq[BatchCommand],
-      replyTo: Option[ActorRef[Done]] = None
-  ) extends Command
-
-  final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 
 }

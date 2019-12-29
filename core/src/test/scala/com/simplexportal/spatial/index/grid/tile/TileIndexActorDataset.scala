@@ -25,7 +25,7 @@ import com.simplexportal.spatial.index.grid.tile
 trait TileIndexActorDataset {
   val bbox = BoundingBox(Location(1, 1), Location(10, 10))
 
-  val exampleTileCommands: Seq[tile.BatchCommand] = Seq(
+  val exampleTileCommands: Seq[tile.BatchActions] = Seq(
     tile.AddNode(1, 7, 3, Map("nodeAttrKey" -> "nodeAttrValue")),
     tile.AddNode(2, 7, 10, Map.empty),
     tile.AddNode(3, 3, 10, Map.empty),
