@@ -27,7 +27,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpWayEntityIdGen,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile.TileIndexActor._
+import com.simplexportal.spatial.index.grid.tile._
 import com.simplexportal.spatial.index.grid.tile.{
   TileIdx,
   TileIndex,

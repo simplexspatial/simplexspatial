@@ -28,9 +28,10 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpNodeEntityIdGen,
   NodeLookUpActor
 }
+import com.simplexportal.spatial.index.grid.tile.TileIndexEntityIdGen
 import com.simplexportal.spatial.index.grid.tile.{
-  TileIndexActor,
-  TileIndexEntityIdGen
+  GetInternalNode,
+  GetInternalNodeResponse
 }
 
 /**
@@ -41,7 +42,7 @@ import com.simplexportal.spatial.index.grid.tile.{
 object GetNodeSession {
   def apply(
       sharding: ClusterSharding,
-      getNode: TileIndexActor.GetInternalNode,
+      getNode: GetInternalNode,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NodeLookUpActor.GetResponse] =
     Behaviors
@@ -53,14 +54,14 @@ object GetNodeSession {
         ) ! NodeLookUpActor.Get(getNode.id, context.self)
 
         Behaviors.receiveMessage {
-          case NodeLookUpActor.GetResponse(nodeId, Some(tileIdx)) =>
+          case NodeLookUpActor.GetResponse(_, Some(tileIdx)) =>
             sharding.entityRefFor(
               TileTypeKey,
               tileIdx.entityId
             ) ! getNode
             Behaviors.stopped
           case NodeLookUpActor.GetResponse(nodeId, None) =>
-            getNode.replyTo ! TileIndexActor.GetInternalNodeResponse(
+            getNode.replyTo ! GetInternalNodeResponse(
               nodeId,
               None
             )

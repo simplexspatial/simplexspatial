@@ -22,15 +22,12 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.simplexportal.spatial.index.grid.tile.TileIndexActor
+import com.simplexportal.spatial.index.grid.tile
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-// FIXME: This should be not a simple proxy. This should be the responsable to manage the back-pressure. It means that
-//        it needs to itself as replyTo and always ask. After get the response, response to the client allowing next
-//        message.
-class DataServiceImpl(gridIndex: ActorRef[TileIndexActor.Command])(
+class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
     implicit
     executionContext: ExecutionContext,
     scheduler: Scheduler
@@ -39,28 +36,25 @@ class DataServiceImpl(gridIndex: ActorRef[TileIndexActor.Command])(
   // FIXME: Temporal timeout for POC
   implicit val timeout = Timeout(15 minutes)
 
-  implicit def responseAdapter(node: TileIndexActor.Done): Done = Done()
+  implicit def responseAdapter(node: tile.Done): Done = Done()
 
   override def addNode(in: AddNodeCmd): Future[Done] =
     gridIndex
-      .ask[TileIndexActor.Done](
-        ref =>
-          TileIndexActor
-            .AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref))
+      .ask[tile.Done](
+        ref => tile.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref))
       )
       .map(responseAdapter)
 
   override def addWay(in: AddWayCmd): Future[Done] =
     gridIndex
-      .ask[TileIndexActor.Done](
-        ref =>
-          TileIndexActor.AddWay(in.id, in.nodeIds, in.attributes, Some(ref))
+      .ask[tile.Done](
+        ref => tile.AddWay(in.id, in.nodeIds, in.attributes, Some(ref))
       )
       .map(responseAdapter)
 
   override def getMetrics(in: GetMetricsCmd): Future[Metrics] =
     gridIndex
-      .ask[TileIndexActor.Metrics](TileIndexActor.GetMetrics(_))
+      .ask[tile.Metrics](tile.GetMetrics(_))
       .map(m => Metrics(ways = m.ways, nodes = m.nodes))
 
   override def streamBatchCommands(
@@ -69,25 +63,22 @@ class DataServiceImpl(gridIndex: ActorRef[TileIndexActor.Command])(
     in.map(cmd => toAddBatch(cmd))
       .via(
         ActorFlow.ask(gridIndex)(
-          (commands, replyTo: ActorRef[TileIndexActor.Done]) =>
-            TileIndexActor.AddBatch(commands, Some(replyTo))
+          (commands, replyTo: ActorRef[tile.Done]) =>
+            tile.AddBatch(commands, Some(replyTo))
         )
       )
       .map(responseAdapter);
 
   private def toAddBatch(
       batchCmd: ExecuteBatchCmd
-  ): Seq[TileIndexActor.BatchCommand] =
+  ): Seq[tile.BatchCommand] =
     batchCmd.commands.flatMap(
       executeCmd =>
         executeCmd.command match {
           case ExecuteCmd.Command.Way(way) =>
-            Some(TileIndexActor.AddWay(way.id, way.nodeIds, way.attributes))
+            Some(tile.AddWay(way.id, way.nodeIds, way.attributes))
           case ExecuteCmd.Command.Node(node) =>
-            Some(
-              TileIndexActor
-                .AddNode(node.id, node.lat, node.lon, node.attributes)
-            )
+            Some(tile.AddNode(node.id, node.lat, node.lon, node.attributes))
           case ExecuteCmd.Command.Empty => None
         }
     )

@@ -32,47 +32,47 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
   "Tile Actor" should {
 
     "add the nodes" in {
-      val probeDone = testKit.createTestProbe[TileIndexActor.Done]()
-      val probeNode = testKit.createTestProbe[TileIndexActor.GetInternalNodeResponse]()
-      val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
+      val probeDone = testKit.createTestProbe[tile.Done]()
+      val probeNode = testKit.createTestProbe[tile.GetInternalNodeResponse]()
+      val probeMetrics = testKit.createTestProbe[tile.Metrics]()
 
       val tileActor = testKit.spawn(TileIndexActor("add-nodes-test", "add-nodes-test"), "add-nodes-test")
-      tileActor ! TileIndexActor.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
+      tileActor ! tile.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
 
-      tileActor ! TileIndexActor.GetInternalNode(10, probeNode.ref)
-      tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
+      tileActor ! tile.GetInternalNode(10, probeNode.ref)
+      tileActor ! tile.GetMetrics(probeMetrics.ref)
 
       probeNode.expectMessage(
-        TileIndexActor.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
+        tile.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(5, 5), Map(128826956 -> "nodeAttrValue"))))
       )
-      probeMetrics.expectMessage(TileIndexActor.Metrics(0, 1))
+      probeMetrics.expectMessage(tile.Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
-      val probeWay = testKit.createTestProbe[TileIndexActor.GetInternalWayResponse]()
-      val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
+      val probeWay = testKit.createTestProbe[tile.GetInternalWayResponse]()
+      val probeMetrics = testKit.createTestProbe[tile.Metrics]()
 
       val tileActor = testKit.spawn(tile.TileIndexActor("connect-nodes-using-ways-test", "connect-nodes-using-ways-test"), "connect-nodes-using-ways-test")
 
       exampleTileCommands foreach (command => tileActor ! command)
 
-      tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
-      tileActor ! TileIndexActor.GetInternalWay(100, probeWay.ref)
-      probeMetrics.expectMessage(TileIndexActor.Metrics(2, 6))
-      probeWay.expectMessage(TileIndexActor.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      tileActor ! tile.GetMetrics(probeMetrics.ref)
+      tileActor ! tile.GetInternalWay(100, probeWay.ref)
+      probeMetrics.expectMessage(tile.Metrics(2, 6))
+      probeWay.expectMessage(tile.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
     }
 
     "create network using blocks" in {
-      val probeWay = testKit.createTestProbe[TileIndexActor.GetInternalWayResponse]()
-      val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
+      val probeWay = testKit.createTestProbe[tile.GetInternalWayResponse]()
+      val probeMetrics = testKit.createTestProbe[tile.Metrics]()
 
       val tileActor = testKit.spawn(tile.TileIndexActor("create-network-using-blocks-test", "create-network-using-blocks-test"), "create-network-using-blocks-test")
 
-      tileActor ! TileIndexActor.AddBatch(exampleTileCommands)
+      tileActor ! tile.AddBatch(exampleTileCommands)
 
-      tileActor ! TileIndexActor.GetMetrics(probeMetrics.ref)
-      tileActor ! TileIndexActor.GetInternalWay(100, probeWay.ref)
-      probeWay.expectMessage(TileIndexActor.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
+      tileActor ! tile.GetMetrics(probeMetrics.ref)
+      tileActor ! tile.GetInternalWay(100, probeWay.ref)
+      probeWay.expectMessage(tile.GetInternalWayResponse(100, Some(TileIndex.InternalWay(100, 5, Map(276737215 -> "wayAttrValue")))))
 
     }
 

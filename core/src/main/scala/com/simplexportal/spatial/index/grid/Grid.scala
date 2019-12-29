@@ -31,20 +31,12 @@ import com.simplexportal.spatial.index.grid.lookups.{
   NodeLookUpActor,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.sessions.{
-  AddNodeSession,
-  AddWaySession,
-  GetNodeSession,
-  GetNodesSession
-}
-import com.simplexportal.spatial.index.grid.tile.{
-  TileIndexActor,
-  TileIndexEntityIdGen
-}
+import com.simplexportal.spatial.index.grid.sessions._
+import com.simplexportal.spatial.index.grid.tile._
 import com.typesafe.config.ConfigFactory
+import io.jvm.uuid._
 
 import scala.concurrent.duration._
-import io.jvm.uuid._
 
 // TODO: Every context.spawn(*Session(...), ... ) should be replaced by a spawn in the cluster, to start the session in a free node and not in this one.
 object Grid {
@@ -71,7 +63,7 @@ object Grid {
     )
   }
 
-  val TileTypeKey = EntityTypeKey[TileIndexActor.Command]("TileEntity")
+  val TileTypeKey = EntityTypeKey[Command]("TileEntity")
   val NodeLookUpTypeKey =
     EntityTypeKey[NodeLookUpActor.Command]("NodeLookUpEntity")
   val WayLookUpTypeKey =
@@ -123,7 +115,7 @@ object Grid {
       nodeLookUpPartitions: Int,
       latPartitions: Int,
       lonPartitions: Int
-  ): Behavior[TileIndexActor.Command] =
+  ): Behavior[Command] =
     Behaviors.setup { context =>
       logInfo(
         context,
@@ -149,7 +141,7 @@ object Grid {
 
       Behaviors.receiveMessage {
 
-        case cmd: TileIndexActor.AddNode =>
+        case cmd: AddNode =>
           context.spawn(
             AddNodeSession(
               sharding,
@@ -161,36 +153,36 @@ object Grid {
           )
           Behaviors.same
 
-        case cmd: TileIndexActor.AddWay =>
+        case cmd: AddWay =>
           context.spawn(
             AddWaySession(sharding, cmd, tileEntityFn),
             s"adding_way_${UUID.randomString}"
           )
           Behaviors.same
 
-        case addBatchCmd: TileIndexActor.AddBatch =>
+        case addBatchCmd: AddBatch =>
 //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
 //          Behaviors.same
           ???
 
-        case cmd: TileIndexActor.GetInternalNode =>
+        case cmd: GetInternalNode =>
           context.spawn(
             GetNodeSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
-        case cmd: TileIndexActor.GetInternalNodes =>
+        case cmd: GetInternalNodes =>
           context.spawn(
             GetNodesSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
-        case cmd: TileIndexActor.GetInternalWay =>
+        case cmd: GetInternalWay =>
           ???
 
-        case TileIndexActor.GetMetrics(replyTo) =>
+        case GetMetrics(replyTo) =>
           ???
       }
     }

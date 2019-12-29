@@ -17,91 +17,14 @@
 
 package com.simplexportal.spatial.index.grid.tile
 
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 
 import scala.collection.breakOut
 
 object TileIndexActor {
-
-  sealed trait Message
-
-  // From here all possible replies to sent.
-  sealed trait Reply extends Message
-  case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class GetInternalNodeResponse(
-      id: Long,
-      node: Option[TileIndex.InternalNode]
-  ) extends Reply
-  case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse])
-      extends Reply
-  case class GetInternalWayResponse(
-      id: Long,
-      way: Option[TileIndex.InternalWay]
-  ) extends Reply
-  case class Done() extends Reply // TODO: Should be able to response with Done or NotDone, or ACK and NACK
-
-  // From here all possible commands to accept.
-  sealed trait Command extends Message
-  sealed trait BatchCommand extends Command
-
-  final case class AddNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String],
-      replyTo: Option[ActorRef[TileIndexActor.Done]] = None
-  ) extends BatchCommand
-
-  final case class AddWay(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String],
-      replyTo: Option[ActorRef[TileIndexActor.Done]] = None
-  ) extends BatchCommand
-
-  final case class AddBatch(
-      cmds: Seq[BatchCommand],
-      replyTo: Option[ActorRef[TileIndexActor.Done]] = None
-  ) extends Command
-
-  final case class GetInternalNode(
-      id: Long,
-      replyTo: ActorRef[GetInternalNodeResponse]
-  ) extends Command
-
-  final case class GetInternalNodes(
-      ids: Seq[Long],
-      replyTo: ActorRef[GetInternalNodesResponse]
-  ) extends Command
-
-  final case class GetInternalWay(
-      id: Long,
-      replyTo: ActorRef[GetInternalWayResponse]
-  ) extends Command
-
-  final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
-
-  // From here, all possible events generated.
-  sealed trait Event extends Message
-  sealed trait AtomicEvent extends Event
-
-  final case class NodeAdded(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String]
-  ) extends AtomicEvent
-
-  final case class WayAdded(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String]
-  ) extends AtomicEvent
-
-  final case class BatchAdded(events: Seq[AtomicEvent]) extends Event
 
   def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
@@ -140,12 +63,12 @@ object TileIndexActor {
 
       case AddNode(id, lat, lon, attributes, replyTo) =>
         Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _ =>
-          replyTo.foreach(_ ! TileIndexActor.Done())
+          replyTo.foreach(_ ! Done())
         }
 
       case AddWay(id, nodeIds, attributes, replyTo) =>
         Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
-          replyTo.foreach(_ ! TileIndexActor.Done())
+          replyTo.foreach(_ ! Done())
         }
 
       case AddBatch(cmds, replyTo) =>
@@ -157,7 +80,7 @@ object TileIndexActor {
               WayAdded(id, nodeIds, attributes)
           }(breakOut)))
           .thenRun { _ =>
-            replyTo.foreach(_ ! TileIndexActor.Done())
+            replyTo.foreach(_ ! Done())
           }
     }
 

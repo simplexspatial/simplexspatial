@@ -26,7 +26,7 @@ import com.simplexportal.spatial.index.grid.Grid.{
   TileTypeKey
 }
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor
-import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexActor}
+import com.simplexportal.spatial.index.grid.tile
 
 /**
   * AddNode per session actor that update all indices and stop.
@@ -34,9 +34,9 @@ import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexActor}
 object AddNodeSession {
   def apply(
       sharding: ClusterSharding,
-      addNode: TileIndexActor.AddNode,
+      addNode: tile.AddNode,
       nodeEntityId: String,
-      tileIdx: TileIdx
+      tileIdx: tile.TileIdx
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>
@@ -60,13 +60,13 @@ object AddNodeSession {
         addNode.replyTo match {
           case Some(clientRef) =>
             var lookUpResponse: Option[NodeLookUpActor.Done] = None
-            var tileResponse: Option[TileIndexActor.Done] = None
+            var tileResponse: Option[tile.Done] = None
 
             def nextBehavior(): Behavior[AnyRef] =
               (lookUpResponse, tileResponse) match {
                 case (Some(_), Some(_)) =>
                   // we got both responses, "session" is completed!
-                  clientRef ! TileIndexActor.Done()
+                  clientRef ! tile.Done()
                   Behaviors.stopped
                 case _ =>
                   // Wait for the next response.
@@ -77,7 +77,7 @@ object AddNodeSession {
               case resp: NodeLookUpActor.Done =>
                 lookUpResponse = Some(resp)
                 nextBehavior()
-              case resp: TileIndexActor.Done =>
+              case resp: tile.Done =>
                 tileResponse = Some(resp)
                 nextBehavior()
               case _ =>

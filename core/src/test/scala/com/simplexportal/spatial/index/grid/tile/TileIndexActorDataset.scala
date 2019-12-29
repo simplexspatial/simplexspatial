@@ -20,19 +20,19 @@
 package com.simplexportal.spatial.index.grid.tile
 
 import com.simplexportal.spatial.model.{BoundingBox, Location}
+import com.simplexportal.spatial.index.grid.tile
 
 trait TileIndexActorDataset {
   val bbox = BoundingBox(Location(1, 1), Location(10, 10))
 
-  val exampleTileCommands: Seq[TileIndexActor.BatchCommand] = Seq(
-    TileIndexActor.AddNode(1, 7, 3, Map("nodeAttrKey" -> "nodeAttrValue")),
-    TileIndexActor.AddNode(2, 7, 10, Map.empty),
-    TileIndexActor.AddNode(3, 3, 10, Map.empty),
-    TileIndexActor.AddNode(4, 3, 16, Map.empty),
-    TileIndexActor.AddNode(5, 4, 5, Map.empty),
-    TileIndexActor.AddNode(6, 2, 5, Map.empty),
-    TileIndexActor
-      .AddWay(100, Seq(5, 6, 3), Map("wayAttrKey" -> "wayAttrValue")),
-    TileIndexActor.AddWay(101, Seq(1, 2, 3, 4), Map.empty)
+  val exampleTileCommands: Seq[tile.BatchCommand] = Seq(
+    tile.AddNode(1, 7, 3, Map("nodeAttrKey" -> "nodeAttrValue")),
+    tile.AddNode(2, 7, 10, Map.empty),
+    tile.AddNode(3, 3, 10, Map.empty),
+    tile.AddNode(4, 3, 16, Map.empty),
+    tile.AddNode(5, 4, 5, Map.empty),
+    tile.AddNode(6, 2, 5, Map.empty),
+    tile.AddWay(100, Seq(5, 6, 3), Map("wayAttrKey" -> "wayAttrValue")),
+    tile.AddWay(101, Seq(1, 2, 3, 4), Map.empty)
   )
 }

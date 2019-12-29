@@ -30,6 +30,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpNodeEntityIdGen,
   NodeLookUpActor
 }
+import com.simplexportal.spatial.index.grid.tile
 import com.simplexportal.spatial.index.grid.tile.{
   TileIdx,
   TileIndexActor,
@@ -46,7 +47,7 @@ object GetNodesSession {
   // scalastyle:off method.length
   def apply(
       sharding: ClusterSharding,
-      getNodes: TileIndexActor.GetInternalNodes,
+      getNodes: tile.GetInternalNodes,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
     Behaviors
@@ -71,7 +72,7 @@ object GetNodesSession {
         var nodeLocations: Seq[(Long, Option[TileIdx])] = Seq.empty
 
         var responsesCounter = 0
-        var response = TileIndexActor.GetInternalNodesResponse(Seq.empty)
+        var response = tile.GetInternalNodesResponse(Seq.empty)
 
         Behaviors.receiveMessage {
           case NodeLookUpActor.GetsResponse(nodeEntities) =>
@@ -89,19 +90,18 @@ object GetNodesSession {
                     sharding.entityRefFor(
                       TileTypeKey,
                       tileIdx.entityId
-                    ) ! TileIndexActor.GetInternalNodes(ids, context.self)
+                    ) ! tile.GetInternalNodes(ids, context.self)
                   case (None, ids) =>
-                    response = TileIndexActor.GetInternalNodesResponse(
+                    response = tile.GetInternalNodesResponse(
                       response.nodes ++ ids
-                        .map(TileIndexActor.GetInternalNodeResponse(_, None))
+                        .map(tile.GetInternalNodeResponse(_, None))
                     )
                 }
             }
             Behaviors.same
-          case TileIndexActor.GetInternalNodesResponse(nodes) =>
+          case tile.GetInternalNodesResponse(nodes) =>
             responsesCounter -= 1
-            response =
-              TileIndexActor.GetInternalNodesResponse(response.nodes ++ nodes)
+            response = tile.GetInternalNodesResponse(response.nodes ++ nodes)
             if (responsesCounter == 0) {
               getNodes.replyTo ! sortResponse(getNodes.ids, response)
               Behaviors.stopped
@@ -116,16 +116,15 @@ object GetNodesSession {
 
   def sortResponse(
       request: Seq[Long],
-      response: TileIndexActor.GetInternalNodesResponse
-  ): TileIndexActor.GetInternalNodesResponse = {
+      response: tile.GetInternalNodesResponse
+  ): tile.GetInternalNodesResponse = {
     val nodesLookUp = response.nodes.map { node =>
       node.id -> node.node
     }.toMap
-    TileIndexActor.GetInternalNodesResponse(
+    tile.GetInternalNodesResponse(
       request
         .map { id =>
-          TileIndexActor
-            .GetInternalNodeResponse(id, nodesLookUp.getOrElse(id, None))
+          tile.GetInternalNodeResponse(id, nodesLookUp.getOrElse(id, None))
         }
     )
   }

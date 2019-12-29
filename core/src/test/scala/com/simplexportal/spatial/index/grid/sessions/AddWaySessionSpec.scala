@@ -17,8 +17,8 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import com.simplexportal.spatial.index.grid.tile.TileIndexActor.GetInternalNodeResponse
-import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndex, TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.{GetInternalNodeResponse, TileIdx, TileIndex, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile
 import com.simplexportal.spatial.model.Location
 import org.scalatest.{Matchers, TryValues, WordSpecLike}
 
@@ -131,8 +131,7 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
               11,
               Some(TileIndex.InternalNode(11, Location(11, 11)))
             ),
-            TileIndexActor
-              .GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
+            tile.GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
           )
         ) shouldBe Success(
           Seq(
@@ -155,8 +154,7 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
                 11,
                 None
               ),
-              TileIndexActor
-                .GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
+              tile.GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(12, 12))))
             )
           )
           .failure
