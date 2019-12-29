@@ -15,7 +15,9 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+// scalastyle:off magic.number
+
+package com.simplexportal.spatial.index.grid.tile
 
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
@@ -29,7 +31,6 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-// scalastyle:off magic.number
 object TileIndexClusterSpecConfig extends MultiNodeConfig {
 
   val node0 = role("node0")

@@ -30,7 +30,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpNodeEntityIdGen,
   NodeLookUpActor
 }
-import com.simplexportal.spatial.index.grid.{
+import com.simplexportal.spatial.index.grid.tile.{
   TileIdx,
   TileIndexActor,
   TileIndexEntityIdGen
@@ -92,8 +92,8 @@ object GetNodesSession {
                     ) ! TileIndexActor.GetInternalNodes(ids, context.self)
                   case (None, ids) =>
                     response = TileIndexActor.GetInternalNodesResponse(
-                      response.nodes ++ ids.map(
-                        TileIndexActor.GetInternalNodeResponse(_, None))
+                      response.nodes ++ ids
+                        .map(TileIndexActor.GetInternalNodeResponse(_, None))
                     )
                 }
             }
@@ -114,9 +114,10 @@ object GetNodesSession {
       }
       .narrow[NotUsed]
 
-  def sortResponse(request: Seq[Long],
-                   response: TileIndexActor.GetInternalNodesResponse)
-    : TileIndexActor.GetInternalNodesResponse = {
+  def sortResponse(
+      request: Seq[Long],
+      response: TileIndexActor.GetInternalNodesResponse
+  ): TileIndexActor.GetInternalNodesResponse = {
     val nodesLookUp = response.nodes.map { node =>
       node.id -> node.node
     }.toMap

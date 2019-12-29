@@ -15,12 +15,12 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+// scalastyle:off magic.number
+
+package com.simplexportal.spatial.index.grid.tile
 
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
-
-// scalastyle:off magic.number
 
 class TileIndexSpec extends WordSpecLike with Matchers {
 

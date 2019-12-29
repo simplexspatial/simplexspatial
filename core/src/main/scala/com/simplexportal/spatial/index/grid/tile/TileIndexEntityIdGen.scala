@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.tile
 
 case class TileIdx(latIdx: Int, lonIdx: Int) {
   def entityId: String = s"${latIdx}_${lonIdx}"
@@ -54,7 +54,7 @@ class TileIndexEntityIdGen(
   def lonPartition(lon: Double): Int =
     ((lon + 180) * PRECISION_ROUNDING).toInt / ((360 * PRECISION_ROUNDING) / lonPartitions)
 
-  def tileIdx(lat: Double, lon: Double): TileIdx = TileIdx(latPartition(lat), lonPartition(lon))
+  def tileIdx(lat: Double, lon: Double): TileIdx =
+    TileIdx(latPartition(lat), lonPartition(lon))
 
 }
-

@@ -19,8 +19,8 @@
 package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import com.simplexportal.spatial.index.grid.TileIdx
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor._
+import com.simplexportal.spatial.index.grid.tile.TileIdx
 import org.scalatest.{Matchers, WordSpecLike}
 
 class NodeLookUpActorSpec

@@ -17,10 +17,10 @@
 
 // scalastyle:off magic.number
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.tile
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import com.simplexportal.spatial.index.grid
+import com.simplexportal.spatial.index.grid.tile
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
 
@@ -36,7 +36,7 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
       val probeNode = testKit.createTestProbe[TileIndexActor.GetInternalNodeResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
-      val tileActor = testKit.spawn(grid.TileIndexActor("add-nodes-test", "add-nodes-test"), "add-nodes-test")
+      val tileActor = testKit.spawn(TileIndexActor("add-nodes-test", "add-nodes-test"), "add-nodes-test")
       tileActor ! TileIndexActor.AddNode(10, 5, 5, Map("nodeAttrKey" -> "nodeAttrValue"), Some(probeDone.ref))
 
       tileActor ! TileIndexActor.GetInternalNode(10, probeNode.ref)
@@ -52,7 +52,7 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
       val probeWay = testKit.createTestProbe[TileIndexActor.GetInternalWayResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
-      val tileActor = testKit.spawn(grid.TileIndexActor("connect-nodes-using-ways-test", "connect-nodes-using-ways-test"), "connect-nodes-using-ways-test")
+      val tileActor = testKit.spawn(tile.TileIndexActor("connect-nodes-using-ways-test", "connect-nodes-using-ways-test"), "connect-nodes-using-ways-test")
 
       exampleTileCommands foreach (command => tileActor ! command)
 
@@ -66,7 +66,7 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
       val probeWay = testKit.createTestProbe[TileIndexActor.GetInternalWayResponse]()
       val probeMetrics = testKit.createTestProbe[TileIndexActor.Metrics]()
 
-      val tileActor = testKit.spawn(grid.TileIndexActor("create-network-using-blocks-test", "create-network-using-blocks-test"), "create-network-using-blocks-test")
+      val tileActor = testKit.spawn(tile.TileIndexActor("create-network-using-blocks-test", "create-network-using-blocks-test"), "create-network-using-blocks-test")
 
       tileActor ! TileIndexActor.AddBatch(exampleTileCommands)
 

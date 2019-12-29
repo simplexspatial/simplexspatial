@@ -28,7 +28,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpNodeEntityIdGen,
   NodeLookUpActor
 }
-import com.simplexportal.spatial.index.grid.{
+import com.simplexportal.spatial.index.grid.tile.{
   TileIndexActor,
   TileIndexEntityIdGen
 }
@@ -60,8 +60,10 @@ object GetNodeSession {
             ) ! getNode
             Behaviors.stopped
           case NodeLookUpActor.GetResponse(nodeId, None) =>
-            getNode.replyTo ! TileIndexActor.GetInternalNodeResponse(nodeId,
-                                                                     None)
+            getNode.replyTo ! TileIndexActor.GetInternalNodeResponse(
+              nodeId,
+              None
+            )
             Behaviors.stopped
           case _ =>
             Behaviors.unhandled

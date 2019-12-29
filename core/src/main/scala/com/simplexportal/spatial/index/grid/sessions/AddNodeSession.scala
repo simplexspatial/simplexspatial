@@ -21,62 +21,71 @@ import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
+import com.simplexportal.spatial.index.grid.Grid.{
+  NodeLookUpTypeKey,
+  TileTypeKey
+}
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor
-import com.simplexportal.spatial.index.grid.{TileIdx, TileIndexActor}
+import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexActor}
 
 /**
- * AddNode per session actor that update all indices and stop.
- */
+  * AddNode per session actor that update all indices and stop.
+  */
 object AddNodeSession {
   def apply(
-             sharding: ClusterSharding,
-             addNode: TileIndexActor.AddNode,
-             nodeEntityId: String,
-             tileIdx: TileIdx
-           ): Behavior[NotUsed] = Behaviors
-    .setup[AnyRef] { context =>
-      val nodeLookUpActor = sharding.entityRefFor(NodeLookUpTypeKey, nodeEntityId)
-      val tileIndexActor = sharding.entityRefFor(TileTypeKey, tileIdx.entityId)
+      sharding: ClusterSharding,
+      addNode: TileIndexActor.AddNode,
+      nodeEntityId: String,
+      tileIdx: TileIdx
+  ): Behavior[NotUsed] =
+    Behaviors
+      .setup[AnyRef] { context =>
+        val nodeLookUpActor =
+          sharding.entityRefFor(NodeLookUpTypeKey, nodeEntityId)
+        val tileIndexActor =
+          sharding.entityRefFor(TileTypeKey, tileIdx.entityId)
 
-      // Add node in the lookUp index.
-      nodeLookUpActor ! NodeLookUpActor.Put(
-        addNode.id,
-        tileIdx,
-        addNode.replyTo.map(_ => context.self)
-      )
+        // Add node in the lookUp index.
+        nodeLookUpActor ! NodeLookUpActor.Put(
+          addNode.id,
+          tileIdx,
+          addNode.replyTo.map(_ => context.self)
+        )
 
-      // Add node in the tiles index.
-      tileIndexActor ! addNode.copy(replyTo = addNode.replyTo.map(_ => context.self))
+        // Add node in the tiles index.
+        tileIndexActor ! addNode.copy(
+          replyTo = addNode.replyTo.map(_ => context.self)
+        )
 
-      addNode.replyTo match {
-        case Some(clientRef) =>
-          var lookUpResponse: Option[NodeLookUpActor.Done] = None
-          var tileResponse: Option[TileIndexActor.Done] = None
+        addNode.replyTo match {
+          case Some(clientRef) =>
+            var lookUpResponse: Option[NodeLookUpActor.Done] = None
+            var tileResponse: Option[TileIndexActor.Done] = None
 
-          def nextBehavior(): Behavior[AnyRef] =
-            (lookUpResponse, tileResponse) match {
-              case (Some(_), Some(_)) =>
-                // we got both responses, "session" is completed!
-                clientRef ! TileIndexActor.Done()
-                Behaviors.stopped
+            def nextBehavior(): Behavior[AnyRef] =
+              (lookUpResponse, tileResponse) match {
+                case (Some(_), Some(_)) =>
+                  // we got both responses, "session" is completed!
+                  clientRef ! TileIndexActor.Done()
+                  Behaviors.stopped
+                case _ =>
+                  // Wait for the next response.
+                  Behaviors.same
+              }
+
+            Behaviors.receiveMessage {
+              case resp: NodeLookUpActor.Done =>
+                lookUpResponse = Some(resp)
+                nextBehavior()
+              case resp: TileIndexActor.Done =>
+                tileResponse = Some(resp)
+                nextBehavior()
               case _ =>
-                // Wait for the next response.
-                Behaviors.same
+                Behaviors.unhandled
             }
-
-          Behaviors.receiveMessage {
-            case resp: NodeLookUpActor.Done =>
-              lookUpResponse = Some(resp)
-              nextBehavior()
-            case resp: TileIndexActor.Done =>
-              tileResponse = Some(resp)
-              nextBehavior()
-            case _ =>
-              Behaviors.unhandled
-          }
-        case None =>
-          Behaviors.stopped
+          case None =>
+            Behaviors.stopped
+        }
       }
-    }.narrow[NotUsed]
+      .narrow[NotUsed]
 }

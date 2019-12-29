@@ -21,7 +21,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import com.simplexportal.spatial.index.grid.TileIdx
+import com.simplexportal.spatial.index.grid.tile.TileIdx
 
 // TODO: Generalize LookUp
 object WayLookUpActor {
@@ -30,10 +30,15 @@ object WayLookUpActor {
 
   trait Response extends Message
   case class Done() extends Response
-  case class GetResponse(id: Long, maybeNodeEntityIds: Option[Seq[TileIdx]]) extends Response
+  case class GetResponse(id: Long, maybeNodeEntityIds: Option[Seq[TileIdx]])
+      extends Response
 
   trait Command extends Message
-  case class Put(id: Long, nodeEntityId: TileIdx, replyTo: Option[ActorRef[Done]]) extends Command
+  case class Put(
+      id: Long,
+      nodeEntityId: TileIdx,
+      replyTo: Option[ActorRef[Done]]
+  ) extends Command
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
 
   trait Event extends Message
@@ -49,22 +54,31 @@ object WayLookUpActor {
       )
     }
 
-  private def onCommand(table: Map[Long, Seq[TileIdx]], command: Command): Effect[Event, Map[Long, Seq[TileIdx]]] = {
+  private def onCommand(
+      table: Map[Long, Seq[TileIdx]],
+      command: Command
+  ): Effect[Event, Map[Long, Seq[TileIdx]]] = {
     command match {
       case Get(id, replyTo) =>
         replyTo ! GetResponse(id, table.get(id))
         Effect.none
       case Put(id, nodeEntityId, replyTo) =>
-        Effect.persist(Putted(id, nodeEntityId)).thenRun { _  =>
-          replyTo.foreach(_ ! Done() )
+        Effect.persist(Putted(id, nodeEntityId)).thenRun { _ =>
+          replyTo.foreach(_ ! Done())
         }
     }
   }
 
-  private def applyEvent(table: Map[Long, Seq[TileIdx]], event: Event): Map[Long, Seq[TileIdx]] =
+  private def applyEvent(
+      table: Map[Long, Seq[TileIdx]],
+      event: Event
+  ): Map[Long, Seq[TileIdx]] =
     event match {
       case put: Putted =>
-        table + (put.id -> (put.nodeEntityId +: table.getOrElse(put.id, Seq.empty)))
+        table + (put.id -> (put.nodeEntityId +: table.getOrElse(
+          put.id,
+          Seq.empty
+        )))
     }
 
 }

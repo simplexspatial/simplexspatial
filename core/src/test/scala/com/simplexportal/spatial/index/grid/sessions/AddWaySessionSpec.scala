@@ -17,9 +17,9 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import com.simplexportal.spatial.index.grid.{TileIdx, TileIndex, TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.TileIndexActor.GetInternalNodeResponse
+import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndex, TileIndexActor, TileIndexEntityIdGen}
 import com.simplexportal.spatial.model.Location
-import TileIndexActor._
 import org.scalatest.{Matchers, TryValues, WordSpecLike}
 
 import scala.util.Success

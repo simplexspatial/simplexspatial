@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.tile
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
@@ -31,9 +31,16 @@ object TileIndexActor {
   // From here all possible replies to sent.
   sealed trait Reply extends Message
   case class Metrics(ways: Long, nodes: Long) extends Reply
-  case class GetInternalNodeResponse(id: Long, node: Option[TileIndex.InternalNode]) extends Reply
-  case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse]) extends Reply
-  case class GetInternalWayResponse(id: Long, way: Option[TileIndex.InternalWay]) extends Reply
+  case class GetInternalNodeResponse(
+      id: Long,
+      node: Option[TileIndex.InternalNode]
+  ) extends Reply
+  case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse])
+      extends Reply
+  case class GetInternalWayResponse(
+      id: Long,
+      way: Option[TileIndex.InternalWay]
+  ) extends Reply
   case class Done() extends Reply // TODO: Should be able to response with Done or NotDone, or ACK and NACK
 
   // From here all possible commands to accept.
@@ -60,14 +67,20 @@ object TileIndexActor {
       replyTo: Option[ActorRef[TileIndexActor.Done]] = None
   ) extends Command
 
-  final case class GetInternalNode(id: Long, replyTo: ActorRef[GetInternalNodeResponse])
-      extends Command
+  final case class GetInternalNode(
+      id: Long,
+      replyTo: ActorRef[GetInternalNodeResponse]
+  ) extends Command
 
-  final case class GetInternalNodes(ids: Seq[Long], replyTo: ActorRef[GetInternalNodesResponse])
-      extends Command
+  final case class GetInternalNodes(
+      ids: Seq[Long],
+      replyTo: ActorRef[GetInternalNodesResponse]
+  ) extends Command
 
-  final case class GetInternalWay(id: Long, replyTo: ActorRef[GetInternalWayResponse])
-      extends Command
+  final case class GetInternalWay(
+      id: Long,
+      replyTo: ActorRef[GetInternalWayResponse]
+  ) extends Command
 
   final case class GetMetrics(replyTo: ActorRef[Metrics]) extends Command
 

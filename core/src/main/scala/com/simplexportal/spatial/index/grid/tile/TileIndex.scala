@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.grid.tile
 
 import com.simplexportal.spatial.model._
 

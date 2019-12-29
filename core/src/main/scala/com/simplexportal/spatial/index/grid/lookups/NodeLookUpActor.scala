@@ -21,7 +21,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import com.simplexportal.spatial.index.grid.TileIdx
+import com.simplexportal.spatial.index.grid.tile.TileIdx
 
 // TODO: Generalize LookUp
 object NodeLookUpActor {
@@ -30,13 +30,19 @@ object NodeLookUpActor {
 
   trait Response extends Message
   case class Done() extends Response
-  case class GetResponse(id: Long, maybeNodeEntityId: Option[TileIdx]) extends Response
+  case class GetResponse(id: Long, maybeNodeEntityId: Option[TileIdx])
+      extends Response
   case class GetsResponse(gets: Seq[GetResponse]) extends Response
 
   trait Command extends Message
-  case class Put(id: Long, nodeEntityId: TileIdx, replyTo: Option[ActorRef[Done]]) extends Command
+  case class Put(
+      id: Long,
+      nodeEntityId: TileIdx,
+      replyTo: Option[ActorRef[Done]]
+  ) extends Command
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
-  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse]) extends Command
+  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse])
+      extends Command
 
   trait Event extends Message
   case class Putted(id: Long, nodeEntityId: TileIdx) extends Event
@@ -51,7 +57,10 @@ object NodeLookUpActor {
       )
     }
 
-  private def onCommand(table: Map[Long, TileIdx], command: Command): Effect[Event, Map[Long, TileIdx]] = {
+  private def onCommand(
+      table: Map[Long, TileIdx],
+      command: Command
+  ): Effect[Event, Map[Long, TileIdx]] = {
     command match {
       case Get(id, replyTo) =>
         replyTo ! GetResponse(id, table.get(id))
@@ -60,13 +69,16 @@ object NodeLookUpActor {
         replyTo ! GetsResponse(ids.map(id => GetResponse(id, table.get(id))))
         Effect.none
       case Put(id, nodeEntityId, replyTo) =>
-        Effect.persist(Putted(id, nodeEntityId)).thenRun { _  =>
-          replyTo.foreach(_ ! Done() )
+        Effect.persist(Putted(id, nodeEntityId)).thenRun { _ =>
+          replyTo.foreach(_ ! Done())
         }
     }
   }
 
-  private def applyEvent(table: Map[Long, TileIdx], event: Event): Map[Long, TileIdx] =
+  private def applyEvent(
+      table: Map[Long, TileIdx],
+      event: Event
+  ): Map[Long, TileIdx] =
     event match {
       case put: Putted =>
         table + (put.id -> put.nodeEntityId)

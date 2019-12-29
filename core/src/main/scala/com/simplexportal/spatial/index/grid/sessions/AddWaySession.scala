@@ -21,15 +21,20 @@ import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import io.jvm.uuid.UUID
+import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
-import com.simplexportal.spatial.index.grid._
 import com.simplexportal.spatial.index.grid.lookups.{
   LookUpWayEntityIdGen,
   WayLookUpActor
 }
-import TileIndexActor._
+import com.simplexportal.spatial.index.grid.tile.TileIndexActor._
+import com.simplexportal.spatial.index.grid.tile.{
+  TileIdx,
+  TileIndex,
+  TileIndexEntityIdGen
+}
 import com.simplexportal.spatial.model.Location
+import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
