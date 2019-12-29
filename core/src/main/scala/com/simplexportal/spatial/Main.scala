@@ -22,7 +22,7 @@ import akka.grpc.scaladsl.ServiceHandler
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
-import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
+import com.simplexportal.spatial.api.grpc.{DataServiceHandler, DataServiceImpl}
 import com.simplexportal.spatial.index.grid.Grid
 import com.typesafe.config.ConfigFactory
 
@@ -58,12 +58,21 @@ object Main extends App {
   val gridIndex = system.spawn(
     Grid(
       "GridIndex",
-      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.ways-lookup"),
-      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.nodes-lookup"),
-      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.latitude"),
-      config.getInt("simplexportal.spatial.indexes.grid-index.partitions.longitude")
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.ways-lookup"
+      ),
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.nodes-lookup"
+      ),
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.latitude"
+      ),
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.longitude"
+      )
     ),
-    "GridIndex");
+    "GridIndex"
+  );
 
   val dataServiceHandler =
     DataServiceHandler.partial(new DataServiceImpl(gridIndex))

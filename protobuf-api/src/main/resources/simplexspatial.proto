@@ -1,9 +1,9 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "com.simplexportal.spatial.api.data";
+option java_package = "com.simplexportal.spatial.api.grpc";
 
-package com.simplexportal.spatial.api.data;
+package com.simplexportal.spatial.api.grpc;
 
 service DataService {
     rpc AddNode (AddNodeCmd) returns (Done);

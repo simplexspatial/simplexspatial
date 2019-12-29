@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplexportal.spatial.api.data
+package com.simplexportal.spatial.api.grpc
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
