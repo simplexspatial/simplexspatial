@@ -39,7 +39,7 @@ import com.simplexportal.spatial.index.grid.tile.{
   * 1. From the look-up index, retrieve the location of the node.
   * 2. Send the command to the right shard.
   */
-object GetNodeSession {
+object GetInternalNodeSession {
   def apply(
       sharding: ClusterSharding,
       getNode: GetInternalNode,

@@ -18,14 +18,14 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.{TileIndex, TileIndexActor}
+import com.simplexportal.spatial.index.grid.tile.TileIndex
 import com.simplexportal.spatial.model.Location
 import org.scalatest.{Matchers, WordSpecLike}
 
 import scala.util.Random
 
 // scalastyle:off magic.number
-class GetNodesSessionSpec extends WordSpecLike with Matchers {
+class GetInternalNodesSessionSpec extends WordSpecLike with Matchers {
 
   "GetNodesSession" should {
 
@@ -45,7 +45,7 @@ class GetNodesSessionSpec extends WordSpecLike with Matchers {
 
       val unorderedResponse = tile.GetInternalNodesResponse(Random.shuffle(expectedResponse.nodes))
 
-      GetNodesSession.sortResponse(ids, unorderedResponse) shouldBe expectedResponse
+      GetInternalNodesSession.sortResponse(ids, unorderedResponse) shouldBe expectedResponse
     }
 
   }

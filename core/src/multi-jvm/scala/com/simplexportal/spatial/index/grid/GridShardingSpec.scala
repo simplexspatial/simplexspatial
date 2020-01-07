@@ -23,8 +23,8 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.{TileIndex, TileIndexActor}
-import com.simplexportal.spatial.model.Location
+import com.simplexportal.spatial.index.grid.tile.{GetWayResponse, TileIndex, TileIndexActor}
+import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -162,6 +162,22 @@ abstract class GridShardingSpec
         probe.receiveMessage()
       }
       enterBarrier("way added")
+    }
+
+    "retrieve way from multiple shards" in {
+      val probe = TestProbe[tile.GetWayResponse]()
+      runOn(node0) {
+        gridIndex ! tile.GetWay(1, probe.ref)
+        GetWayResponse(1,Some(
+          Way(1, Seq(
+            Node(0,Location(-23.0,-90.0),Map()),
+            Node(1,Location(60.0,130.0),Map()),
+            Node(2,Location(-23.3,-90.0),Map()),
+            Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())
+          ), Map.empty)
+        )) shouldBe probe.receiveMessage()
+      }
+      enterBarrier("way retrieved from different shards")
     }
 
 //    "get right metrics" in within(10.seconds)  {

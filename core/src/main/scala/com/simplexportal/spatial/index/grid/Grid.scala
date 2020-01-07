@@ -109,6 +109,7 @@ object Grid {
     sharding
   }
 
+  // scalastyle:off method.length
   def apply(
       indexId: String,
       wayLookUpPartitions: Int,
@@ -167,24 +168,32 @@ object Grid {
 
         case cmd: GetInternalNode =>
           context.spawn(
-            GetNodeSession(sharding, cmd, tileEntityFn),
+            GetInternalNodeSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
         case cmd: GetInternalNodes =>
           context.spawn(
-            GetNodesSession(sharding, cmd, tileEntityFn),
+            GetInternalNodesSession(sharding, cmd, tileEntityFn),
             s"getting_node_${UUID.randomString}"
           )
           Behaviors.same
 
-        case cmd: GetInternalWay =>
-          ???
+        case cmd: GetWay =>
+          context.spawn(
+            GetWaySession(sharding, cmd),
+            s"getting_way_${UUID.randomString}"
+          )
+          Behaviors.same
 
         case GetMetrics(replyTo) =>
           ???
+
+        case cmd: GetInternalWay =>
+          ???
       }
     }
+  // scalastyle:on method.length
 
 }

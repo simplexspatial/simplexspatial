@@ -31,17 +31,13 @@ import com.simplexportal.spatial.index.grid.lookups.{
   NodeLookUpActor
 }
 import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.{
-  TileIdx,
-  TileIndexActor,
-  TileIndexEntityIdGen
-}
+import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexEntityIdGen}
 
 /**
   * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.
   * The order in the response is the same that the order in que request.
   */
-object GetNodesSession {
+object GetInternalNodesSession {
 
   // scalastyle:off cyclomatic.complexity
   // scalastyle:off method.length

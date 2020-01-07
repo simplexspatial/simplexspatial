@@ -53,7 +53,7 @@ object AddWaySession {
 
         // Translate nodes ids into nodes.
         context.spawn(
-          GetNodesSession(
+          GetInternalNodesSession(
             sharding,
             GetInternalNodes(addWay.nodeIds, context.self),
             tileIndexEntityIdGen
