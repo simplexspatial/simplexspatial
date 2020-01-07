@@ -40,15 +40,15 @@ class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
 
   override def addNode(in: AddNodeCmd): Future[Done] =
     gridIndex
-      .ask[tile.Done](
-        ref => tile.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref))
+      .ask[tile.Done](ref =>
+        tile.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref))
       )
       .map(responseAdapter)
 
   override def addWay(in: AddWayCmd): Future[Done] =
     gridIndex
-      .ask[tile.Done](
-        ref => tile.AddWay(in.id, in.nodeIds, in.attributes, Some(ref))
+      .ask[tile.Done](ref =>
+        tile.AddWay(in.id, in.nodeIds, in.attributes, Some(ref))
       )
       .map(responseAdapter)
 
@@ -62,9 +62,8 @@ class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
   ): Source[Done, NotUsed] =
     in.map(cmd => toAddBatch(cmd))
       .via(
-        ActorFlow.ask(gridIndex)(
-          (commands, replyTo: ActorRef[tile.Done]) =>
-            tile.AddBatch(commands, Some(replyTo))
+        ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[tile.Done]) =>
+          tile.AddBatch(commands, Some(replyTo))
         )
       )
       .map(responseAdapter);
@@ -72,14 +71,13 @@ class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
   private def toAddBatch(
       batchCmd: ExecuteBatchCmd
   ): Seq[tile.BatchActions] =
-    batchCmd.commands.flatMap(
-      executeCmd =>
-        executeCmd.command match {
-          case ExecuteCmd.Command.Way(way) =>
-            Some(tile.AddWay(way.id, way.nodeIds, way.attributes))
-          case ExecuteCmd.Command.Node(node) =>
-            Some(tile.AddNode(node.id, node.lat, node.lon, node.attributes))
-          case ExecuteCmd.Command.Empty => None
-        }
+    batchCmd.commands.flatMap(executeCmd =>
+      executeCmd.command match {
+        case ExecuteCmd.Command.Way(way) =>
+          Some(tile.AddWay(way.id, way.nodeIds, way.attributes))
+        case ExecuteCmd.Command.Node(node) =>
+          Some(tile.AddNode(node.id, node.lat, node.lon, node.attributes))
+        case ExecuteCmd.Command.Empty => None
+      }
     )
 }

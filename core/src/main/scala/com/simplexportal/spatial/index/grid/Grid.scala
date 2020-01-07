@@ -144,12 +144,7 @@ object Grid {
 
         case cmd: AddNode =>
           context.spawn(
-            AddNodeSession(
-              sharding,
-              cmd,
-              LookUpNodeEntityIdGen.entityId(cmd.id),
-              tileEntityFn.tileIdx(cmd.lat, cmd.lon)
-            ),
+            AddNodeSession(sharding, cmd, tileEntityFn),
             s"adding_node_${UUID.randomString}"
           )
           Behaviors.same
@@ -161,22 +156,24 @@ object Grid {
           )
           Behaviors.same
 
-        case addBatchCmd: AddBatch =>
-          //          sharding.entityRefFor(TileActor.TypeKey, partitionId(addBatchCmd, lonPartitions, latPartitions)) ! addBatchCmd
-          //          Behaviors.same
-          ???
+        case cmd: AddBatch =>
+//          context.spawn(
+//            AddBatchSession(sharding, cmd, tileEntityFn),
+//            s"adding_way_${UUID.randomString}"
+//          )
+          Behaviors.same
 
         case cmd: GetInternalNode =>
           context.spawn(
             GetInternalNodeSession(sharding, cmd, tileEntityFn),
-            s"getting_node_${UUID.randomString}"
+            s"getting_internal_node_${UUID.randomString}"
           )
           Behaviors.same
 
         case cmd: GetInternalNodes =>
           context.spawn(
             GetInternalNodesSession(sharding, cmd, tileEntityFn),
-            s"getting_node_${UUID.randomString}"
+            s"getting_internal_nodes_${UUID.randomString}"
           )
           Behaviors.same
 

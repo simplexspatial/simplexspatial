@@ -25,21 +25,27 @@ import com.simplexportal.spatial.index.grid.Grid.{
   NodeLookUpTypeKey,
   TileTypeKey
 }
-import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor
+import com.simplexportal.spatial.index.grid.lookups.{
+  LookUpNodeEntityIdGen,
+  NodeLookUpActor
+}
 import com.simplexportal.spatial.index.grid.tile
+import com.simplexportal.spatial.index.grid.tile.TileIndexEntityIdGen
 
 /**
   * AddNode per session actor that update all indices and stop.
   */
+// scalastyle:off method.length
 object AddNodeSession {
   def apply(
       sharding: ClusterSharding,
       addNode: tile.AddNode,
-      nodeEntityId: String,
-      tileIdx: tile.TileIdx
+      tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>
+        val nodeEntityId = LookUpNodeEntityIdGen.entityId(addNode.id)
+        val tileIdx = tileIndexEntityIdGen.tileIdx(addNode.lat, addNode.lon)
         val nodeLookUpActor =
           sharding.entityRefFor(NodeLookUpTypeKey, nodeEntityId)
         val tileIndexActor =
@@ -89,3 +95,4 @@ object AddNodeSession {
       }
       .narrow[NotUsed]
 }
+// scalastyle:on method.length
