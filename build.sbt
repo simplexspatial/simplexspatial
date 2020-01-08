@@ -1,14 +1,16 @@
-import sbt.Keys.startYear
+import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
+import sbt.Keys.{description, startYear}
 
 lazy val commonSettings = Seq(
   organization := "com.simplexportal.spatial",
   organizationHomepage := Some(url("http://www.simplexportal.com")),
   organizationName := "SimplexPortal Ltd",
+  maintainer := "angelcervera@simplexportal.com",
   developers := List(
     Developer(
       "angelcervera",
       "Angel Cervera Claudio",
-      "angelcervera@silyan.com",
+      "angelcervera@simplexportal.com",
       url("http://github.com/angelcervera")
     )
   ),
@@ -20,6 +22,9 @@ lazy val commonSettings = Seq(
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.10",
+//  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+//  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+//  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
   /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding",
@@ -36,59 +41,35 @@ lazy val commonSettings = Seq(
     "-source",
     "1.8",
     "-target",
-    "1.8"
+    "1.8",
+    "-parameters"
   ),*/
-  test in assembly := {}
 )
 
-lazy val akkaVersion = "2.6.0"
+lazy val akkaVersion = "2.6.1"
 lazy val scalatestVersion = "3.0.8"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
+lazy val akkaKryoSerializationVersion = "1.1.0"
+lazy val scalaUUIDVersion = "0.3.1"
+
 
 lazy val root = (project in file("."))
-  .disablePlugins(sbtassembly.AssemblyPlugin)
   .settings(
-
+    commonSettings,
+    name := "SimplexSpatial",
+    description := "Geospatial distributed server"
   )
   .aggregate(protobufApi, core, loadOSM)
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
-    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
+    name := "protobuf-api",
+    description := "Protobuf API definition"
   )
 
-lazy val core = (project in file("core"))
-  .enablePlugins(AkkaGrpcPlugin)
-  .enablePlugins(JavaAgent) // ALPN agent
-  .settings(
-    PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
-    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
-    akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server)
-  )
-  .settings(
-    commonSettings,
-    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
-    mainClass in assembly := Some("com.simplexportal.spatial.Main"),
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-      "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
-      "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
-      "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
-      "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
-      "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
-    ) ++ Seq(
-      "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
-      "org.scalatest" %% "scalatest" % scalatestVersion,
-      "com.github.pathikrit" %% "better-files" % betterFilesVersion
-    ).map(_ % "test")
-  )
-  .dependsOn(protobufApi)
-
-
-lazy val loadOSM = (project in file("load_osm"))
+lazy val grpcClientScala = (project in file("grpc-client-scala"))
   .enablePlugins(AkkaGrpcPlugin)
   .settings(
     PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
@@ -96,7 +77,59 @@ lazy val loadOSM = (project in file("load_osm"))
   )
   .settings(
     commonSettings,
-    mainClass in assembly := Some("com.simplexportal.spatial.loadosm.Main"),
+    name := "grpc-client-scala",
+    description := "gRPC Client for Scala"
+  )
+  .dependsOn(protobufApi)
+
+lazy val core = (project in file("core"))
+  .enablePlugins(JavaAppPackaging)
+  .enablePlugins(AkkaGrpcPlugin)
+  .enablePlugins(JavaAgent) // ALPN agent
+  .enablePlugins(MultiJvmPlugin)
+  .configs(MultiJvm)
+  .settings(multiJvmSettings: _*)
+  .settings(parallelExecution in Test := false)
+  .settings(
+    PB.protoSources in Compile += (resourceDirectory in (protobufApi, Compile)).value,
+    akkaGrpcGeneratedLanguages := Seq(AkkaGrpc.Scala),
+    akkaGrpcGeneratedSources := Seq(AkkaGrpc.Server)
+  )
+  .settings(
+    commonSettings,
+    name := "core",
+    description := "Core",
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
+    mainClass in (Compile, packageBin) := Some("com.simplexportal.spatial.Main"),
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
+      "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
+      "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
+      "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
+      "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
+      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion
+    ) ++ Seq(
+      "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
+      "org.scalatest" %% "scalatest" % scalatestVersion,
+      "com.github.pathikrit" %% "better-files" % betterFilesVersion,
+      "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion
+    ).map(_ % Test)
+  )
+  .dependsOn(protobufApi, grpcClientScala % "test->compile")
+
+
+lazy val loadOSM = (project in file("load_osm"))
+  .enablePlugins(JavaAppPackaging)
+  .settings(
+    commonSettings,
+    name := "osm-loader",
+    description := "OSM Loader",
+    mainClass in (Compile, packageBin) := Some("com.simplexportal.spatial.loadosm.Main"),
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
       "org.backuity.clist" %% "clist-core" % "3.5.1",
@@ -104,5 +137,5 @@ lazy val loadOSM = (project in file("load_osm"))
       "ch.qos.logback" % "logback-classic" % "1.2.3"
     )
   )
-  .dependsOn(protobufApi)
+  .dependsOn(grpcClientScala)
 

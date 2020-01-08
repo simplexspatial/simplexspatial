@@ -25,7 +25,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import com.acervera.osm4scala.EntityIterator.fromPbf
 import com.acervera.osm4scala.model.{NodeEntity, OSMTypes, WayEntity}
-import com.simplexportal.spatial.api.data._
+import com.simplexportal.spatial.api.grpc._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -59,10 +59,12 @@ class LoadStreaming {
 
     val reply = client
       .streamBatchCommands(createBatchSource(osmFile, blockSize))
-      .runForeach(i =>
-        println(
-          s"Sent ${nodes} nodes,  ${ways} ways and ${others} others in ${(System.currentTimeMillis() - startTime) / 1000} seconds.  ${blocksSent} blocks sent. Response: ${i}"
-        )
+      .runForeach(
+        i =>
+          println(
+            s"Sent ${nodes} nodes,  ${ways} ways and ${others} others in ${(System
+              .currentTimeMillis() - startTime) / 1000} seconds.  ${blocksSent} blocks sent. Response: ${i}"
+          )
       )
 
     reply.onComplete {
@@ -76,15 +78,19 @@ class LoadStreaming {
     }
   }
 
-  def printTotals: Unit = {
+  def printTotals(): Unit = {
     println("Asking for metrics .....")
-    val metrics = Await.result(client.getMetrics(GetMetricsCmd()), 1 hour)
+    val metrics = Await.result(client.getMetrics(GetMetricsCmd()), 1.hour)
     println(
-      s"Added ${metrics.nodes}/${nodes} nodes and ${metrics.ways}/${ways} ways in ${(System.currentTimeMillis() - startTime) / 1000} seconds. ${blocksSent} blocks sent."
+      s"Added ${metrics.nodes}/${nodes} nodes and ${metrics.ways}/${ways} ways in ${(System
+        .currentTimeMillis() - startTime) / 1000} seconds. ${blocksSent} blocks sent."
     )
   }
 
-  def createBatchSource(osmFile: File, blockSize: Int): Source[ExecuteBatchCmd, NotUsed] = {
+  def createBatchSource(
+      osmFile: File,
+      blockSize: Int
+  ): Source[ExecuteBatchCmd, NotUsed] = {
     val pbfIS: InputStream = new FileInputStream(osmFile)
 
     Source

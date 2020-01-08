@@ -22,14 +22,15 @@ import akka.grpc.scaladsl.ServiceHandler
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
-import com.simplexportal.spatial.api.data.{DataServiceHandler, DataServiceImpl}
-import com.simplexportal.spatial.model.BoundingBox
+import com.simplexportal.spatial.api.grpc.{DataServiceHandler, DataServiceImpl}
+import com.simplexportal.spatial.index.grid.Grid
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
+// TODO: Create the RootBehavior in a separate object.
 object Main extends App {
 
   val config = ConfigFactory
@@ -40,7 +41,7 @@ object Main extends App {
   val port = config.getInt("simplexportal.spatial.api.http.port")
 
   // Akka Classic implicits
-  implicit val system = akka.actor.ActorSystem("CounterServer", config)
+  implicit val system = akka.actor.ActorSystem("CounterServerSystem", config)
   implicit val materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
 
@@ -48,11 +49,33 @@ object Main extends App {
   implicit val typedSystem = system.toTyped
   implicit val scheduler: Scheduler = typedSystem.scheduler
 
-  val tileActor =
-    system.spawn(TileActor("GridIndex", BoundingBox.MAX), "TileActor")
+// TODO: Add roles to http entrypoint and grid shards.
+//  cluster.selfMember match {
+//    case member if member.roles.contains("http") => ???
+//    case member if member.roles.contains("grid-index") => ???
+//  }
+
+  val gridIndex = system.spawn(
+    Grid(
+      "GridIndex",
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.ways-lookup"
+      ),
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.nodes-lookup"
+      ),
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.latitude"
+      ),
+      config.getInt(
+        "simplexportal.spatial.indexes.grid-index.partitions.longitude"
+      )
+    ),
+    "GridIndex"
+  );
 
   val dataServiceHandler =
-    DataServiceHandler.partial(new DataServiceImpl(tileActor))
+    DataServiceHandler.partial(new DataServiceImpl(gridIndex))
   // val algorithmServiceHandler = ....
 
   val serviceHandlers: HttpRequest => Future[HttpResponse] =

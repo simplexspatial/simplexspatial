@@ -23,16 +23,31 @@ package model {
     val MAX_LATITUDE = 90
     val MIN_LONGITUDE = -180
     val MIN_LATITUDE = -90
-    val MAX = Location(MAX_LONGITUDE, MAX_LATITUDE)
-    val MIN = Location(MIN_LONGITUDE, MIN_LATITUDE)
+    val NO_LATITUDE = 91
+    val NO_LONGITUDE = 181
+    val MAX = Location(MAX_LATITUDE, MAX_LONGITUDE)
+    val MIN = Location(MIN_LATITUDE, MIN_LONGITUDE)
+    val NaL = Location(NO_LATITUDE, NO_LONGITUDE)
   }
 
-  case class Location(lon: Double, lat: Double)
+  case class Location(lat: Double, lon: Double)
 
   object BoundingBox {
     val MAX = BoundingBox(Location.MIN, Location.MAX)
   }
 
   case class BoundingBox(min: Location, max: Location)
+
+  case class Node(
+      id: Long,
+      location: Location,
+      attributes: Map[String, String] = Map.empty
+  )
+
+  case class Way(
+      id: Long,
+      nodes: Seq[Node],
+      attributes: Map[String, String] = Map.empty
+  )
 
 }
