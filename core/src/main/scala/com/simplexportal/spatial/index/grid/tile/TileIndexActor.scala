@@ -89,6 +89,7 @@ object TileIndexActor {
       }
 
     case AddBatch(cmds, replyTo) =>
+      println(s">>>>>>>>>>>>>>>>>>> Adding ${cmds}")
       Effect
         .persist(BatchAdded(cmds.map {
           case AddNode(id, lat, lon, attributes, _) =>
