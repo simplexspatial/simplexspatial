@@ -55,18 +55,24 @@ object GetNodeLocationsSession {
       var expectedResponses = 0;
 
       // Group by look-up entity id to get node locations.
-      ids.distinct
+      val idsByEntityId = ids.distinct
         .map(id => (id, LookUpNodeEntityIdGen.entityId(id)))
         .groupBy(_._2)
         .map(e => e._1 -> e._2.map(_._1))
-        .foreach {
-          case (entityId, ids) =>
-            expectedResponses += 1
-            sharding.entityRefFor(
-              NodeLookUpTypeKey,
-              entityId
-            ) ! NodeLookUpActor.Gets(ids, nodeLookUpResponseAdapter)
-        }
+
+      if (idsByEntityId.isEmpty) {
+        replyTo ! NodeLocations(Map.empty)
+      } else {
+        idsByEntityId
+          .foreach {
+            case (entityId, ids) =>
+              expectedResponses += 1
+              sharding.entityRefFor(
+                NodeLookUpTypeKey,
+                entityId
+              ) ! NodeLookUpActor.Gets(ids, nodeLookUpResponseAdapter)
+          }
+      }
 
       handleLookUpResponses(
         expectedResponses,

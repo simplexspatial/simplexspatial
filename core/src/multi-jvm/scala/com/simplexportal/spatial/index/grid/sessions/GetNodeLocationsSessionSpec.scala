@@ -120,6 +120,44 @@ abstract class GetNodeLocationsSessionSpec
       enterBarrier("all-up")
     }
 
+    "Ask for locations when is empty" when {
+
+      "ask a list of not found nodes return a map on none in the value" in {
+        val probe = TestProbe[GetNodeLocationsSession.NodeLocations]()
+        runOn(node1) {
+          system.spawn(
+            GetNodeLocationsSession(sharding, Seq(9910, 9911), probe.ref),
+            s"get_not_found_node_locations_${UUID.randomString}"
+          )
+
+          probe.expectMessage(
+            GetNodeLocationsSession.NodeLocations(
+              Map(
+                9910L -> None,
+                9911L -> None
+              )
+            )
+          )
+        }
+      }
+
+      "ask an empty list return an empty map" in {
+        val probe = TestProbe[GetNodeLocationsSession.NodeLocations]()
+        runOn(node1) {
+          system.spawn(
+            GetNodeLocationsSession(sharding, Seq.empty, probe.ref),
+            s"get_empty_request_node_locations_${UUID.randomString}"
+          )
+
+          probe.expectMessage(
+            GetNodeLocationsSession.NodeLocations(
+              Map.empty
+            )
+          )
+        }
+      }
+    }
+
     "Add nodes in different " in {
       val probe = TestProbe[NodeLookUpActor.Done]()
       runOn(node0) {
