@@ -33,6 +33,9 @@ import scala.language.implicitConversions
 
 import com.simplexportal.spatial.index.grid.tile
 
+/**
+ * Testing a single tile in a cluster. On this way, it is possible to verify aspects like serialization.
+ */
 object TileIndexClusterSpecConfig extends MultiNodeConfig {
 
   val node0 = role("node0")
