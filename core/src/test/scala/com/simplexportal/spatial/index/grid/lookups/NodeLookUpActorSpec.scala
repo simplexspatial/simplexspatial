@@ -29,33 +29,66 @@ class NodeLookUpActorSpec
     with Matchers {
 
   "NodeLookUpActor" must {
-    "Put and Get correctly" in {
-      val probeResponse = testKit.createTestProbe[NodeLookUpActor.Response]()
-      val lookup = testKit.spawn(
-        NodeLookUpActor("test-index", "add-lookup"),
-        "add-lookup-test"
-      )
-
-      lookup ! Put(10, TileIdx(10, 10), Some(probeResponse.ref))
-      probeResponse.expectMessage(Done())
-
-      lookup ! Put(11, TileIdx(11, 11), Some(probeResponse.ref))
-      probeResponse.expectMessage(Done())
-
-      lookup ! Get(10, probeResponse.ref)
-      probeResponse.expectMessage(GetResponse(10, Some(TileIdx(10, 10))))
-
-      lookup ! Get(1000, probeResponse.ref)
-      probeResponse.expectMessage(GetResponse(1000, None))
-
-      lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
-      probeResponse.expectMessage(GetsResponse(
-        Seq(
-          GetResponse(10, Some(TileIdx(10,10))),
-          GetResponse(11, Some(TileIdx(11,11))),
-          GetResponse(1000, None)
+    "Put and Get correctly" when {
+      "do it one by one" in {
+        val probeResponse = testKit.createTestProbe[NodeLookUpActor.Response]()
+        val lookup = testKit.spawn(
+          NodeLookUpActor("test-one-by-one-index", "add-one-by-one-lookup"),
+          "add-lookup-one-by-one-test"
         )
-      ))
+
+        lookup ! Put(10, TileIdx(10, 10), Some(probeResponse.ref))
+        probeResponse.expectMessage(Done())
+
+        lookup ! Put(11, TileIdx(11, 11), Some(probeResponse.ref))
+        probeResponse.expectMessage(Done())
+
+        lookup ! Get(10, probeResponse.ref)
+        probeResponse.expectMessage(GetResponse(10, Some(TileIdx(10, 10))))
+
+        lookup ! Get(1000, probeResponse.ref)
+        probeResponse.expectMessage(GetResponse(1000, None))
+
+        lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
+        probeResponse.expectMessage(
+          GetsResponse(
+            Seq(
+              GetResponse(10, Some(TileIdx(10, 10))),
+              GetResponse(11, Some(TileIdx(11, 11))),
+              GetResponse(1000, None)
+            )
+          )
+        )
+      }
+
+      "do it in blocks" in {
+        val probeResponse = testKit.createTestProbe[NodeLookUpActor.Response]()
+        val lookup = testKit.spawn(
+          NodeLookUpActor("test-batch-index", "add-batch-lookup"),
+          "add-lookup-batch-test"
+        )
+        lookup ! PutBatch(
+          Seq(
+            Put(10, TileIdx(10, 10), Some(probeResponse.ref)),
+            Put(11, TileIdx(11, 11), Some(probeResponse.ref)),
+            Put(12, TileIdx(12, 12), Some(probeResponse.ref)),
+            Put(13, TileIdx(13, 13), Some(probeResponse.ref))
+          ),
+          Some(probeResponse.ref)
+        )
+        probeResponse.expectMessage(Done())
+
+        lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
+        probeResponse.expectMessage(
+          GetsResponse(
+            Seq(
+              GetResponse(10, Some(TileIdx(10, 10))),
+              GetResponse(11, Some(TileIdx(11, 11))),
+              GetResponse(1000, None)
+            )
+          )
+        )
+      }
 
     }
   }

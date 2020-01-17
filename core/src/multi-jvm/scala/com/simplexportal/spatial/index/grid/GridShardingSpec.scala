@@ -189,7 +189,7 @@ abstract class GridShardingSpec
       enterBarrier("no data found")
     }
 
-    "be able to add a ways in different shards using batched commands" in {
+/*    "be able to add a ways in different shards using batched commands" in {
       val probe = TestProbe[tile.ACK]()
       runOn(node0) {
         gridIndex ! tile.AddBatch(Seq(
@@ -222,7 +222,7 @@ abstract class GridShardingSpec
 //        )) shouldBe probe.receiveMessage()
       }
       enterBarrier("data retrieved from batch mode")
-    }
+    }*/
 
 
 //    "get right metrics" in within(10.seconds)  {

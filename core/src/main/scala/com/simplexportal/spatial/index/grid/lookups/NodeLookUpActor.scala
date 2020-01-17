@@ -21,34 +21,50 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
+import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.tile.TileIdx
 
-// TODO: Generalize LookUp
 object NodeLookUpActor {
 
-  sealed trait Message
+  sealed trait Message extends CommonInternalSerializer
 
   trait Response extends Message
-  case class Done() extends Response
+
+  trait ACK extends Response
+
+  case class Done() extends ACK
+
+  case class NotDone(error: String) extends ACK
+
   case class GetResponse(id: Long, maybeNodeEntityId: Option[TileIdx])
       extends Response
+
   case class GetsResponse(gets: Seq[GetResponse]) extends Response
 
   trait Command extends Message
+
   case class Put(
       id: Long,
       nodeEntityId: TileIdx,
-      replyTo: Option[ActorRef[Done]]
+      replyTo: Option[ActorRef[ACK]]
   ) extends Command
+
+  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]])
+      extends Command
+
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
+
   case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse])
       extends Command
 
   trait Event extends Message
+
   case class Putted(id: Long, nodeEntityId: TileIdx) extends Event
 
+  case class PuttedBatch(puts: Seq[Putted]) extends Event
+
   def apply(indexId: String, partitionId: String): Behavior[Command] =
-    Behaviors.setup { context =>
+    Behaviors.setup { _ =>
       EventSourcedBehavior[Command, Event, Map[Long, TileIdx]](
         persistenceId = PersistenceId(s"NodeLookUp_${indexId}", partitionId),
         emptyState = Map.empty,
@@ -72,6 +88,14 @@ object NodeLookUpActor {
         Effect.persist(Putted(id, nodeEntityId)).thenRun { _ =>
           replyTo.foreach(_ ! Done())
         }
+      case PutBatch(puts, replyTo) =>
+        Effect
+          .persist(
+            PuttedBatch(puts.map(put => Putted(put.id, put.nodeEntityId)))
+          )
+          .thenRun { _ =>
+            replyTo.foreach(_ ! Done())
+          }
     }
   }
 
@@ -80,8 +104,10 @@ object NodeLookUpActor {
       event: Event
   ): Map[Long, TileIdx] =
     event match {
-      case put: Putted =>
-        table + (put.id -> put.nodeEntityId)
+      case Putted(id, nodeEntityId) =>
+        table + (id -> nodeEntityId)
+      case PuttedBatch(puts) =>
+        table ++ puts.map(put => (put.id -> put.nodeEntityId))
     }
 
 }

@@ -17,10 +17,21 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.tile.TileIdx
+import com.simplexportal.spatial.index.grid.lookups.{
+  LookUpNodeEntityIdGen,
+  LookUpWayEntityIdGen,
+  NodeLookUpActor,
+  WayLookUpActor
+}
+import com.simplexportal.spatial.index.grid.tile.{
+  AddNode,
+  AddWay,
+  BatchActions,
+  TileIdx
+}
 import com.simplexportal.spatial.index.grid.{
   CommonInternalSerializer,
   Grid,
@@ -29,6 +40,7 @@ import com.simplexportal.spatial.index.grid.{
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object AddBatchSession {
@@ -49,7 +61,7 @@ object AddBatchSession {
   def apply(
       sharding: ClusterSharding,
       cmds: Seq[tile.BatchActions],
-      replyTo: Option[ActorRef[tile.ACK]],
+      maybeReplyTo: Option[ActorRef[tile.ACK]],
       tileEntityFn: tile.TileIndexEntityIdGen
   ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
     val locsResponseAdapter: ActorRef[GetNodeLocationsSession.NodeLocations] =
@@ -70,13 +82,14 @@ object AddBatchSession {
           case (id, Some(tileIdx)) => Some((id -> tileIdx))
         } ++ newNodes) match {
           case Success(locationsIdx) =>
-            addCommandsPerTileIdx(
+            updateIndexes(
               sharding,
-              groupByTileIdx(cmds, locationsIdx),
-              replyTo
+              cmds,
+              locationsIdx,
+              maybeReplyTo
             )
           case Failure(exception) =>
-            replyTo.foreach(_ ! tile.NotDone(exception.getMessage))
+            maybeReplyTo.foreach(_ ! tile.NotDone(exception.getMessage))
             Behaviors.stopped
         }
     }
@@ -172,24 +185,101 @@ object AddBatchSession {
     )
   }
 
-  def addCommandsPerTileIdx(
-      sharding: ClusterSharding,
-      cmdsPerTile: Map[tile.TileIdx, Seq[tile.BatchActions]],
-      maybeReplyTo: Option[ActorRef[tile.ACK]]
-  ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
-    val batchResponseAdapter: ActorRef[tile.ACK] =
-      context.messageAdapter {
-        case tile.Done()       => DoneWrapper()
-        case tile.NotDone(msg) => NotDoneWrapper(msg)
-      }
-
-    cmdsPerTile.foreach {
-      case (tileIdx, cmds) =>
-        sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) !
-          tile.AddBatch(cmds, Some(batchResponseAdapter))
+  private def adapters(context: ActorContext[Messages]): ActorRef[AnyRef] =
+    context.messageAdapter {
+      case tile.Done()                  => DoneWrapper()
+      case tile.NotDone(msg)            => NotDoneWrapper(msg)
+      case NodeLookUpActor.Done()       => DoneWrapper()
+      case NodeLookUpActor.NotDone(msg) => NotDoneWrapper(msg)
+      case WayLookUpActor.Done()        => DoneWrapper()
+      case WayLookUpActor.NotDone(msg)  => NotDoneWrapper(msg)
     }
 
-    collectAddCommandsResponses(cmdsPerTile.size, Seq.empty, maybeReplyTo)
+  def updateIndexes(
+      sharding: ClusterSharding,
+      cmds: Seq[tile.BatchActions],
+      locationsIdx: Map[Long, tile.TileIdx],
+      maybeReplyTo: Option[ActorRef[tile.ACK]]
+  ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
+    val adapter = adapters(context)
+
+    val cmdsPerTileIdx = groupByTileIdx(cmds, locationsIdx)
+
+    var expectedResponses = 0
+
+    val (nodes, ways) = splitLookUps(cmdsPerTileIdx)
+
+    // Update Nodes lookUp.
+    nodes.foreach {
+      case (shardId, items) =>
+        expectedResponses += 1
+        sharding.entityRefFor(Grid.NodeLookUpTypeKey, shardId) !
+          NodeLookUpActor.PutBatch(items.map {
+            case (id, tileIdx) => NodeLookUpActor.Put(id, tileIdx, None)
+          }, Some(adapter))
+    }
+
+    // Update Ways lookUp.
+    ways.foreach {
+      case (shardId, items) =>
+        expectedResponses += 1
+        sharding.entityRefFor(Grid.WayLookUpTypeKey, shardId) !
+          WayLookUpActor.PutBatch(items.map {
+            case (id, tileIdx) => WayLookUpActor.Put(id, tileIdx, None)
+          }, Some(adapter))
+    }
+
+    // Update Tile index.
+    cmdsPerTileIdx.foreach {
+      case (tileIdx, cmds) =>
+        expectedResponses += 1
+        sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) !
+          tile.AddBatch(cmds, Some(adapter))
+    }
+
+    collectAddCommandsResponses(expectedResponses, Seq.empty, maybeReplyTo)
+  }
+
+  def splitLookUps(
+      cmdsPerTileIdx: Map[tile.TileIdx, Seq[tile.BatchActions]]
+  ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) = {
+
+    @tailrec
+    def rec(
+        remaining: Seq[(TileIdx, BatchActions)],
+        nodes: Map[String, Seq[(Long, TileIdx)]],
+        ways: Map[String, Seq[(Long, TileIdx)]]
+    ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) =
+      remaining match {
+        case Nil => (nodes, ways)
+        case head :: tail =>
+          head match {
+            case (tileIdx, AddNode(id, _, _, _, _)) =>
+              val shard = LookUpNodeEntityIdGen.entityId(id)
+              val itemsPerShard = nodes.getOrElse(shard, Seq.empty) :+ (id, tileIdx)
+              rec(
+                tail,
+                nodes + (shard -> itemsPerShard),
+                ways
+              )
+            case (tileIdx, AddWay(id, _, _, _)) =>
+              val shard = LookUpWayEntityIdGen.entityId(id)
+              val itemsPerShard = ways.getOrElse(shard, Seq.empty) :+ (id, tileIdx)
+              rec(
+                tail,
+                nodes,
+                ways + (shard -> itemsPerShard)
+              )
+          }
+      }
+
+    val actions = cmdsPerTileIdx.flatMap {
+      case (tileIdx, actions) =>
+        actions.map((tileIdx, _))
+    }.toList
+
+    rec(actions, Map.empty, Map.empty)
+
   }
 
   def collectAddCommandsResponses(

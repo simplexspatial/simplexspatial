@@ -27,6 +27,8 @@ import com.simplexportal.spatial.index.grid.tile
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
+// TODO: Move to ...index.grid.grpc package
+
 class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
     implicit
     executionContext: ExecutionContext,

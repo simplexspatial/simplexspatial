@@ -159,7 +159,7 @@ abstract class GetNodeLocationsSessionSpec
     }
 
     "Add nodes in different " in {
-      val probe = TestProbe[NodeLookUpActor.Done]()
+      val probe = TestProbe[NodeLookUpActor.ACK]()
       runOn(node0) {
         val nodes = Seq(
           tile.AddNode(0, -23, -90, Map.empty, None),
