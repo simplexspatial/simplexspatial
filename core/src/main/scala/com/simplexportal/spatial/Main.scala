@@ -22,8 +22,9 @@ import akka.grpc.scaladsl.ServiceHandler
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
-import com.simplexportal.spatial.api.grpc.{DataServiceHandler, DataServiceImpl}
+import com.simplexportal.spatial.api.grpc.DataServiceHandler
 import com.simplexportal.spatial.index.grid.Grid
+import com.simplexportal.spatial.index.grid.grpc.DataServiceImpl
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration

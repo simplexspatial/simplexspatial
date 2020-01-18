@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplexportal.spatial.api.grpc
+package com.simplexportal.spatial.index.grid.grpc
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
@@ -22,12 +22,11 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
+import com.simplexportal.spatial.api.grpc._
 import com.simplexportal.spatial.index.grid.tile
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-
-// TODO: Move to ...index.grid.grpc package
 
 class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
     implicit
@@ -36,7 +35,7 @@ class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
 ) extends DataService {
 
   // FIXME: Temporal timeout for POC
-  implicit val timeout = Timeout(15 minutes)
+  implicit val timeout = Timeout(1 minutes)
 
   implicit def responseAdapter(response: tile.ACK): ACK = response match {
     case tile.Done()         => ACK().withDone(Done())
