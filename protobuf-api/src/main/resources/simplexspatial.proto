@@ -6,10 +6,17 @@ option java_package = "com.simplexportal.spatial.api.grpc";
 package com.simplexportal.spatial.api.grpc;
 
 service DataService {
-    rpc AddNode (AddNodeCmd) returns (Done);
-    rpc AddWay (AddWayCmd) returns (Done);
-    rpc StreamBatchCommands (stream ExecuteBatchCmd) returns (stream Done);
+    rpc AddNode (AddNodeCmd) returns (ACK);
+    rpc AddWay (AddWayCmd) returns (ACK);
+    rpc StreamBatchCommands (stream ExecuteBatchCmd) returns (stream ACK);
     rpc GetMetrics (GetMetricsCmd) returns (Metrics);
+}
+
+message ACK {
+    oneof ACKValue {
+        Done done = 1;
+        NotDone notDone = 2;
+    }
 }
 
 message Done {

@@ -21,32 +21,54 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
+import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.tile.TileIdx
+
+import scala.annotation.tailrec
 
 // TODO: Generalize LookUp
 object WayLookUpActor {
 
-  sealed trait Message
+  sealed trait Message extends CommonInternalSerializer
 
   trait Response extends Message
-  case class Done() extends Response
-  case class GetResponse(id: Long, maybeNodeEntityIds: Option[Seq[TileIdx]])
+
+  trait ACK extends Response
+
+  case class Done() extends ACK
+
+  case class NotDone(error: String) extends ACK
+
+  case class GetResponse(id: Long, maybeWayEntityIds: Option[Set[TileIdx]])
       extends Response
 
+  case class GetsResponse(gets: Seq[GetResponse]) extends Response
+
   trait Command extends Message
+
   case class Put(
       id: Long,
-      nodeEntityId: TileIdx,
-      replyTo: Option[ActorRef[Done]]
+      wayEntityId: TileIdx,
+      replyTo: Option[ActorRef[ACK]]
   ) extends Command
+
+  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]])
+      extends Command
+
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
 
+  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse])
+      extends Command
+
   trait Event extends Message
-  case class Putted(id: Long, nodeEntityId: TileIdx) extends Event
+
+  case class Putted(id: Long, wayEntityId: TileIdx) extends Event
+
+  case class PuttedBatch(puts: Seq[Putted]) extends Event
 
   def apply(indexId: String, partitionId: String): Behavior[Command] =
     Behaviors.setup { _ =>
-      EventSourcedBehavior[Command, Event, Map[Long, Seq[TileIdx]]](
+      EventSourcedBehavior[Command, Event, Map[Long, Set[TileIdx]]](
         persistenceId = PersistenceId(indexId, partitionId),
         emptyState = Map.empty,
         commandHandler = (state, command) => onCommand(state, command),
@@ -55,30 +77,62 @@ object WayLookUpActor {
     }
 
   private def onCommand(
-      table: Map[Long, Seq[TileIdx]],
+      table: Map[Long, Set[TileIdx]],
       command: Command
-  ): Effect[Event, Map[Long, Seq[TileIdx]]] = {
+  ): Effect[Event, Map[Long, Set[TileIdx]]] = {
     command match {
       case Get(id, replyTo) =>
         replyTo ! GetResponse(id, table.get(id))
         Effect.none
-      case Put(id, nodeEntityId, replyTo) =>
-        Effect.persist(Putted(id, nodeEntityId)).thenRun { _ =>
+      case Gets(ids, replyTo) =>
+        replyTo ! GetsResponse(ids.map(id => GetResponse(id, table.get(id))))
+        Effect.none
+      case Put(id, wayEntityId, replyTo) =>
+        Effect.persist(Putted(id, wayEntityId)).thenRun { _ =>
           replyTo.foreach(_ ! Done())
         }
+      case PutBatch(puts, replyTo) =>
+        Effect
+          .persist(
+            PuttedBatch(puts.map(put => Putted(put.id, put.wayEntityId)))
+          )
+          .thenRun { _ =>
+            replyTo.foreach(_ ! Done())
+          }
     }
   }
 
   private def applyEvent(
-      table: Map[Long, Seq[TileIdx]],
+      table: Map[Long, Set[TileIdx]],
       event: Event
-  ): Map[Long, Seq[TileIdx]] =
+  ): Map[Long, Set[TileIdx]] =
     event match {
-      case put: Putted =>
-        table + (put.id -> (put.nodeEntityId +: table.getOrElse(
-          put.id,
-          Seq.empty
-        )))
+      case Putted(id, wayEntityId) =>
+        table.multiAdd(id, wayEntityId)
+      case PuttedBatch(puts) =>
+        table.multiAdd(puts.map { case Putted(k, v) => (k, v) })
     }
 
+  // TODO: Export to a common class.
+  private implicit class MultiValueMap(table: Map[Long, Set[TileIdx]]) {
+
+    def multiAdd(k: Long, v: TileIdx): Map[Long, Set[TileIdx]] =
+      table + (k -> (table.getOrElse(k, Set.empty) + v))
+
+    def multiAdd(items: Seq[(Long, TileIdx)]): Map[Long, Set[TileIdx]] = {
+      @tailrec
+      def rec(
+          remaining: Seq[(Long, TileIdx)],
+          acc: Map[Long, Set[TileIdx]]
+      ): Map[Long, Set[TileIdx]] = remaining match {
+        case Nil => acc
+        case head :: tail =>
+          head match {
+            case (k, v) => rec(tail, acc.multiAdd(k, v))
+          }
+      }
+      rec(items, table)
+    }
+
+  }
 }

@@ -18,7 +18,7 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
@@ -36,7 +36,8 @@ object GetWaySession {
 
   def apply(
       sharding: ClusterSharding,
-      getWay: tile.GetWay
+      id: Long,
+      replyTo: ActorRef[GetWayResponse]
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>
@@ -45,13 +46,16 @@ object GetWaySession {
 
         sharding.entityRefFor(
           WayLookUpTypeKey,
-          LookUpWayEntityIdGen.entityId(getWay.id)
-        ) ! WayLookUpActor.Get(getWay.id, context.self)
+          LookUpWayEntityIdGen.entityId(id)
+        ) ! WayLookUpActor.Get(id, context.self)
 
         Behaviors.receiveMessage {
-          case WayLookUpActor.GetResponse(wayId, Some(tileIdxs)) =>
-            expectedTiles += tileIdxs.size
-            tileIdxs.foreach(tileIdx =>
+          case WayLookUpActor.GetResponse(_, None) =>
+            replyTo ! GetWayResponse(id, None)
+            Behaviors.stopped
+          case WayLookUpActor.GetResponse(wayId, Some(tileIds)) =>
+            expectedTiles += tileIds.size
+            tileIds.foreach(tileIdx =>
               sharding.entityRefFor(
                 TileTypeKey,
                 tileIdx.entityId
@@ -62,9 +66,8 @@ object GetWaySession {
             expectedTiles -= 1
             wayParts = wayParts + way
             if (expectedTiles == 0) {
-              getWay.replyTo ! GetWayResponse(id, joinWayParts(wayParts).map {
-                nodes =>
-                  way.copy(nodes = nodes)
+              replyTo ! GetWayResponse(id, joinWayParts(wayParts).map { nodes =>
+                way.copy(nodes = nodes)
               })
               Behaviors.stopped
             }

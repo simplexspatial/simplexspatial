@@ -36,6 +36,7 @@ import com.simplexportal.spatial.index.grid.tile.TileIndexEntityIdGen
   * AddNode per session actor that update all indices and stop.
   */
 // scalastyle:off method.length
+@deprecated("Reuse AddBatchSession")
 object AddNodeSession {
   def apply(
       sharding: ClusterSharding,

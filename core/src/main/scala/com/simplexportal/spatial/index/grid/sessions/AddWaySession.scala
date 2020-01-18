@@ -39,6 +39,7 @@ import io.jvm.uuid.UUID
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
+@deprecated("Reuse AddBatchSession")
 object AddWaySession {
 
   // scalastyle:off method.length
@@ -84,9 +85,8 @@ object AddWaySession {
                   }
                 Behaviors.same
               case Failure(exception) =>
-                // FIXME: Must return NACK or NotDone
-                exception.printStackTrace()
-                ???
+                addWay.replyTo.foreach(_ ! NotDone(exception.getMessage))
+                Behaviors.stopped
             }
           case Done() | WayLookUpActor.Done() =>
             pendingResponses -= 1

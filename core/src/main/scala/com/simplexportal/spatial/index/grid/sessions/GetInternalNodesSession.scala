@@ -18,8 +18,8 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{Behavior, Scheduler}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{
   NodeLookUpTypeKey,
@@ -32,6 +32,13 @@ import com.simplexportal.spatial.index.grid.lookups.{
 }
 import com.simplexportal.spatial.index.grid.tile
 import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexEntityIdGen}
+import io.jvm.uuid.UUID
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.util.Timeout
+
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 /**
   * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.

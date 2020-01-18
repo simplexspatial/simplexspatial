@@ -31,9 +31,11 @@ package tile {
 
   case class Metrics(ways: Long, nodes: Long) extends Reply
 
-  case class Done() extends Reply
+  trait ACK extends Reply
 
-  case class NotDone() extends Reply
+  case class Done() extends ACK
+
+  case class NotDone(msg: String = "No error message") extends ACK
 
   case class GetInternalNodeResponse(
       id: Long,
@@ -82,19 +84,19 @@ package tile {
       lat: Double,
       lon: Double,
       attributes: Map[String, String],
-      replyTo: Option[ActorRef[Done]] = None
+      replyTo: Option[ActorRef[ACK]] = None
   ) extends BatchActions
 
   final case class AddWay(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String],
-      replyTo: Option[ActorRef[Done]] = None
+      replyTo: Option[ActorRef[ACK]] = None
   ) extends BatchActions
 
   final case class AddBatch(
       cmds: Seq[BatchActions],
-      replyTo: Option[ActorRef[Done]] = None
+      replyTo: Option[ActorRef[ACK]] = None
   ) extends Action
 
   protected[tile] sealed trait AtomicEvent extends Event

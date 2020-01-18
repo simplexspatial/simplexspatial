@@ -32,7 +32,7 @@ class TileIndexActorSpec extends ScalaTestWithActorTestKit
   "Tile Actor" should {
 
     "add the nodes" in {
-      val probeDone = testKit.createTestProbe[tile.Done]()
+      val probeDone = testKit.createTestProbe[tile.ACK]()
       val probeNode = testKit.createTestProbe[tile.GetInternalNodeResponse]()
       val probeMetrics = testKit.createTestProbe[tile.Metrics]()
 
