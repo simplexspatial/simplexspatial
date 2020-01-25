@@ -42,7 +42,7 @@ object Main extends App {
   val port = config.getInt("simplexportal.spatial.api.http.port")
 
   // Akka Classic implicits
-  implicit val system = akka.actor.ActorSystem("CounterServerSystem", config)
+  implicit val system = akka.actor.ActorSystem("SimplexSpatialSystem", config)
   implicit val materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
 

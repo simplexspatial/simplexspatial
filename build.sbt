@@ -1,6 +1,8 @@
 import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
 import sbt.Keys.{description, startYear}
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
 lazy val commonSettings = Seq(
   organization := "com.simplexportal.spatial",
   organizationHomepage := Some(url("http://www.simplexportal.com")),
@@ -21,7 +23,7 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.12.10"
 //  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
 //  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 //  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
@@ -53,7 +55,6 @@ lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
 lazy val akkaKryoSerializationVersion = "1.1.0"
 lazy val scalaUUIDVersion = "0.3.1"
-
 
 lazy val root = (project in file("."))
   .settings(
@@ -97,10 +98,12 @@ lazy val core = (project in file("core"))
   )
   .settings(
     commonSettings,
-    name := "core",
+    name := "simplex-spatial-core",
     description := "Core",
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
-    mainClass in (Compile, packageBin) := Some("com.simplexportal.spatial.Main"),
+    mainClass in (Compile, packageBin) := Some(
+      "com.simplexportal.spatial.Main"
+    ),
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
@@ -120,16 +123,23 @@ lazy val core = (project in file("core"))
       "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion
     ).map(_ % Test)
   )
+  .enablePlugins(UniversalPlugin)
+  .enablePlugins(BashStartScriptPlugin)
+  .enablePlugins(LauncherJarPlugin)
+  .settings(
+    packageDescription := "SimplexSpatial Server"
+  )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")
-
 
 lazy val loadOSM = (project in file("load_osm"))
   .enablePlugins(JavaAppPackaging)
   .settings(
     commonSettings,
-    name := "osm-loader",
+    name := "simplex-spatial-osm-loader",
     description := "OSM Loader",
-    mainClass in (Compile, packageBin) := Some("com.simplexportal.spatial.loadosm.Main"),
+    mainClass in (Compile, packageBin) := Some(
+      "com.simplexportal.spatial.loadosm.Main"
+    ),
     libraryDependencies ++= Seq(
       "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
       "org.backuity.clist" %% "clist-core" % "3.5.1",
@@ -138,4 +148,3 @@ lazy val loadOSM = (project in file("load_osm"))
     )
   )
   .dependsOn(grpcClientScala)
-
