@@ -98,7 +98,7 @@ lazy val core = (project in file("core"))
   )
   .settings(
     commonSettings,
-    name := "simplex-spatial-core",
+    name := "simplexspatial-core",
     description := "Core",
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
     mainClass in (Compile, packageBin) := Some(
@@ -135,7 +135,7 @@ lazy val loadOSM = (project in file("load_osm"))
   .enablePlugins(JavaAppPackaging)
   .settings(
     commonSettings,
-    name := "simplex-spatial-osm-loader",
+    name := "simplexspatial-osm-loader",
     description := "OSM Loader",
     mainClass in (Compile, packageBin) := Some(
       "com.simplexportal.spatial.loadosm.Main"
