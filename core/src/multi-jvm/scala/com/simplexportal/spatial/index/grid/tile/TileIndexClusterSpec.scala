@@ -63,6 +63,7 @@ object TileIndexClusterSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
       akka.loglevel=ERROR
       akka.cluster.seed-nodes = [ "akka://TileIndexClusterSpec@localhost:2551" ]
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """).withFallback(ConfigFactory.load()))
 
 }

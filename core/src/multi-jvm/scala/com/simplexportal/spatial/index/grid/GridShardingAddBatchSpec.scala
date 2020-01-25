@@ -60,6 +60,7 @@ object GridShardingAddBatchSpecConfig extends MultiNodeConfig {
     ConfigFactory.parseString("""
       akka.loglevel=INFO
       akka.cluster.seed-nodes = [ "akka://GridShardingAddBatchSpec@localhost:2551" ]
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """).withFallback(ConfigFactory.load())
   )
 

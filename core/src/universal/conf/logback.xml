@@ -19,7 +19,7 @@
 <configuration>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>simplexspatial.log</file>
+        <file>logs/simplexspatial.log</file>
         <immediateFlush>false</immediateFlush>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>simplexspatial_%d{yyyy-MM-dd}.log</fileNamePattern>

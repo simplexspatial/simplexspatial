@@ -59,6 +59,7 @@ object GridShardingSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
       akka.loglevel=INFO
       akka.cluster.seed-nodes = [ "akka://GridShardingSpec@localhost:2551" ]
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """).withFallback(ConfigFactory.load()))
 
 }

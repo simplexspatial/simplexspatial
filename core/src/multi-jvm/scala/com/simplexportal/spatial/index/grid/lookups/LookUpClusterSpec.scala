@@ -58,6 +58,7 @@ object LookUpClusterSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
       akka.loglevel=ERROR
       akka.cluster.seed-nodes = [ "akka://NodeLookUpClusterSpec@localhost:2551" ]
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """).withFallback(ConfigFactory.load()))
 
 }

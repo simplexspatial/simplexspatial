@@ -45,16 +45,20 @@ object Grid {
       context: ActorContext[_],
       indexId: String,
       nodeLookUpPartitions: Int,
+      wayLookUpPartitions: Int,
       latPartitions: Int,
       lonPartitions: Int
   ): Unit = {
     context.log.info(
       """
-        | Starting Guardian sharding [{}] with [{}] nodes lookup partitions, [{}] lat. partitions and [{}] lon. partitions.
-        | Every shard in the index is going to cover a fixed area of [{}] km2 approx. [{}] Km. lat. x [{}] Km. lon.
+        | Starting Guardian sharding [{}] with:
+        | -> [{}] nodes lookup partitions,
+        | -> [{}] ways lookup partitions,
+        | -> [{}] lat. partitions and [{}] lon. partitions. So every shard in the index is going to cover a fixed area of [{}] km2 approx. [{}] Km. lat. x [{}] Km. lon.
         |""".stripMargin,
       indexId toString,
       nodeLookUpPartitions toString,
+      wayLookUpPartitions toString,
       latPartitions toString,
       lonPartitions toString,
       ((40075 / lonPartitions) * (40007 / latPartitions)) toString,
@@ -122,6 +126,7 @@ object Grid {
         context,
         indexId,
         nodeLookUpPartitions,
+        wayLookUpPartitions,
         latPartitions,
         lonPartitions
       )
