@@ -45,7 +45,7 @@ case class TileIndex(
     nodes: Map[Long, InternalNode] = Map.empty,
     ways: Map[Long, InternalWay] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
-) {
+) extends TileGISSearch {
 
   // Generate a tuple a map with all tagsIds and another with the value indexed by tagId.
   private def attributesToDictionary(
@@ -57,6 +57,11 @@ case class TileIndex(
         (dic + (hash -> attr._1), attrs + (hash -> attr._2))
       }
     }
+
+  protected def dictionaryToAttributes(
+      attrs: Map[Int, String]
+  ): Map[String, String] =
+    attrs.map { case (k, v) => tagsDic(k) -> v }
 
   def addNode(
       id: Long,

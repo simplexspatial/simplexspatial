@@ -55,6 +55,7 @@ lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
 lazy val akkaKryoSerializationVersion = "1.1.0"
 lazy val scalaUUIDVersion = "0.3.1"
+lazy val jtsVersion = "1.16.1"
 
 lazy val root = (project in file("."))
   .settings(
@@ -115,10 +116,12 @@ lazy val core = (project in file("core"))
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
       "ch.qos.logback" % "logback-classic" % "1.2.3",
-      "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion
+      "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
+      "org.locationtech.jts" % "jts-core" % jtsVersion
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
+      "org.scalactic" %% "scalactic" % scalatestVersion,
       "com.github.pathikrit" %% "better-files" % betterFilesVersion,
       "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion
     ).map(_ % Test)
