@@ -15,10 +15,10 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.impl
 
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex.InternalNode
 import com.simplexportal.spatial.index.{GISSearch, NearestNode}
-import com.simplexportal.spatial.index.grid.tile.TileIndex.InternalNode
 import com.simplexportal.spatial.model.{Location, Node}
 import com.simplexportal.spatial.utils.JTSImplicits._
 import org.locationtech.jts.geom.Coordinate
@@ -58,11 +58,9 @@ trait TileGISSearch extends GISSearch {
           case None => Some(Set(node), d)
           case Some((nearestNodes, nearestDistance)) if d == nearestDistance =>
             Some((nearestNodes + node, nearestDistance))
-          case Some((nearestNodes, nearestDistance)) if d < nearestDistance =>
+          case Some((_, nearestDistance)) if d < nearestDistance =>
             Some(Set(node), d)
-          case d =>
-            println(d)
-            current
+          case _ => current
         }
       }
     }

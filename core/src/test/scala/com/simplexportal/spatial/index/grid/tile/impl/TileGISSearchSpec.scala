@@ -17,7 +17,7 @@
 
 // scalastyle:off magic.number
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.impl
 
 import com.simplexportal.spatial.index.NearestNode
 import com.simplexportal.spatial.model.{Location, Node}

@@ -18,6 +18,7 @@
 package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.ActorRef
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.Way
 
 package tile {

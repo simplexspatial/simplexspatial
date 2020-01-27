@@ -20,7 +20,7 @@ package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.lookups.LookUpActor._
-import com.simplexportal.spatial.index.grid.tile.TileIndex
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.Location
 import org.scalatest.{Matchers, WordSpecLike}
 

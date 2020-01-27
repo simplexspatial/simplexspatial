@@ -15,10 +15,10 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.impl
 
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex._
 import com.simplexportal.spatial.model._
-import com.simplexportal.spatial.index.grid.tile.TileIndex._
 
 import scala.annotation.tailrec
 

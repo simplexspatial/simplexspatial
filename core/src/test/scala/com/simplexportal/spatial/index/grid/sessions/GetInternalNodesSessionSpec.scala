@@ -18,7 +18,7 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.TileIndex
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.Location
 import org.scalatest.{Matchers, WordSpecLike}
 

@@ -21,6 +21,7 @@ package com.simplexportal.spatial.index.grid.tile
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.tile
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model._
 import org.scalatest.{Matchers, WordSpecLike}
 
