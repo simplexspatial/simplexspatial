@@ -17,7 +17,7 @@
 
 // scalastyle:off magic.number
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.actor
 
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.{Matchers, WordSpecLike}

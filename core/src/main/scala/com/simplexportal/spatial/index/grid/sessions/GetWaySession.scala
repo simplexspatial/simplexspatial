@@ -27,7 +27,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   WayLookUpActor
 }
 import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
+import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, GetWayResponse}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 
 import scala.annotation.tailrec
@@ -59,10 +59,10 @@ object GetWaySession {
               sharding.entityRefFor(
                 TileTypeKey,
                 tileIdx.entityId
-              ) ! tile.GetWay(wayId, context.self)
+              ) ! GetWay(wayId, context.self)
             )
             Behaviors.same
-          case tile.GetWayResponse(id, Some(way)) =>
+          case GetWayResponse(id, Some(way)) =>
             expectedTiles -= 1
             wayParts = wayParts + way
             if (expectedTiles == 0) {

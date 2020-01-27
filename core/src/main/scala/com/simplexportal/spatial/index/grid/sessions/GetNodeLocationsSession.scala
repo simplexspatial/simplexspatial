@@ -26,7 +26,7 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpNodeEntityIdGen,
   NodeLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile.TileIdx
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 
 object GetNodeLocationsSession {
 

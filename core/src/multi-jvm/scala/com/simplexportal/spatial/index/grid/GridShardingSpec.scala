@@ -23,7 +23,8 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
+import com.simplexportal.spatial.index.grid.tile.actor
+import com.simplexportal.spatial.index.grid.tile.actor.{ACK, AddNode, AddWay, GetInternalNode, GetInternalNodeResponse, GetInternalNodes, GetInternalNodesResponse, GetWay, GetWayResponse}
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
@@ -105,51 +106,51 @@ abstract class GridShardingSpec
 
 
     "be able to add nodes" in {
-      val probe = TestProbe[tile.ACK]()
+      val probe = TestProbe[ACK]()
       runOn(node0) {
-        gridIndex ! tile.AddNode(0, -23, -90, Map.empty, Some(probe.ref))
-        gridIndex ! tile.AddNode(1, 60, 130, Map.empty, Some(probe.ref))
-        gridIndex ! tile.AddNode(2, -23.3, -90, Map.empty, Some(probe.ref))
+        gridIndex ! AddNode(0, -23, -90, Map.empty, Some(probe.ref))
+        gridIndex ! actor.AddNode(1, 60, 130, Map.empty, Some(probe.ref))
+        gridIndex ! actor.AddNode(2, -23.3, -90, Map.empty, Some(probe.ref))
         probe.receiveMessages(3, 20.seconds)
       }
       enterBarrier("nodes added")
     }
 
     "be able to retrieve nodes one per one" in {
-      val probe = TestProbe[tile.GetInternalNodeResponse]()
+      val probe = TestProbe[GetInternalNodeResponse]()
 
-      gridIndex ! tile.GetInternalNode(999, probe.ref)
-      gridIndex ! tile.GetInternalNode(0, probe.ref)
-      gridIndex ! tile.GetInternalNode(1, probe.ref)
-      gridIndex ! tile.GetInternalNode(2, probe.ref)
+      gridIndex ! GetInternalNode(999, probe.ref)
+      gridIndex ! actor.GetInternalNode(0, probe.ref)
+      gridIndex ! actor.GetInternalNode(1, probe.ref)
+      gridIndex ! actor.GetInternalNode(2, probe.ref)
 
       probe.receiveMessages(4, 1.minutes).toSet shouldBe Set(
-        tile.GetInternalNodeResponse(999, None),
-        tile.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
-        tile.GetInternalNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
-        tile.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty)))
+        actor.GetInternalNodeResponse(999, None),
+        actor.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
+        actor.GetInternalNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
+        actor.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty)))
       )
 
       enterBarrier("nodes retrieved")
     }
 
     "be able to retrieve nodes in block" in {
-      val probe = TestProbe[tile.GetInternalNodesResponse]()
+      val probe = TestProbe[GetInternalNodesResponse]()
 
       runOn(node1) {
-        gridIndex ! tile.AddNode(10, 1, 1, Map.empty, None)
-        gridIndex ! tile.AddNode(11, 1.000001, 1.000001, Map.empty, None)
-        gridIndex ! tile.AddNode(12, 1.000002, 1.000002, Map.empty, None)
-        gridIndex ! tile.GetInternalNodes(Seq(999, 0, 1, 2, 10, 11, 12), probe.ref)
+        gridIndex ! actor.AddNode(10, 1, 1, Map.empty, None)
+        gridIndex ! actor.AddNode(11, 1.000001, 1.000001, Map.empty, None)
+        gridIndex ! actor.AddNode(12, 1.000002, 1.000002, Map.empty, None)
+        gridIndex ! GetInternalNodes(Seq(999, 0, 1, 2, 10, 11, 12), probe.ref)
 
         Seq(
-          tile.GetInternalNodeResponse(999, None),
-          tile.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
-          tile.GetInternalNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
-          tile.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty))),
-          tile.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(1, 1), Map.empty))),
-          tile.GetInternalNodeResponse(11, Some(TileIndex.InternalNode(11, Location(1.000001, 1.000001), Map.empty))),
-          tile.GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(1.000002, 1.000002), Map.empty)))
+          actor.GetInternalNodeResponse(999, None),
+          actor.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
+          actor.GetInternalNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
+          actor.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty))),
+          actor.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(1, 1), Map.empty))),
+          actor.GetInternalNodeResponse(11, Some(TileIndex.InternalNode(11, Location(1.000001, 1.000001), Map.empty))),
+          actor.GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(1.000002, 1.000002), Map.empty)))
         ) shouldBe(probe.receiveMessage().nodes)
       }
 
@@ -158,18 +159,18 @@ abstract class GridShardingSpec
     }
 
     "be able to add a ways in different shards" in {
-      val probe = TestProbe[tile.ACK]()
+      val probe = TestProbe[ACK]()
       runOn(node0) {
-        gridIndex ! tile.AddWay(1, Seq(0, 1, 2, 10, 11, 12), Map.empty, Some(probe.ref))
+        gridIndex ! AddWay(1, Seq(0, 1, 2, 10, 11, 12), Map.empty, Some(probe.ref))
         probe.receiveMessage()
       }
       enterBarrier("way added")
     }
 
     "retrieve way from multiple shards" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GetWayResponse]()
       runOn(node0) {
-        gridIndex ! tile.GetWay(1, probe.ref)
+        gridIndex ! GetWay(1, probe.ref)
         GetWayResponse(1,Some(
           Way(1, Seq(
             Node(0,Location(-23.0,-90.0),Map()),
@@ -183,9 +184,9 @@ abstract class GridShardingSpec
     }
 
     "return None if data is not there" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GetWayResponse]()
       runOn(node1) {
-        gridIndex ! tile.GetWay(999, probe.ref)
+        gridIndex ! actor.GetWay(999, probe.ref)
         GetWayResponse(999,None) shouldBe probe.receiveMessage()
       }
       enterBarrier("no data found")

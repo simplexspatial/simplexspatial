@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors

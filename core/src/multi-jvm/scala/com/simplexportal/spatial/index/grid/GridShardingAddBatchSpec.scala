@@ -23,7 +23,8 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
+import com.simplexportal.spatial.index.grid.tile.actor
+import com.simplexportal.spatial.index.grid.tile.actor.{ACK, AddBatch, AddNode, AddWay, GetWay, GetWayResponse}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -108,18 +109,18 @@ abstract class GridShardingAddBatchSpec
     }
 
     "be able to add nodes and ways" in {
-      val probe = TestProbe[tile.ACK]()
+      val probe = TestProbe[ACK]()
       runOn(node0) {
 
-        gridIndex ! tile.AddBatch(
+        gridIndex ! AddBatch(
           Seq(
-            tile.AddNode(100, -23, -90, Map.empty),
-            tile.AddNode(101, 60, 130, Map.empty),
-            tile.AddNode(102, -23.3, -90, Map.empty),
-            tile.AddNode(110, 1, 1, Map.empty, None),
-            tile.AddNode(111, 1.000001, 1.000001, Map.empty, None),
-            tile.AddNode(112, 1.000002, 1.000002, Map.empty, None),
-            tile.AddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
+            AddNode(100, -23, -90, Map.empty),
+            actor.AddNode(101, 60, 130, Map.empty),
+            actor.AddNode(102, -23.3, -90, Map.empty),
+            actor.AddNode(110, 1, 1, Map.empty, None),
+            actor.AddNode(111, 1.000001, 1.000001, Map.empty, None),
+            actor.AddNode(112, 1.000002, 1.000002, Map.empty, None),
+            AddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
           ),
           Some(probe.ref)
         )
@@ -129,18 +130,18 @@ abstract class GridShardingAddBatchSpec
     }
 
     "return None if way is not there" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GetWayResponse]()
       runOn(node1) {
-        gridIndex ! tile.GetWay(999, probe.ref)
+        gridIndex ! GetWay(999, probe.ref)
         GetWayResponse(999, None) shouldBe probe.receiveMessage()
       }
       enterBarrier("no data found")
     }
 
     "return the way if it is there" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GetWayResponse]()
       runOn(node1) {
-        gridIndex ! tile.GetWay(101, probe.ref)
+        gridIndex ! actor.GetWay(101, probe.ref)
         GetWayResponse(
           101,
           Some(

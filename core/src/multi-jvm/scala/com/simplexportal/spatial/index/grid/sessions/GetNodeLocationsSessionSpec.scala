@@ -25,12 +25,9 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
 import com.simplexportal.spatial.index.grid.Grid.NodeLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpNodeEntityIdGen,
-  NodeLookUpActor
-}
-import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.typesafe.config.ConfigFactory
 import io.jvm.uuid.UUID
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}

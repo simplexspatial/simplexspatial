@@ -17,7 +17,7 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
+import com.simplexportal.spatial.index.grid.tile.actor.GetWayResponse
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import org.scalatest.{Matchers, WordSpecLike}
 

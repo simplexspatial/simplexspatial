@@ -15,7 +15,7 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.actor
 
 case class TileIdx(latIdx: Int, lonIdx: Int) {
   def entityId: String = s"${latIdx}_${lonIdx}"

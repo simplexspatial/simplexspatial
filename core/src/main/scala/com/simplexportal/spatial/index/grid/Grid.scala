@@ -33,6 +33,19 @@ import com.simplexportal.spatial.index.grid.lookups.{
 }
 import com.simplexportal.spatial.index.grid.sessions._
 import com.simplexportal.spatial.index.grid.tile._
+import com.simplexportal.spatial.index.grid.tile.actor.{
+  AddBatch,
+  AddNode,
+  AddWay,
+  Command,
+  GetInternalNode,
+  GetInternalNodes,
+  GetInternalWay,
+  GetMetrics,
+  GetWay,
+  TileIndexActor,
+  TileIndexEntityIdGen
+}
 import com.typesafe.config.ConfigFactory
 import io.jvm.uuid._
 

@@ -28,10 +28,10 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpNodeEntityIdGen,
   NodeLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile.TileIndexEntityIdGen
-import com.simplexportal.spatial.index.grid.tile.{
+import com.simplexportal.spatial.index.grid.tile.actor.{
   GetInternalNode,
-  GetInternalNodeResponse
+  GetInternalNodeResponse,
+  TileIndexEntityIdGen
 }
 
 /**

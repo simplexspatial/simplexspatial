@@ -26,17 +26,14 @@ import com.simplexportal.spatial.index.grid.lookups.{
   NodeLookUpActor,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile.{
+import com.simplexportal.spatial.index.grid.tile.actor.{
   AddNode,
   AddWay,
   BatchActions,
   TileIdx
 }
-import com.simplexportal.spatial.index.grid.{
-  CommonInternalSerializer,
-  Grid,
-  tile
-}
+import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
@@ -197,8 +194,8 @@ object AddBatchSession {
 
   def updateIndexes(
       sharding: ClusterSharding,
-      cmds: Seq[tile.BatchActions],
-      locationsIdx: Map[Long, tile.TileIdx],
+      cmds: Seq[BatchActions],
+      locationsIdx: Map[Long, TileIdx],
       maybeReplyTo: Option[ActorRef[tile.ACK]]
   ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
     val adapter = adapters(context)
@@ -241,7 +238,7 @@ object AddBatchSession {
   }
 
   def splitLookUps(
-      cmdsPerTileIdx: Map[tile.TileIdx, Seq[tile.BatchActions]]
+      cmdsPerTileIdx: Map[TileIdx, Seq[BatchActions]]
   ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) = {
 
     @tailrec

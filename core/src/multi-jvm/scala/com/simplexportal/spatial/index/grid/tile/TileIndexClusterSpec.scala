@@ -30,8 +30,8 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
-
 import com.simplexportal.spatial.index.grid.tile
+import com.simplexportal.spatial.index.grid.tile.actor.{AddNode, AddWay, GetMetrics, Metrics, TileIndexActor}
 
 /**
  * Testing a single tile in a cluster. On this way, it is possible to verify aspects like serialization.
@@ -108,10 +108,10 @@ abstract class TileIndexClusterSpec
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
         val localTileActor = system.spawn(TileIndexActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
-        localTileActor ! tile.AddNode(0, 0, 0, Map.empty, Some(probe.ref))
-        localTileActor ! tile.AddNode(1, 1, 1, Map.empty, Some(probe.ref))
-        localTileActor ! tile.AddNode(2, 2, 2, Map.empty, Some(probe.ref))
-        localTileActor ! tile.AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
+        localTileActor ! AddNode(0, 0, 0, Map.empty, Some(probe.ref))
+        localTileActor ! actor.AddNode(1, 1, 1, Map.empty, Some(probe.ref))
+        localTileActor ! actor.AddNode(2, 2, 2, Map.empty, Some(probe.ref))
+        localTileActor ! AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
 
         probe.receiveMessages(4)
       }
@@ -123,10 +123,10 @@ abstract class TileIndexClusterSpec
         val probe = TestProbe[AnyRef]()
         val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
 
-        remoteTileActor ! tile.AddNode(10, 10, 10, Map.empty, Some(probe.ref))
-        remoteTileActor ! tile.AddNode(11, 11, 11, Map.empty, Some(probe.ref))
-        remoteTileActor ! tile.AddNode(12, 12, 12, Map.empty, Some(probe.ref))
-        remoteTileActor ! tile.AddWay(11, Seq(10, 11, 12), Map.empty, Some(probe.ref))
+        remoteTileActor ! actor.AddNode(10, 10, 10, Map.empty, Some(probe.ref))
+        remoteTileActor ! actor.AddNode(11, 11, 11, Map.empty, Some(probe.ref))
+        remoteTileActor ! actor.AddNode(12, 12, 12, Map.empty, Some(probe.ref))
+        remoteTileActor ! actor.AddWay(11, Seq(10, 11, 12), Map.empty, Some(probe.ref))
 
         probe.receiveMessages(4)
       }
@@ -138,9 +138,9 @@ abstract class TileIndexClusterSpec
       runOn(node2) {
         val probe = TestProbe[AnyRef]()
         val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
-        remoteTileActor ! tile.GetMetrics(probe.ref)
+        remoteTileActor ! GetMetrics(probe.ref)
 
-        probe.expectMessage(tile.Metrics(2,6))
+        probe.expectMessage(Metrics(2,6))
 
       }
     }

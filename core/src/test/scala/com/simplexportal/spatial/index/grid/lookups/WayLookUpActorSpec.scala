@@ -20,7 +20,7 @@ package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor._
-import com.simplexportal.spatial.index.grid.tile.TileIdx
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 import org.scalatest.{Matchers, WordSpecLike}
 
 class WayLookUpActorSpec
