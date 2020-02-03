@@ -19,12 +19,91 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
+import com.simplexportal.spatial.model.{BoundingBox, Location}
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.{Matchers, WordSpecLike}
 
 class TileIndexEntityIdGenSpec extends WordSpecLike with Matchers {
 
-  "GridHashFunctionTest" should {
+  "TileIdx" should {
+    "create TileIdx from String" in {
+      TileIdx("1_2") shouldBe Right(TileIdx(1,2))
+      TileIdx("1_2_3") shouldBe Left("[1_2_3] is not a valid format for a TileIdx")
+      TileIdx("") shouldBe Left("[] is not a valid format for a TileIdx")
+      TileIdx("X_2") shouldBe Left("Error parsing X_2 => For input string: \"X\"")
+    }
+  }
+
+  "TileIndexEntityGen" should {
+
+    "calculate the BBox from the index" in {
+      val tileIdxGen = TileIndexEntityIdGen(10, 10)
+      tileIdxGen.boundingBox(TileIdx(0,0)) should be (BoundingBox(Location(-90 + (18*0),-180+(36*0)), Location(-90+(18*1),-180+(36*1))))
+      tileIdxGen.boundingBox(TileIdx(1,1)) should be (BoundingBox(Location(-90 + (18*1),-180+(36*1)), Location(-90+(18*2),-180+(36*2))))
+      tileIdxGen.boundingBox(TileIdx(2,2)) should be (BoundingBox(Location(-90 + (18*2),-180+(36*2)), Location(-90+(18*3),-180+(36*3))))
+    }
+
+    "calculate neighbours TileIdx" when {
+      val tileIdxGen = TileIndexEntityIdGen(10, 10)
+      "asks for north" in {
+        tileIdxGen.northTileIdx(TileIdx(9,9)) shouldBe TileIdx(0,9)
+        tileIdxGen.northTileIdx(TileIdx(0,0)) shouldBe TileIdx(1,0)
+      }
+      "asks for north-east" in {
+        tileIdxGen.northEastTileIdx(TileIdx(9,9)) shouldBe TileIdx(0,0)
+        tileIdxGen.northEastTileIdx(TileIdx(9,0)) shouldBe TileIdx(0,1)
+        tileIdxGen.northEastTileIdx(TileIdx(0,9)) shouldBe TileIdx(1,0)
+        tileIdxGen.northEastTileIdx(TileIdx(0,0)) shouldBe TileIdx(1,1)
+      }
+      "asks for east" in {
+        tileIdxGen.eastTileIdx(TileIdx(9,9)) shouldBe TileIdx(9,0)
+        tileIdxGen.eastTileIdx(TileIdx(9,0)) shouldBe TileIdx(9,1)
+        tileIdxGen.eastTileIdx(TileIdx(0,9)) shouldBe TileIdx(0,0)
+        tileIdxGen.eastTileIdx(TileIdx(0,0)) shouldBe TileIdx(0,1)
+      }
+      "asks for south-east" in {
+        tileIdxGen.southEastTileIdx(TileIdx(9,9)) shouldBe TileIdx(8,0)
+        tileIdxGen.southEastTileIdx(TileIdx(9,0)) shouldBe TileIdx(8,1)
+        tileIdxGen.southEastTileIdx(TileIdx(0,9)) shouldBe TileIdx(9,0)
+        tileIdxGen.southEastTileIdx(TileIdx(0,0)) shouldBe TileIdx(9,1)
+      }
+      "asks for south" in {
+        tileIdxGen.southTileIdx(TileIdx(9,9)) shouldBe TileIdx(8,9)
+        tileIdxGen.southTileIdx(TileIdx(9,0)) shouldBe TileIdx(8,0)
+        tileIdxGen.southTileIdx(TileIdx(0,9)) shouldBe TileIdx(9,9)
+        tileIdxGen.southTileIdx(TileIdx(0,0)) shouldBe TileIdx(9,0)
+      }
+      "asks for south-west" in {
+        tileIdxGen.southWestTileIdx(TileIdx(9,9)) shouldBe TileIdx(8,8)
+        tileIdxGen.southWestTileIdx(TileIdx(9,0)) shouldBe TileIdx(8,9)
+        tileIdxGen.southWestTileIdx(TileIdx(0,9)) shouldBe TileIdx(9,8)
+        tileIdxGen.southWestTileIdx(TileIdx(0,0)) shouldBe TileIdx(9,9)
+      }
+      "asks for west" in {
+        tileIdxGen.westTileIdx(TileIdx(9,9)) shouldBe TileIdx(9,8)
+        tileIdxGen.westTileIdx(TileIdx(9,0)) shouldBe TileIdx(9,9)
+        tileIdxGen.westTileIdx(TileIdx(0,9)) shouldBe TileIdx(0,8)
+        tileIdxGen.westTileIdx(TileIdx(0,0)) shouldBe TileIdx(0,9)
+      }
+      "asks for north-west" in {
+        tileIdxGen.northWestTileIdx(TileIdx(9,9)) shouldBe TileIdx(8,8)
+        tileIdxGen.northWestTileIdx(TileIdx(9,0)) shouldBe TileIdx(8,9)
+        tileIdxGen.northWestTileIdx(TileIdx(0,9)) shouldBe TileIdx(9,8)
+        tileIdxGen.northWestTileIdx(TileIdx(0,0)) shouldBe TileIdx(9,9)
+      }
+      "ask for all neighbours in clock order" in {
+        tileIdxGen.clockNeighbours(TileIdx(9,9)) shouldBe Seq(
+          TileIdx(0,9),
+          TileIdx(0,0),
+          TileIdx(9,0),
+          TileIdx(8,0),
+          TileIdx(8,9),
+          TileIdx(8,8),
+          TileIdx(9,8),
+          TileIdx(8,8)
+        )
+      }
+    }
 
     "create the right hash" in {
       val coordsHashes = Table(
@@ -49,19 +128,19 @@ class TileIndexEntityIdGenSpec extends WordSpecLike with Matchers {
         (1000000, 1000000, 90, 180, TileIdx(1000000,1000000)),
       )
       forAll (coordsHashes) { (latPartitions, lonPartitions, lat, lon, tileIdx) =>
-        new TileIndexEntityIdGen(latPartitions, lonPartitions).tileIdx(lat, lon) should be(tileIdx)
+        TileIndexEntityIdGen(latPartitions, lonPartitions).tileIdx(lat, lon) should be(tileIdx)
       }
     }
 
     "throw an error when ask for latitude partitions higher than the precision" in {
       val e = intercept[Exception] {
-        new TileIndexEntityIdGen(10000000, 1)
+        TileIndexEntityIdGen(10000000, 1)
       }
       assert(e.getMessage().startsWith("requirement failed: latitude partitions could not be higher"))
     }
     "throw an error when ask for longitude partitions higher than the precision" in {
       val e = intercept[Exception] {
-        new TileIndexEntityIdGen(1, 10000000)
+        TileIndexEntityIdGen(1, 10000000)
       }
       assert(e.getMessage().startsWith("requirement failed: longitude partitions could not be higher"))
     }

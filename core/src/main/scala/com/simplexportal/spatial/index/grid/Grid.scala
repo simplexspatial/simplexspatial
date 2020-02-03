@@ -27,25 +27,11 @@ import akka.cluster.sharding.typed.scaladsl.{
 }
 import akka.util.Timeout
 import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpNodeEntityIdGen,
   NodeLookUpActor,
   WayLookUpActor
 }
 import com.simplexportal.spatial.index.grid.sessions._
-import com.simplexportal.spatial.index.grid.tile._
-import com.simplexportal.spatial.index.grid.tile.actor.{
-  AddBatch,
-  AddNode,
-  AddWay,
-  Command,
-  GetInternalNode,
-  GetInternalNodes,
-  GetInternalWay,
-  GetMetrics,
-  GetWay,
-  TileIndexActor,
-  TileIndexEntityIdGen
-}
+import com.simplexportal.spatial.index.grid.tile.actor._
 import com.typesafe.config.ConfigFactory
 import io.jvm.uuid._
 
@@ -69,14 +55,14 @@ object Grid {
         | -> [{}] ways lookup partitions,
         | -> [{}] lat. partitions and [{}] lon. partitions. So every shard in the index is going to cover a fixed area of [{}] km2 approx. [{}] Km. lat. x [{}] Km. lon.
         |""".stripMargin,
-      indexId toString,
-      nodeLookUpPartitions toString,
-      wayLookUpPartitions toString,
-      latPartitions toString,
-      lonPartitions toString,
-      ((40075 / lonPartitions) * (40007 / latPartitions)) toString,
-      40007 / latPartitions toString,
-      40075 / lonPartitions toString
+      indexId.toString,
+      nodeLookUpPartitions.toString,
+      wayLookUpPartitions.toString,
+      latPartitions.toString,
+      lonPartitions.toString,
+      ((40075 / lonPartitions) * (40007 / latPartitions)).toString,
+      (40007 / latPartitions).toString,
+      (40075 / lonPartitions).toString
     )
   }
 
@@ -144,9 +130,10 @@ object Grid {
         lonPartitions
       )
 
-      val tileEntityFn = new TileIndexEntityIdGen(lonPartitions, latPartitions)
+      implicit val tileEntityFn =
+        TileIndexEntityIdGen(lonPartitions, latPartitions)
 
-      val sharding = initSharding(
+      implicit val sharding = initSharding(
         indexId,
         wayLookUpPartitions,
         nodeLookUpPartitions,
@@ -158,7 +145,7 @@ object Grid {
       implicit val timeout: Timeout = 6.seconds
       implicit val scheduler = context.system.executionContext
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
 
         case cmd: AddNode =>
           context.spawn(

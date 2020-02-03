@@ -18,15 +18,14 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
 import com.simplexportal.spatial.index.grid.lookups.{
   LookUpWayEntityIdGen,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile
 import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, GetWayResponse}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 

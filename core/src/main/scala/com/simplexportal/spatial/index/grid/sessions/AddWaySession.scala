@@ -35,7 +35,7 @@ import io.jvm.uuid.UUID
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-@deprecated("Reuse AddBatchSession")
+@deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddWaySession {
 
   // scalastyle:off method.length

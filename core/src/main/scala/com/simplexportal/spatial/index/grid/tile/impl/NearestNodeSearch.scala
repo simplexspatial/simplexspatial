@@ -18,16 +18,21 @@
 package com.simplexportal.spatial.index.grid.tile.impl
 
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex.InternalNode
-import com.simplexportal.spatial.index.{GISSearch, NearestNode}
 import com.simplexportal.spatial.model.{Location, Node}
-import com.simplexportal.spatial.utils.JTSImplicits._
+import com.simplexportal.spatial.utils.JTSEnrichers._
+import com.simplexportal.spatial.utils.ModelEnrichers._
 import org.locationtech.jts.geom.Coordinate
 
-trait TileGISSearch extends GISSearch {
+case class NearestNode(
+    nodes: Set[Node],
+    distance: Double
+)
+
+trait NearestNodeSearch {
   this: TileIndex =>
 
-  override def nearestNode(origin: Location): Option[NearestNode] =
-    nearestInternalNode(origin).map {
+  def nearestNode(origin: Location): Option[NearestNode] =
+    nearestInternalNode(origin.toJTS()).map {
       case (internalNodes, distance) =>
         NearestNode(
           internalNodes.map(iNode =>
@@ -53,7 +58,7 @@ trait TileGISSearch extends GISSearch {
   ): Option[(Set[InternalNode], Double)] =
     nodes.foldLeft(Option.empty[(Set[InternalNode], Double)]) {
       case (current, (_, node)) => {
-        val d = origin.distance(node.location)
+        val d = origin.distance(node.location.toJTS())
         current match {
           case None => Some(Set(node), d)
           case Some((nearestNodes, nearestDistance)) if d == nearestDistance =>

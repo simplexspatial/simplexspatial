@@ -17,8 +17,28 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
+import com.simplexportal.spatial.model.{BoundingBox, Location}
+
+import scala.util.Try
+
+object TileIdx {
+  def apply(entityId: String): Either[String, TileIdx] =
+    entityId.split("_") match {
+      case Array(latIdx, lonIdx) =>
+        Try(TileIdx(latIdx.toInt, lonIdx.toInt)).toEither.left.map(ex =>
+          s"Error parsing ${entityId} => ${ex.getMessage}"
+        )
+      case _ => Left(s"[${entityId}] is not a valid format for a TileIdx")
+    }
+}
+
 case class TileIdx(latIdx: Int, lonIdx: Int) {
   def entityId: String = s"${latIdx}_${lonIdx}"
+}
+
+object TileIndexEntityIdGen {
+  val defaultRoundingDecimal: Byte = 6
+
 }
 
 /**
@@ -31,13 +51,15 @@ case class TileIdx(latIdx: Int, lonIdx: Int) {
   * @param roundingDecimals 6 decimals precision means that the smallest shard possible will be around 100 square millimeters per shard.
   * @return A function that calculate Entity Id info for tiles.
   */
-class TileIndexEntityIdGen(
+case class TileIndexEntityIdGen(
     latPartitions: Int,
     lonPartitions: Int,
-    roundingDecimals: Byte = 6
+    roundingDecimals: Byte = TileIndexEntityIdGen.defaultRoundingDecimal
 ) {
-
+  // scalastyle:off magic.number
   val PRECISION_ROUNDING: Int = Math.pow(10, roundingDecimals).toInt
+  val maxLatIdx = latPartitions - 1
+  val maxLonIdx = lonPartitions - 1
 
   require(
     latPartitions <= PRECISION_ROUNDING,
@@ -57,4 +79,74 @@ class TileIndexEntityIdGen(
   def tileIdx(lat: Double, lon: Double): TileIdx =
     TileIdx(latPartition(lat), lonPartition(lon))
 
+  def boundingBox(tileIdx: TileIdx): BoundingBox = BoundingBox(
+    min = Location(
+      -90 + ((180 / latPartitions) * tileIdx.latIdx),
+      -180 + ((360 / lonPartitions) * tileIdx.lonIdx)
+    ),
+    max = Location(
+      -90 + ((180 / latPartitions) * (tileIdx.latIdx + 1)),
+      -180 + ((360 / lonPartitions) * (tileIdx.lonIdx + 1))
+    )
+  )
+
+  // TODO: Think about move all neighbour calculation into TileIdx passing TileIndexEntityIdGen as implicit.
+
+  @inline private def incTileCoord(current: Int, max: Int): Int =
+    if (current >= max) 0 else current + 1
+
+  @inline private def decTileCoord(current: Int, max: Int): Int =
+    if (current == 0) max else current - 1
+
+  def northTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    incTileCoord(tileIdx.latIdx, maxLatIdx),
+    tileIdx.lonIdx
+  )
+
+  def northEastTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    incTileCoord(tileIdx.latIdx, maxLatIdx),
+    incTileCoord(tileIdx.lonIdx, maxLonIdx)
+  )
+
+  def eastTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    tileIdx.latIdx,
+    incTileCoord(tileIdx.lonIdx, maxLonIdx)
+  )
+
+  def southEastTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    if (tileIdx.latIdx == 0) maxLatIdx else tileIdx.latIdx - 1,
+    incTileCoord(tileIdx.lonIdx, maxLonIdx)
+  )
+
+  def southTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    decTileCoord(tileIdx.latIdx, maxLatIdx),
+    tileIdx.lonIdx
+  )
+
+  def southWestTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    decTileCoord(tileIdx.latIdx, maxLatIdx),
+    decTileCoord(tileIdx.lonIdx, maxLonIdx)
+  )
+
+  def westTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    tileIdx.latIdx,
+    decTileCoord(tileIdx.lonIdx, maxLonIdx)
+  )
+
+  def northWestTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
+    decTileCoord(tileIdx.latIdx, maxLatIdx),
+    decTileCoord(tileIdx.lonIdx, maxLonIdx)
+  )
+
+  def clockNeighbours(tileIdx: TileIdx): Seq[TileIdx] = Seq(
+    northTileIdx(tileIdx),
+    northEastTileIdx(tileIdx),
+    eastTileIdx(tileIdx),
+    southEastTileIdx(tileIdx),
+    southTileIdx(tileIdx),
+    southWestTileIdx(tileIdx),
+    westTileIdx(tileIdx),
+    northWestTileIdx(tileIdx)
+  )
+  // scalastyle:on magic.number
 }

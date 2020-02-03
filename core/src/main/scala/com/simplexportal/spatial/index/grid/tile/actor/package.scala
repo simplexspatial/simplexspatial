@@ -18,10 +18,11 @@
 package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.actor.typed.ActorRef
-import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
-import com.simplexportal.spatial.model.Way
+import com.simplexportal.spatial.index.grid.CommonInternalSerializer
+import com.simplexportal.spatial.index.grid.tile.impl.{NearestNode, TileIndex}
+import com.simplexportal.spatial.model.{Location, Way}
 
-sealed trait Message
+sealed trait Message extends CommonInternalSerializer
 sealed trait Reply extends Message
 sealed trait Command extends Message
 sealed trait Query extends Command
@@ -35,6 +36,12 @@ trait ACK extends Reply
 case class Done() extends ACK
 
 case class NotDone(msg: String = "No error message") extends ACK
+
+case class GetInternalNearestNodeResponse(
+    tileId: String,
+    origin: Location,
+    nodes: Option[NearestNode]
+) extends Reply
 
 case class GetInternalNodeResponse(
     id: Long,
@@ -53,6 +60,11 @@ case class GetWayResponse(
     id: Long,
     way: Option[Way]
 ) extends Reply
+
+final case class GetNearestNode(
+    location: Location,
+    replyTo: ActorRef[GetInternalNearestNodeResponse]
+) extends Query
 
 final case class GetInternalNode(
     id: Long,

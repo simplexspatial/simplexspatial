@@ -16,14 +16,18 @@
 
 package com.simplexportal.spatial.utils
 
-import com.simplexportal.spatial.model.Location
-import org.locationtech.jts.geom.Coordinate
+import com.simplexportal.spatial.model.{LineSegment, Location}
+import org.locationtech.jts.geom.{Coordinate, LineSegment => JTSLineSegment}
 
-object JTSImplicits {
+/**
+  * Useful enrichers to operate with JTS objects.
+  */
+object JTSEnrichers {
+  implicit class ModelCoordinateEnricher(coord: Coordinate) {
+    def toSpl(): Location = Location(coord.y, coord.x)
+  }
 
-  implicit def toLocation(coord: Coordinate): Location =
-    Location(coord.y, coord.x)
-
-  implicit def toCoordinate(location: Location): Coordinate =
-    new Coordinate(location.lon, location.lat)
+  implicit class ModelLineSegmentEnricher(line: JTSLineSegment) {
+    def toSpl(): LineSegment = LineSegment(line.p0.toSpl(), line.p1.toSpl())
+  }
 }

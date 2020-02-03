@@ -37,7 +37,6 @@ import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object AddBatchSession {

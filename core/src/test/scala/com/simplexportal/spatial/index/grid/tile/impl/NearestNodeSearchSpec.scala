@@ -19,11 +19,10 @@
 
 package com.simplexportal.spatial.index.grid.tile.impl
 
-import com.simplexportal.spatial.index.NearestNode
 import com.simplexportal.spatial.model.{Location, Node}
 import org.scalatest.{Inside, Matchers, WordSpecLike}
 
-class TileGISSearchSpec extends WordSpecLike with Matchers with Inside {
+class NearestNodeSearchSpec extends WordSpecLike with Matchers with Inside {
 
   "TileGISSearch" should {
     val index = TileIndex()

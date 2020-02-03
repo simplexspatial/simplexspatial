@@ -25,6 +25,7 @@ import scala.collection.breakOut
 trait TileIndexActionHandler {
 
   def applyAction(
+      tileId: String,
       tile: TileIndex,
       action: Action
   ): Effect[Event, TileIndex] = action match {

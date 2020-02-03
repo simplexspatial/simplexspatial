@@ -23,7 +23,8 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
-  scalaVersion := "2.12.10"
+  scalaVersion := "2.12.10",
+  scalacOptions ++= Seq("-deprecation", "-feature")
 //  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
 //  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 //  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),

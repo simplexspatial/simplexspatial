@@ -34,17 +34,18 @@ object TileIndexActor
       EventSourcedBehavior[Command, Event, TileIndex](
         persistenceId = PersistenceId(s"Tile_${indexId}", tileId),
         emptyState = TileIndex(),
-        commandHandler = (state, command) => onCommand(state, command),
+        commandHandler = (state, command) => onCommand(tileId, state, command),
         eventHandler = (state, event) => applyEvent(state, event)
       )
     }
 
   def onCommand(
+      tileId: String,
       tile: TileIndex,
       command: Command
   ): Effect[Event, TileIndex] = command match {
-    case q: Query  => applyQueries(tile, q)
-    case a: Action => applyAction(tile, a)
+    case q: Query  => applyQueries(tileId, tile, q)
+    case a: Action => applyAction(tileId, tile, a)
   }
 
 }

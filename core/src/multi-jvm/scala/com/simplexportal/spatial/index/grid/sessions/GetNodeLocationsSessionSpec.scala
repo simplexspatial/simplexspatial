@@ -94,7 +94,7 @@ abstract class GetNodeLocationsSessionSpec
   "The tile index" must {
     println(s"Running System [${system.name}]")
 
-    val tileEntityFn = new TileIndexEntityIdGen(2, 2)
+    val tileEntityFn = TileIndexEntityIdGen(2, 2)
     val sharding = ClusterSharding(system.toTyped)
     sharding.init(
       Entity(NodeLookUpTypeKey) { entityContext =>

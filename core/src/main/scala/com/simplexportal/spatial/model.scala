@@ -18,6 +18,14 @@ package com.simplexportal.spatial
 
 package model {
 
+// TODO: Review Geometry definition to add distance and other functions.
+//  sealed trait Geometry {
+//    def distance(geom: Geometry): Double
+//  }
+
+  sealed trait Geometry
+  sealed trait AdjacentRepresentation
+
   object Location {
     val MAX_LONGITUDE = 180
     val MAX_LATITUDE = 90
@@ -30,13 +38,51 @@ package model {
     val NaL = Location(NO_LATITUDE, NO_LONGITUDE)
   }
 
+  case class LineSegment(start: Location, end: Location)
+      extends Geometry
+      with AdjacentRepresentation
+
   case class Location(lat: Double, lon: Double)
+      extends Geometry
+      with AdjacentRepresentation
 
   object BoundingBox {
     val MAX = BoundingBox(Location.MIN, Location.MAX)
   }
 
-  case class BoundingBox(min: Location, max: Location)
+  case class BoundingBox(min: Location, max: Location) extends Geometry {
+
+    def northEdge(): LineSegment =
+      LineSegment(Location(max.lat, min.lon), Location(max.lat, max.lon))
+
+    def northEastVertex(): Location = max
+
+    def eastEdge(): LineSegment =
+      LineSegment(Location(max.lat, max.lon), Location(min.lat, max.lon))
+
+    def southEastVertex(): Location = Location(min.lat, max.lon)
+
+    def southEdge(): LineSegment =
+      LineSegment(Location(min.lat, min.lon), Location(min.lat, max.lon))
+
+    def southWestVertex(): Location = min
+
+    def westEdge(): LineSegment =
+      LineSegment(Location(max.lat, min.lon), Location(min.lat, min.lon))
+
+    def northWestVertex(): Location = Location(max.lat, min.lon)
+
+    def clockNeighbours(): Seq[AdjacentRepresentation] = Seq(
+      northEdge(),
+      northEastVertex(),
+      eastEdge(),
+      southEastVertex(),
+      southEdge(),
+      southWestVertex(),
+      westEdge(),
+      northWestVertex()
+    )
+  }
 
   case class Node(
       id: Long,

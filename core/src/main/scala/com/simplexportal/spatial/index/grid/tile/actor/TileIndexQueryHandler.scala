@@ -22,6 +22,7 @@ import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 
 trait TileIndexQueryHandler {
   def applyQueries(
+      tileId: String,
       tile: TileIndex,
       query: Query
   ): Effect[Event, TileIndex] = query match {
@@ -46,6 +47,14 @@ trait TileIndexQueryHandler {
 
     case GetWay(id, replyTo) =>
       replyTo ! GetWayResponse(id, tile.getWay(id))
+      Effect.none
+
+    case GetNearestNode(origin, replyTo) =>
+      replyTo ! GetInternalNearestNodeResponse(
+        tileId,
+        origin,
+        tile.nearestNode(origin)
+      )
       Effect.none
   }
 }

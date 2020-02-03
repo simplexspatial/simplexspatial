@@ -43,7 +43,7 @@ object Main extends App {
 
   // Akka Classic implicits
   implicit val system = akka.actor.ActorSystem("SimplexSpatialSystem", config)
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer() // FIXME: How to do change it in 2.6?
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   // Akka Typed implicits
