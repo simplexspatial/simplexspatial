@@ -42,9 +42,8 @@ import com.simplexportal.spatial.index.grid.tile.actor.{
   */
 @deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddNodeSession {
-  def apply(
-      sharding: ClusterSharding,
-      addNode: AddNode,
+  def apply(addNode: AddNode)(
+      implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
     Behaviors

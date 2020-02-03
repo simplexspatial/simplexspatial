@@ -30,7 +30,8 @@ import com.simplexportal.spatial.index.grid.tile.actor.{
   AddNode,
   AddWay,
   BatchActions,
-  TileIdx
+  TileIdx,
+  TileIndexEntityIdGen
 }
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
@@ -55,15 +56,16 @@ object AddBatchSession {
 
   // scalastyle:off method.length
   def apply(
-      sharding: ClusterSharding,
       cmds: Seq[tile.BatchActions],
-      maybeReplyTo: Option[ActorRef[tile.ACK]],
-      tileEntityFn: tile.TileIndexEntityIdGen
+      maybeReplyTo: Option[ActorRef[tile.ACK]]
+  )(
+      implicit sharding: ClusterSharding,
+      tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
     val locsResponseAdapter: ActorRef[GetNodeLocationsSession.NodeLocations] =
       context.messageAdapter { LocationsWrapper }
 
-    val (newNodes, unknownNodes) = splitKnowNodesTileIdxs(cmds, tileEntityFn)
+    val (newNodes, unknownNodes) = splitKnowNodesTileIdxs(cmds)
 
     context.spawn(
       GetNodeLocationsSession(sharding, unknownNodes, locsResponseAdapter),
@@ -91,9 +93,8 @@ object AddBatchSession {
     }
   }
 
-  def splitKnowNodesTileIdxs(
-      commands: Seq[tile.BatchActions],
-      tileEntityFn: tile.TileIndexEntityIdGen
+  def splitKnowNodesTileIdxs(commands: Seq[tile.BatchActions])(
+      implicit tileIndexEntityIdGen: TileIndexEntityIdGen
   ): (Map[Long, tile.TileIdx], Seq[Long]) = {
 
     val (newNodes, unknownNodes) =
@@ -104,7 +105,7 @@ object AddBatchSession {
           cmd match {
             case n: tile.AddNode =>
               (
-                resp._1 + (n.id -> tileEntityFn.tileIdx(n.lat, n.lon)),
+                resp._1 + (n.id -> tileIndexEntityIdGen.tileIdx(n.lat, n.lon)),
                 resp._2
               )
             case w: tile.AddWay =>

@@ -33,10 +33,8 @@ import scala.annotation.tailrec
 
 object GetWaySession {
 
-  def apply(
-      sharding: ClusterSharding,
-      id: Long,
-      replyTo: ActorRef[GetWayResponse]
+  def apply(id: Long, replyTo: ActorRef[GetWayResponse])(
+      implicit sharding: ClusterSharding
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>

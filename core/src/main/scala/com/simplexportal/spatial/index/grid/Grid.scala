@@ -149,42 +149,42 @@ object Grid {
 
         case cmd: AddNode =>
           context.spawn(
-            AddNodeSession(sharding, cmd, tileEntityFn),
+            AddNodeSession(cmd),
             s"adding_node_${UUID.randomString}"
           )
           Behaviors.same
 
         case cmd: AddWay =>
           context.spawn(
-            AddWaySession(sharding, cmd, tileEntityFn),
+            AddWaySession(cmd),
             s"adding_way_${UUID.randomString}"
           )
           Behaviors.same
 
         case AddBatch(cmds, maybeReplyTo) =>
           context.spawn(
-            AddBatchSession(sharding, cmds, maybeReplyTo, tileEntityFn),
+            AddBatchSession(cmds, maybeReplyTo),
             s"adding_batch_${UUID.randomString}"
           )
           Behaviors.same
 
         case cmd: GetInternalNode =>
           context.spawn(
-            GetInternalNodeSession(sharding, cmd, tileEntityFn),
+            GetInternalNodeSession(cmd),
             s"getting_internal_node_${UUID.randomString}"
           )
           Behaviors.same
 
         case cmd: GetInternalNodes =>
           context.spawn(
-            GetInternalNodesSession(sharding, cmd, tileEntityFn),
+            GetInternalNodesSession(cmd),
             s"getting_internal_nodes_${UUID.randomString}"
           )
           Behaviors.same
 
         case cmd: GetWay =>
           context.spawn(
-            GetWaySession(sharding, cmd.id, cmd.replyTo),
+            GetWaySession(cmd.id, cmd.replyTo),
             s"getting_way_${UUID.randomString}"
           )
           Behaviors.same

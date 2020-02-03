@@ -40,9 +40,8 @@ import com.simplexportal.spatial.index.grid.tile.actor.{
   * 2. Send the command to the right shard.
   */
 object GetInternalNodeSession {
-  def apply(
-      sharding: ClusterSharding,
-      getNode: GetInternalNode,
+  def apply(getNode: GetInternalNode)(
+      implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NodeLookUpActor.GetResponse] =
     Behaviors

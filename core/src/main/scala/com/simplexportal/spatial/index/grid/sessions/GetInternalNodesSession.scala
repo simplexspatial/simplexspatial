@@ -46,9 +46,8 @@ object GetInternalNodesSession {
 
   // scalastyle:off cyclomatic.complexity
   // scalastyle:off method.length
-  def apply(
-      sharding: ClusterSharding,
-      getNodes: tile.GetInternalNodes,
+  def apply(getNodes: tile.GetInternalNodes)(
+      implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
     Behaviors
