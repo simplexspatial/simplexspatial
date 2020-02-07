@@ -63,19 +63,6 @@ case class TileIndex(
   ): Map[String, String] =
     attrs.map { case (k, v) => tagsDic(k) -> v }
 
-  def addNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String]
-  ): TileIndex = {
-    val (dic, attrs) = attributesToDictionary(attributes)
-    copy(
-      nodes = nodes + (id -> InternalNode(id, Location(lat, lon), attrs)),
-      tagsDic = tagsDic ++ dic
-    )
-  }
-
   private def buildNewNode(
       wayId: Long,
       prev: Option[Long],
@@ -123,6 +110,19 @@ case class TileIndex(
     }
   }
 
+  def addNode(
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Map[String, String]
+  ): TileIndex = {
+    val (dic, attrs) = attributesToDictionary(attributes)
+    copy(
+      nodes = nodes + (id -> InternalNode(id, Location(lat, lon), attrs)),
+      tagsDic = tagsDic ++ dic
+    )
+  }
+
   def addWay(
       wayId: Long,
       nodeIds: Seq[Long],
@@ -157,5 +157,12 @@ case class TileIndex(
       iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
     )
   }
+
+  def toNode(internalNode: InternalNode): Node =
+    Node(
+      internalNode.id,
+      internalNode.location,
+      dictionaryToAttributes(internalNode.attributes)
+    )
 
 }

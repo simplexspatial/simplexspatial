@@ -19,7 +19,6 @@ package com.simplexportal.spatial.index.grid.tile.impl
 
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex.InternalNode
 import com.simplexportal.spatial.model.{Location, Node}
-import com.simplexportal.spatial.utils.JTSEnrichers._
 import com.simplexportal.spatial.utils.ModelEnrichers._
 import org.locationtech.jts.geom.Coordinate
 

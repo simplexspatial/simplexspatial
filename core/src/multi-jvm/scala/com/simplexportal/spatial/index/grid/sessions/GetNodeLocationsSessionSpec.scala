@@ -65,7 +65,7 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
       .parseString(
         """
       akka.loglevel=INFO
-      akka.cluster.seed-nodes = [ "akka://GridShardingSpec@localhost:2551" ]
+      akka.cluster.seed-nodes = [ "akka://GetNodeLocationsSessionSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """
       )

@@ -34,7 +34,8 @@ class TileIndexActorSpec
 
     "add the nodes" in {
       val probeDone = testKit.createTestProbe[ACK]()
-      val probeNode = testKit.createTestProbe[GetInternalNodeResponse]()
+      val probeInternalNode = testKit.createTestProbe[GetInternalNodeResponse]()
+      val probeNode = testKit.createTestProbe[GetNodeResponse]()
       val probeMetrics = testKit.createTestProbe[Metrics]()
 
       val tileActor = testKit.spawn(
@@ -49,10 +50,11 @@ class TileIndexActorSpec
         Some(probeDone.ref)
       )
 
-      tileActor ! GetInternalNode(10, probeNode.ref)
+      tileActor ! GetInternalNode(10, probeInternalNode.ref)
+      tileActor ! GetNode(10, probeNode.ref)
       tileActor ! GetMetrics(probeMetrics.ref)
 
-      probeNode.expectMessage(
+      probeInternalNode.expectMessage(
         GetInternalNodeResponse(
           10,
           Some(
@@ -64,6 +66,19 @@ class TileIndexActorSpec
           )
         )
       )
+      probeNode.expectMessage(
+        GetNodeResponse(
+          10,
+          Some(
+            Node(
+              10,
+              Location(5, 5),
+              Map("nodeAttrKey" -> "nodeAttrValue")
+            )
+          )
+        )
+      )
+
       probeMetrics.expectMessage(Metrics(0, 1))
     }
 

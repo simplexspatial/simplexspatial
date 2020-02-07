@@ -17,103 +17,106 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.tile.actor.{
+  GetInternalNearestNodeResponse,
   TileIdx,
   TileIndexEntityIdGen
 }
 import com.simplexportal.spatial.index.grid.tile.impl.NearestNode
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
-import com.simplexportal.spatial.model.{LineSegment, Location}
+import com.simplexportal.spatial.index.protocol.{Message, Reply}
+import com.simplexportal.spatial.model.{LineSegment, Location, Node}
 import com.simplexportal.spatial.utils.ModelEnrichers._
 import org.locationtech.jts.algorithm.Distance
 import org.locationtech.jts.geom.Coordinate
 
 object GetNearestNodeSession {
 
-  sealed trait Messages extends CommonInternalSerializer
-  sealed trait Response extends Messages
-  private sealed trait ForeignResponse extends Messages
+  sealed trait GetNearestNodeSessionMsgs
 
-  case class GetNearestNodeResponse(
-      nodes: Option[NearestNode]
-  ) extends Response
+  case class GetNearestNode(
+      location: Location,
+      replyTo: ActorRef[NearestNodeReply]
+  ) extends GetNearestNodeSessionMsgs
+      with Message
 
-  private case class GetNearestInternalNodeResponseWrapper(
-      tileId: String,
-      nodes: Option[NearestNode]
-  ) extends ForeignResponse
+  case class NearestNodeReply(payload: Either[String, Set[Node]])
+      extends GetNearestNodeSessionMsgs
+      with Reply[Set[Node]]
 
   def apply(
       origin: Location,
-      replyTo: ActorRef[GetNearestNodeResponse]
+      replyTo: ActorRef[NearestNodeReply]
   )(
       implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
-  ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
-    val adapter = adapters(context)
+  ): Behavior[tile.GetInternalNearestNodeResponse] =
+    Behaviors.setup { context =>
+      // Search the tile for the initial location.
+      val initTileIdx = tileIndexEntityIdGen.tileIdx(origin.lat, origin.lon)
 
-    // Search the tile for the initial location.
-    val initTileIdx = tileIndexEntityIdGen.tileIdx(origin.lat, origin.lon)
+      request(Set(initTileIdx.entityId), origin, context.self)
 
-    request(Set(initTileIdx.entityId), origin, adapter)
-
-    /**
-      * Process the new list of nearest nodes for a tile.
-      * It is going to replace the previous one if:
-      *  - No previous nearest nodes found.
-      *  - the new distance is smaller.
-      *
-      * Check if the origin is nearer to the current nearest nodes than to any of the edges/vertex in the current tile.
-      * If it is not nearer, then it will be necessary to search in adjacent tiles.
-      *
-      * @param remainingResponses Remaining responses to arrive.
-      * @return
-      */
-    // FIXME: Split this function in two, one to replace or not the previouse one and another to search in adjacent tiles if necessary.
-    def collectResponses(
-        remainingResponses: Int,
-        visitedTiles: Set[TileIdx],
-        current: Option[NearestNode]
-    ): Behavior[Messages] = Behaviors.receiveMessage {
-      case GetNearestInternalNodeResponseWrapper(tileId, newer) =>
-        TileIdx(tileId) match {
-          case Left(error) => ???
-          case Right(tileIdx) =>
-            val nearestNode = updateNearestNode(current, newer)
-            val tilesToRequest = adjacentlyToRequest(
-              origin,
-              nearestNode,
-              tileIdx,
-              visitedTiles
-            )
-
-            remainingResponses - 1 + tilesToRequest.size match {
-              case 0 =>
-                replyTo ! GetNearestNodeResponse(nearestNode)
-                Behaviors.stopped
-              case remaining =>
-                collectResponses(
-                  remaining,
-                  visitedTiles ++ tilesToRequest,
-                  nearestNode
+      /**
+        * Process the new list of nearest nodes for a tile.
+        * It is going to replace the previous one if:
+        *  - No previous nearest nodes found.
+        *  - the new distance is smaller.
+        *
+        * Check if the origin is nearer to the current nearest nodes than to any of the edges/vertex in the current tile.
+        * If it is not nearer, then it will be necessary to search in adjacent tiles.
+        *
+        * @param remainingResponses Remaining responses to arrive.
+        * @return
+        */
+      // FIXME: Split this function in two, one to replace or not the previouse one and another to search in adjacent tiles if necessary.
+      def collectResponses(
+          remainingResponses: Int,
+          visitedTiles: Set[TileIdx],
+          current: Option[NearestNode]
+      ): Behavior[tile.GetInternalNearestNodeResponse] =
+        Behaviors.receiveMessage {
+          case tile.GetInternalNearestNodeResponse(tileId, _, newer) =>
+            TileIdx(tileId) match {
+              case Left(error) => ???
+              case Right(tileIdx) =>
+                val nearestNode = updateNearestNode(current, newer)
+                val tilesToRequest = adjacentlyToRequest(
+                  origin,
+                  nearestNode,
+                  tileIdx,
+                  visitedTiles
                 )
+
+                remainingResponses - 1 + tilesToRequest.size match {
+                  case 0 =>
+                    replyTo ! NearestNodeReply(
+                      Right(nearestNode.map(n => n.nodes).getOrElse(Set.empty))
+                    )
+                    Behaviors.stopped
+                  case remaining =>
+                    collectResponses(
+                      remaining,
+                      visitedTiles ++ tilesToRequest,
+                      nearestNode
+                    )
+                }
             }
+          case _ => Behaviors.unhandled
         }
-      case _ => Behaviors.unhandled
+
+      collectResponses(1, Set(initTileIdx), None)
+
     }
-
-    collectResponses(1, Set(initTileIdx), None)
-
-  }
 
   private def request(
       tileIds: Set[String],
       origin: Location,
-      replyTo: ActorRef[AnyRef]
+      replyTo: ActorRef[GetInternalNearestNodeResponse]
   )(implicit sharding: ClusterSharding) =
     tileIds.foreach(tileId =>
       sharding.entityRefFor(Grid.TileTypeKey, tileId) ! tile
@@ -131,12 +134,6 @@ object GetNearestNodeSession {
     case (Some(old), Some(newOne)) if old.distance == newOne.distance =>
       Some(old.copy(nodes = old.nodes ++ newOne.nodes))
   }
-
-  private def adapters(context: ActorContext[Messages]): ActorRef[AnyRef] =
-    context.messageAdapter {
-      case tile.GetInternalNearestNodeResponse(tileId, _, nodes) =>
-        GetNearestInternalNodeResponseWrapper(tileId, nodes)
-    }
 
   /**
     * Calculated the adjacent tiles that is necessary to call.

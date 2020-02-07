@@ -32,12 +32,12 @@ class GetWaySessionSpec extends WordSpecLike with Matchers {
         Way(1,List(Node(2,Location.NaL,Map()), Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())),Map())
       )
 
-      val expected = Some( Seq(
+      val expected = Some( Way(1, Seq(
         Node(0,Location(-23.0,-90.0),Map()),
         Node(1,Location(60.0,130.0),Map()),
         Node(2,Location(-23.3,-90.0),Map()),
         Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())
-      ))
+      ),Map()))
 
       expected shouldBe GetWaySession.joinWayParts(from)
     }

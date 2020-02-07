@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.api.grpc.DataServiceHandler
-import com.simplexportal.spatial.index.grid.Grid
+import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
 import com.simplexportal.spatial.index.grid.grpc.DataServiceImpl
 import com.typesafe.config.ConfigFactory
 
@@ -56,22 +56,9 @@ object Main extends App {
 //    case member if member.roles.contains("grid-index") => ???
 //  }
 
+  // TODO: Build the GridConfig here
   val gridIndex = system.spawn(
-    Grid(
-      "GridIndex",
-      config.getInt(
-        "simplexportal.spatial.indexes.grid-index.partitions.ways-lookup"
-      ),
-      config.getInt(
-        "simplexportal.spatial.indexes.grid-index.partitions.nodes-lookup"
-      ),
-      config.getInt(
-        "simplexportal.spatial.indexes.grid-index.partitions.latitude"
-      ),
-      config.getInt(
-        "simplexportal.spatial.indexes.grid-index.partitions.longitude"
-      )
-    ),
+    Grid(GridConfig("GridIndex", config)),
     "GridIndex"
   );
 

@@ -23,8 +23,7 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.actor
-import com.simplexportal.spatial.index.grid.tile.actor.{ACK, AddBatch, AddNode, AddWay, GetWay, GetWayResponse}
+import com.simplexportal.spatial.index.protocol.{GridACK, GridAddBatch, GridAddNode, GridAddWay, GridGetWay, GridGetWayReply}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -88,7 +87,7 @@ abstract class GridShardingAddBatchSpec
     println(s"Running System [${system.name}]")
 
     val gridIndex = system.spawn(
-      Grid("GridAddBatchIndexTest", 10000, 10000, 10000, 10000),
+      Grid(GridConfig("GridAddBatchIndexTest", 10000, 10000, 10000, 10000)),
       "GridAddBatchIndex"
     )
 
@@ -109,18 +108,18 @@ abstract class GridShardingAddBatchSpec
     }
 
     "be able to add nodes and ways" in {
-      val probe = TestProbe[ACK]()
+      val probe = TestProbe[GridACK]()
       runOn(node0) {
 
-        gridIndex ! AddBatch(
+        gridIndex ! GridAddBatch(
           Seq(
-            AddNode(100, -23, -90, Map.empty),
-            actor.AddNode(101, 60, 130, Map.empty),
-            actor.AddNode(102, -23.3, -90, Map.empty),
-            actor.AddNode(110, 1, 1, Map.empty, None),
-            actor.AddNode(111, 1.000001, 1.000001, Map.empty, None),
-            actor.AddNode(112, 1.000002, 1.000002, Map.empty, None),
-            AddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
+            GridAddNode(100, -23, -90, Map.empty),
+            GridAddNode(101, 60, 130, Map.empty),
+            GridAddNode(102, -23.3, -90, Map.empty),
+            GridAddNode(110, 1, 1, Map.empty, None),
+            GridAddNode(111, 1.000001, 1.000001, Map.empty, None),
+            GridAddNode(112, 1.000002, 1.000002, Map.empty, None),
+            GridAddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
           ),
           Some(probe.ref)
         )
@@ -130,21 +129,20 @@ abstract class GridShardingAddBatchSpec
     }
 
     "return None if way is not there" in {
-      val probe = TestProbe[GetWayResponse]()
+      val probe = TestProbe[GridGetWayReply]()
       runOn(node1) {
-        gridIndex ! GetWay(999, probe.ref)
-        GetWayResponse(999, None) shouldBe probe.receiveMessage()
+        gridIndex ! GridGetWay(999, probe.ref)
+        GridGetWayReply(Right(None)) shouldBe probe.receiveMessage()
       }
       enterBarrier("no data found")
     }
 
     "return the way if it is there" in {
-      val probe = TestProbe[GetWayResponse]()
+      val probe = TestProbe[GridGetWayReply]()
       runOn(node1) {
-        gridIndex ! actor.GetWay(101, probe.ref)
-        GetWayResponse(
-          101,
-          Some(
+        gridIndex ! GridGetWay(101, probe.ref)
+        GridGetWayReply(
+          Right(Some(
             Way(
               101,
               Seq(
@@ -157,7 +155,7 @@ abstract class GridShardingAddBatchSpec
               ),
               Map()
             )
-          )
+          ))
         ) shouldBe probe.receiveMessage()
       }
       enterBarrier("way returned")

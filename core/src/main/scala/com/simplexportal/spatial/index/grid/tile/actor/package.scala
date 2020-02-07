@@ -20,7 +20,7 @@ package com.simplexportal.spatial.index.grid.tile.actor
 import akka.actor.typed.ActorRef
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.tile.impl.{NearestNode, TileIndex}
-import com.simplexportal.spatial.model.{Location, Way}
+import com.simplexportal.spatial.model.{Location, Node, Way}
 
 sealed trait Message extends CommonInternalSerializer
 sealed trait Reply extends Message
@@ -48,6 +48,11 @@ case class GetInternalNodeResponse(
     node: Option[TileIndex.InternalNode]
 ) extends Reply
 
+case class GetNodeResponse(
+    id: Long,
+    node: Option[Node]
+) extends Reply
+
 case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse])
     extends Reply
 
@@ -69,6 +74,11 @@ final case class GetNearestNode(
 final case class GetInternalNode(
     id: Long,
     replyTo: ActorRef[GetInternalNodeResponse]
+) extends Query
+
+final case class GetNode(
+    id: Long,
+    replyTo: ActorRef[GetNodeResponse]
 ) extends Query
 
 final case class GetInternalNodes(
