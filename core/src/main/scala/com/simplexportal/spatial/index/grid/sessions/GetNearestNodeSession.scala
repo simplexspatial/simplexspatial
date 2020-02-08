@@ -17,49 +17,61 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.tile.actor.{
-  GetInternalNearestNodeResponse,
   TileIdx,
-  TileIndexEntityIdGen
+  TileIndexEntityIdGen,
+  GetInternalNearestNodeResponse => TileReply
 }
 import com.simplexportal.spatial.index.grid.tile.impl.NearestNode
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.protocol.{Message, Reply}
-import com.simplexportal.spatial.model.{LineSegment, Location, Node}
+import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
+import com.simplexportal.spatial.index.protocol.{
+  GridNearestNode,
+  GridNearestNodeReply,
+  GridRequest
+}
+import com.simplexportal.spatial.model.{LineSegment, Location}
 import com.simplexportal.spatial.utils.ModelEnrichers._
+import io.jvm.uuid.UUID
 import org.locationtech.jts.algorithm.Distance
 import org.locationtech.jts.geom.Coordinate
 
 object GetNearestNodeSession {
 
-  sealed trait GetNearestNodeSessionMsgs
+  protected sealed trait ForeignResponse extends CommonInternalSerializer
 
-  case class GetNearestNode(
-      location: Location,
-      replyTo: ActorRef[NearestNodeReply]
-  ) extends GetNearestNodeSessionMsgs
-      with Message
+  protected case class TileReplyWrapper(response: TileReply)
+      extends ForeignResponse
 
-  case class NearestNodeReply(payload: Either[String, Set[Node]])
-      extends GetNearestNodeSessionMsgs
-      with Reply[Set[Node]]
+  private def adapters(
+      context: ActorContext[ForeignResponse]
+  ): ActorRef[AnyRef] =
+    context.messageAdapter {
+      case msg: TileReply => TileReplyWrapper(msg)
+    }
 
-  def apply(
-      origin: Location,
-      replyTo: ActorRef[NearestNodeReply]
+  def processRequest(
+      cmd: GridNearestNode,
+      context: ActorContext[GridRequest]
   )(
       implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
-  ): Behavior[tile.GetInternalNearestNodeResponse] =
-    Behaviors.setup { context =>
-      // Search the tile for the initial location.
-      val initTileIdx = tileIndexEntityIdGen.tileIdx(origin.lat, origin.lon)
+  ): Unit =
+    context.spawn(
+      apply(cmd),
+      s"getting_way_${UUID.randomString}"
+    )
 
-      request(Set(initTileIdx.entityId), origin, context.self)
+  // scalastyle:off method.length
+  def apply(cmd: GridNearestNode)(
+      implicit sharding: ClusterSharding,
+      tileIndexEntityIdGen: TileIndexEntityIdGen
+  ): Behavior[ForeignResponse] =
+    Behaviors.setup { context =>
+      val adapter = adapters(context)
 
       /**
         * Process the new list of nearest nodes for a tile.
@@ -70,7 +82,6 @@ object GetNearestNodeSession {
         * Check if the origin is nearer to the current nearest nodes than to any of the edges/vertex in the current tile.
         * If it is not nearer, then it will be necessary to search in adjacent tiles.
         *
-        * @param remainingResponses Remaining responses to arrive.
         * @return
         */
       // FIXME: Split this function in two, one to replace or not the previouse one and another to search in adjacent tiles if necessary.
@@ -78,15 +89,15 @@ object GetNearestNodeSession {
           remainingResponses: Int,
           visitedTiles: Set[TileIdx],
           current: Option[NearestNode]
-      ): Behavior[tile.GetInternalNearestNodeResponse] =
+      ): Behavior[ForeignResponse] = {
+
         Behaviors.receiveMessage {
-          case tile.GetInternalNearestNodeResponse(tileId, _, newer) =>
+          case TileReplyWrapper(TileReply(tileId, _, newer)) => {
             TileIdx(tileId) match {
-              case Left(error) => ???
               case Right(tileIdx) =>
                 val nearestNode = updateNearestNode(current, newer)
                 val tilesToRequest = adjacentlyToRequest(
-                  origin,
+                  cmd.location,
                   nearestNode,
                   tileIdx,
                   visitedTiles
@@ -94,46 +105,61 @@ object GetNearestNodeSession {
 
                 remainingResponses - 1 + tilesToRequest.size match {
                   case 0 =>
-                    replyTo ! NearestNodeReply(
+                    cmd.replyTo ! GridNearestNodeReply(
                       Right(nearestNode.map(n => n.nodes).getOrElse(Set.empty))
                     )
                     Behaviors.stopped
                   case remaining =>
+                    request(tilesToRequest, cmd.location, adapter)
                     collectResponses(
                       remaining,
                       visitedTiles ++ tilesToRequest,
                       nearestNode
                     )
                 }
+              case Left(error) =>
+                cmd.replyTo ! GridNearestNodeReply(Left(error))
+                Behaviors.stopped
             }
+          }
           case _ => Behaviors.unhandled
         }
+      }
+
+      // Search the tile for the initial location.
+      val initTileIdx =
+        tileIndexEntityIdGen.tileIdx(cmd.location.lat, cmd.location.lon)
+
+      request(Set(initTileIdx), cmd.location, adapter)
 
       collectResponses(1, Set(initTileIdx), None)
 
     }
 
   private def request(
-      tileIds: Set[String],
+      tileIds: Set[TileIdx],
       origin: Location,
-      replyTo: ActorRef[GetInternalNearestNodeResponse]
+      replyTo: ActorRef[TileReply]
   )(implicit sharding: ClusterSharding) =
-    tileIds.foreach(tileId =>
-      sharding.entityRefFor(Grid.TileTypeKey, tileId) ! tile
+    tileIds.foreach(idx => {
+      sharding.entityRefFor(Grid.TileTypeKey, idx.entityId) ! tile
         .GetNearestNode(origin, replyTo)
-    )
+    })
 
   private def updateNearestNode(
       maybeOld: Option[NearestNode],
       maybeNew: Option[NearestNode]
-  ): Option[NearestNode] = (maybeOld, maybeNew) match {
-    case (None, _) => maybeNew
-    case (_, None) => maybeOld
-    case (Some(old), Some(newOne)) if old.distance > newOne.distance =>
-      Some(newOne)
-    case (Some(old), Some(newOne)) if old.distance == newOne.distance =>
-      Some(old.copy(nodes = old.nodes ++ newOne.nodes))
-  }
+  ): Option[NearestNode] =
+    (maybeOld, maybeNew) match {
+      case (None, _) => maybeNew
+      case (_, None) => maybeOld
+      case (Some(old), Some(newOne)) if old.distance > newOne.distance =>
+        Some(newOne)
+      case (Some(old), Some(newOne)) if old.distance == newOne.distance =>
+        Some(old.copy(nodes = old.nodes ++ newOne.nodes))
+      case (maybeOld, _) => maybeOld
+
+    }
 
   /**
     * Calculated the adjacent tiles that is necessary to call.
@@ -160,7 +186,8 @@ object GetNearestNodeSession {
       case Some(nearest) =>
         neighbourDistance(origin.toJTS(), currentTile)
           .filter {
-            case (i, d) => d < nearest.distance && !visitedTiles.contains(i)
+            case (i, d) =>
+              d < nearest.distance && !visitedTiles.contains(i)
           }
           .map(_._1)
     }

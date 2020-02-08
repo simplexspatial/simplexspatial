@@ -38,7 +38,6 @@ import scala.util.{Failure, Success, Try}
 @deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddWaySession {
 
-  // scalastyle:off method.length
   def apply(addWay: AddWay)(
       implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
@@ -134,7 +133,7 @@ object AddWaySession {
         nodes: Seq[TileIndex.InternalNode],
         acc: Seq[(TileIdx, Seq[TileIndex.InternalNode])],
         currentShard: (TileIdx, Seq[TileIndex.InternalNode])
-    ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] = {
+    ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] =
       nodes match {
         case Nil => acc :+ currentShard
         case node :: tail =>
@@ -150,12 +149,11 @@ object AddWaySession {
             )
           }
       }
-    }
 
     rec(
       nodes.tail,
       Seq.empty,
-      (entityIdFrom(nodes.head.location), Seq(nodes.head))
+      (entityIdFrom(nodes.head.location), Seq(nodes.head)) // FIXME: Don't use nodes.head abd use headOption
     )
   }
 

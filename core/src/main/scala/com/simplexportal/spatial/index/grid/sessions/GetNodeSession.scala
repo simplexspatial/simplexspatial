@@ -99,7 +99,7 @@ object GetNodeSession {
               TileTypeKey,
               tileIdx.entityId
             ) ! GetNode(nodeId, adapter)
-            Behaviors.stopped
+            Behaviors.same
           case LookUpReplyWrapper(LookUpReply(_, None)) =>
             getNode.replyTo ! GridGetNodeReply(Right(None))
             Behaviors.stopped

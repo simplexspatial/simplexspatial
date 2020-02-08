@@ -44,6 +44,15 @@ import scala.concurrent.duration._
 // TODO: Every context.spawn(*Session(...), ... ) should be replaced by a spawn in the cluster, to start the session in a free node and not in this one.
 object Grid {
 
+  implicit class GridAddNodeEnricher(cmd: GridBatchCommand) {
+    def toBatch(): GridAddBatch = cmd match {
+      case addNode: GridAddNode =>
+        GridAddBatch(Seq(addNode.copy(replyTo = None)), addNode.replyTo)
+      case addWay: GridAddWay =>
+        GridAddBatch(Seq(addWay.copy(replyTo = None)), addWay.replyTo)
+    }
+  }
+
   val TileTypeKey = EntityTypeKey[Command]("TileEntity")
   val NodeLookUpTypeKey =
     EntityTypeKey[NodeLookUpActor.Command]("NodeLookUpEntity")
@@ -72,21 +81,9 @@ object Grid {
       Behaviors.receiveMessage {
 
         // Commands
-        case cmd: GridAddNode => ???
-//        case GridAddNode(id, lat, lon, attributes, replyTo) =>
-//          context.spawn(
-//            id, lat, lon, attributes, replyTo,
-//            s"adding_node_${UUID.randomString}"
-//          )
-//          Behaviors.same
-
-        case cmd: GridAddWay => ???
-//        case GridAddWay(id, nodeIds, attributes, replyTo) =>
-//          context.spawn(
-//            AddWaySession(id, nodeIds, attributes, replyTo),
-//            s"adding_way_${UUID.randomString}"
-//          )
-//          Behaviors.same
+        case cmd: GridBatchCommand =>
+          AddBatchSession.processRequest(cmd.toBatch, context)
+          Behaviors.same
 
         case cmd: GridAddBatch =>
           AddBatchSession.processRequest(cmd, context)
@@ -97,15 +94,13 @@ object Grid {
           GetNodeSession.processRequest(cmd, context)
           Behaviors.same
 
-        case cmd: GridGetNodes => ???
-
         case cmd: GridGetWay =>
           GetWaySession.processRequest(cmd, context)
           Behaviors.same
 
-        case cmd: GridNearestNode => ???
-
-        case cmd: GridNearestWay => ???
+        case cmd: GridNearestNode =>
+          GetNearestNodeSession.processRequest(cmd, context)
+          Behaviors.same
 
       }
     }

@@ -3,7 +3,10 @@ import sbt.Keys.{description, startYear}
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+scapegoatVersion in ThisBuild := "1.3.11"
+
 lazy val commonSettings = Seq(
+  scapegoatIgnoredFiles := Seq(".*/src_managed/.*"),
   organization := "com.simplexportal.spatial",
   organizationHomepage := Some(url("http://www.simplexportal.com")),
   organizationName := "SimplexPortal Ltd",

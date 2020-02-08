@@ -19,7 +19,7 @@ package com.simplexportal.spatial.index
 
 import akka.actor.typed.ActorRef
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
-import com.simplexportal.spatial.model.{Node, Way}
+import com.simplexportal.spatial.model.{Location, Node, Way}
 
 /**
   * Define the protocol used by the Grid.
@@ -49,7 +49,7 @@ package object protocol {
     def payload: Either[String, T]
   }
 
-  case class GridAddNode(
+  final case class GridAddNode(
       id: Long,
       lat: Double,
       lon: Double,
@@ -57,53 +57,46 @@ package object protocol {
       replyTo: Option[ActorRef[GridACK]] = None
   ) extends GridBatchCommand
 
-  case class GridAddWay(
+  final case class GridAddWay(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String],
       replyTo: Option[ActorRef[GridACK]] = None
   ) extends GridBatchCommand
 
-  case class GridAddBatch(
+  final case class GridAddBatch(
       commands: Seq[GridBatchCommand],
       replyTo: Option[ActorRef[GridACK]] = None
   ) extends GridCommand
 
   // All Queries
 
-  case class GridGetNode(id: Long, replyTo: ActorRef[GridGetNodeReply])
+  final case class GridGetNode(id: Long, replyTo: ActorRef[GridGetNodeReply])
       extends GridQuery
 
-  case class GridGetNodeReply(payload: Either[String, Option[Node]])
+  final case class GridGetNodeReply(payload: Either[String, Option[Node]])
       extends GridReply[Option[Node]]
 
-  case class GridGetNodes(ids: Set[Long], replyTo: ActorRef[GridGetNodesReply])
+  final case class GridGetWay(id: Long, replyTo: ActorRef[GridGetWayReply])
       extends GridQuery
 
-  case class GridGetNodesReply(payload: Either[String, Set[Node]])
-      extends GridReply[Set[Node]]
-
-  case class GridGetWay(id: Long, replyTo: ActorRef[GridGetWayReply])
-      extends GridQuery
-
-  case class GridGetWayReply(payload: Either[String, Option[Way]])
+  final case class GridGetWayReply(payload: Either[String, Option[Way]])
       extends GridReply[Option[Way]]
 
-  case class GridNearestNode() extends GridQuery
+  final case class GridNearestNode(
+      location: Location,
+      replyTo: ActorRef[GridNearestNodeReply]
+  ) extends GridQuery
 
-  case class GridNearestNodeReply(payload: Either[String, Set[Node]])
+  final case class GridNearestNodeReply(payload: Either[String, Set[Node]])
       extends GridReply[Set[Node]]
 
-  case class GridNearestWay() extends GridQuery
-
-  case class GridNearestWayReply(payload: Either[String, Set[Way]])
-      extends GridReply[Set[Way]]
-
-  case class GridDone() extends GridACK {
+  // FIXME: This should be a "final case object GridDone extends GridACK {"
+  final case class GridDone() extends GridACK {
     override def payload: Either[String, Unit] = Right(Unit)
   }
 
-  case class GridNotDone(hint: String) extends GridACK {
+  final case class GridNotDone(hint: String) extends GridACK {
     override def payload: Either[String, Unit] = Left(hint)
   }
 

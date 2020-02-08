@@ -130,7 +130,7 @@ abstract class GridShardingSpec
       gridIndex ! GridGetNode(1, probe.ref)
       gridIndex ! GridGetNode(2, probe.ref)
 
-      probe.receiveMessages(4, 1.minutes).toSet shouldBe Set(
+      probe.receiveMessages(4).toSet shouldBe Set(
         GridGetNodeReply(Right(None)),
         GridGetNodeReply(Right(Some(Node(0, Location(-23, -90), Map.empty)))),
         GridGetNodeReply(Right(Some(Node(1, Location(60, 130), Map.empty)))),
@@ -140,68 +140,50 @@ abstract class GridShardingSpec
       enterBarrier("nodes retrieved")
     }
 
-    "be able to retrieve nodes in block" in {
-      val probe = TestProbe[GridGetNodesReply]()
-
-      runOn(node1) {
-        gridIndex ! GridAddNode(10, 1, 1, Map.empty, None)
-        gridIndex ! GridAddNode(11, 1.000001, 1.000001, Map.empty, None)
-        gridIndex ! GridAddNode(12, 1.000002, 1.000002, Map.empty, None)
-        gridIndex ! GridGetNodes(Set(999, 0, 1, 2, 10, 11, 12), probe.ref)
-
-        val expected = Set(
-          Node(0, Location(-23, -90), Map.empty),
-          Node(1, Location(60, 130), Map.empty),
-          Node(2, Location(-23.3, -90), Map.empty),
-          Node(10, Location(1, 1), Map.empty),
-          Node(11, Location(1.000001, 1.000001), Map.empty),
-          Node(12, Location(1.000002, 1.000002), Map.empty)
-        )
-
-        probe.expectMessage(GridGetNodesReply(Right(expected)))
-      }
-
-      enterBarrier("nodes retrieved in group")
-
-    }
-
     "be able to add a ways in different shards" in {
       val probe = TestProbe[GridACK]()
       runOn(node0) {
+        // Adding extra nodes to build larger way.
+        gridIndex ! GridAddNode(10, 1, 1, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(11, 1.000001, 1.000001, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(12, 1.000002, 1.000002, Map.empty, Some(probe.ref))
+        probe.receiveMessages(3)
+
         gridIndex ! GridAddWay(
           1,
           Seq(0, 1, 2, 10, 11, 12),
           Map.empty,
           Some(probe.ref)
         )
-        probe.receiveMessage()
+        probe.expectMessage(GridDone())
+
       }
       enterBarrier("way added")
     }
 
     "retrieve way from multiple shards" in {
       val probe = TestProbe[GridGetWayReply]()
-      runOn(node0) {
-        gridIndex ! GridGetWay(1, probe.ref)
-        GridGetWayReply(
-          Right(
-            Some(
-              Way(
-                1,
-                Seq(
-                  Node(0, Location(-23.0, -90.0), Map()),
-                  Node(1, Location(60.0, 130.0), Map()),
-                  Node(2, Location(-23.3, -90.0), Map()),
-                  Node(10, Location(1.0, 1.0), Map()),
-                  Node(11, Location(1.000001, 1.000001), Map()),
-                  Node(12, Location(1.000002, 1.000002), Map())
-                ),
-                Map.empty
-              )
+
+      gridIndex ! GridGetWay(1, probe.ref)
+      probe.expectMessage(GridGetWayReply(
+        Right(
+          Some(
+            Way(
+              1,
+              Seq(
+                Node(0, Location(-23.0, -90.0), Map()),
+                Node(1, Location(60.0, 130.0), Map()),
+                Node(2, Location(-23.3, -90.0), Map()),
+                Node(10, Location(1.0, 1.0), Map()),
+                Node(11, Location(1.000001, 1.000001), Map()),
+                Node(12, Location(1.000002, 1.000002), Map())
+              ),
+              Map.empty
             )
           )
-        ) shouldBe probe.receiveMessage()
-      }
+        )
+      ))
+
       enterBarrier("way retrieved from different shards")
     }
 
@@ -214,40 +196,41 @@ abstract class GridShardingSpec
       enterBarrier("no data found")
     }
 
-    /*    "be able to add a ways in different shards using batched commands" in {
-      val probe = TestProbe[tile.ACK]()
+    "be able to add nodes and ways in different shards using batched commands" in {
+      val probe = TestProbe[GridACK]()
       runOn(node0) {
-        gridIndex ! tile.AddBatch(Seq(
-          tile.AddNode(130, -23, -90, Map.empty),
-          tile.AddNode(140, 60, 130, Map.empty),
-          tile.AddNode(150, -23.3, -90, Map.empty),
-          tile.AddWay(2, Seq(11, 130, 140, 150), Map.empty)
+        gridIndex ! GridAddBatch(Seq(
+          GridAddNode(130, -23, -90, Map.empty),
+          GridAddNode(140, 60, 130, Map.empty),
+          GridAddNode(150, -23.3, -90, Map.empty),
+          GridAddWay(2, Seq(11, 130, 140, 150), Map.empty)
         ), Some(probe.ref))
-        probe.receiveMessage()
+
+        probe.expectMessage(GridDone())
+
+        val probeGetWay = TestProbe[GridGetWayReply]
+        gridIndex ! GridGetWay(2, probeGetWay.ref)
+        probeGetWay.expectMessage(GridGetWayReply(
+          Right(
+            Some(
+              Way(
+                2,
+                Seq(
+                  Node(11, Location(1.000001, 1.000001), Map()),
+                  Node(130, Location(-23, -90), Map()),
+                  Node(140, Location(60, 130), Map()),
+                  Node(150, Location(-23.3, -90), Map())
+                ),
+                Map.empty
+              )
+            )
+          )
+        ))
+
       }
-      enterBarrier("commands executed")
+      enterBarrier("batch commands executed")
     }
 
-    "be able to retrieve data add in batch mode" in {
-      runOn(node1) {
-        val probeNode = TestProbe[tile.GetInternalNodeResponse]()
-        gridIndex ! tile.GetInternalNode(140, probeNode.ref)
-        GetInternalNodeResponse(140,Some(
-          TileIndex.InternalNode(2, Location(60, 130), Map.empty)
-        )) shouldBe probeNode.receiveMessage()
-
-//        gridIndex ! tile.GetWay(2, probe.ref)
-//        GetWayResponse(2,Some(
-//          Way(2, Seq(
-//            Node(11,Location(1.000001,1.000001),Map()),
-//            Node(130,Location(-23.0,-90.0),Map()),
-//            Node(140,Location(60.0,130.0),Map()),
-//            Node(150,Location(-23.3,-90.0),Map())
-//          ), Map.empty)
-//        )) shouldBe probe.receiveMessage()
-      }
-      enterBarrier("data retrieved from batch mode")
-    }*/
 //    "get right metrics" in within(10.seconds)  {
 //      val probe = TestProbe[AnyRef]()
 //      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>. Asking for metrics")

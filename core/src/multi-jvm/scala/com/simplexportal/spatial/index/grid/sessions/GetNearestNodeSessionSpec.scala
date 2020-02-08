@@ -24,9 +24,8 @@ import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
 import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
-import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
-import com.simplexportal.spatial.index.protocol.{GridAddNode, GridGetNodeReply}
-import com.simplexportal.spatial.model.{Location, Node, Way}
+import com.simplexportal.spatial.index.protocol._
+import com.simplexportal.spatial.model.{Location, Node}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -84,7 +83,7 @@ abstract class GetNearestNodeSessionSpec
   override def initialParticipants: Int =  roles.size
 
   "Search the nearest node" must {
-    val gridIndex = system.spawn(Grid(GridConfig("GridIndexTest", 10000, 10000, 10000, 10000)), "GridIndex")
+    val gridIndex = system.spawn(Grid(GridConfig("GridIndexTest", 10000, 10000, 4, 4)), "GridIndex")
 
     "prepare the cluster for testing" in within(10.seconds) {
 
@@ -102,70 +101,58 @@ abstract class GetNearestNodeSessionSpec
       enterBarrier("all-up")
 
       runOn(node1) {
-        val probe = TestProbe[GridGetNodeReply]()
-
-        gridIndex ! GridAddNode(10, 1, 1, Map.empty, None)
-        gridIndex ! GridAddNode(11, 1.000001, 1.000001, Map.empty, None)
-        gridIndex ! GridAddNode(12, 1.000002, 1.000002, Map.empty, None)
-        gridIndex ! GridAddNode(13, 1.000002, 1.000002, Map.empty, None)
-        gridIndex ! GridGetNodes(Seq(999, 10, 11, 12, 13), probe.ref)
-
-        Seq(
-          actor.GetInternalNodeResponse(999, None),
-          actor.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(1, 1), Map.empty))),
-          actor.GetInternalNodeResponse(11, Some(TileIndex.InternalNode(11, Location(1.000001, 1.000001), Map.empty))),
-          actor.GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(1.000002, 1.000002), Map.empty))),
-          actor.GetInternalNodeResponse(13, Some(TileIndex.InternalNode(12, Location(1.000002, 1.000002), Map.empty)))
-        ) should be (probe.receiveMessage().nodes)
+        val probeACK = TestProbe[GridACK]()
+        gridIndex ! GridAddNode(1, 0, 0, Map.empty, Some(probeACK.ref))
+        gridIndex ! GridAddNode(2, 1, 1, Map.empty, Some(probeACK.ref))
+        gridIndex ! GridAddNode(3, 46, 91, Map.empty, Some(probeACK.ref))
+        gridIndex ! GridAddNode(4, 46, 91, Map.empty, Some(probeACK.ref))
+        gridIndex ! GridAddNode(5, 89, -179, Map.empty, Some(probeACK.ref))
+        probeACK.receiveMessages(5) shouldBe Seq.fill(5)(GridDone())
       }
+    }
+    enterBarrier("nodes added")
 
-      enterBarrier("nodes added")
+    runOn(node0) {
+      "be able to find nearest nodes in the cluster" when {
+        val probe = TestProbe[GridNearestNodeReply]()
+
+        "ask for exact position in the edge" in {
+          gridIndex ! GridNearestNode(Location(0, 0), probe.ref)
+          probe.expectMessage(
+            GridNearestNodeReply(Right(Set(Node(1, Location(0, 0)))))
+          )
+        }
+
+        "ask for exact position" in {
+          gridIndex ! GridNearestNode(Location(1, 1), probe.ref)
+          probe.expectMessage(
+            GridNearestNodeReply(Right(Set(Node(2, Location(1, 1)))))
+          )
+        }
+
+        "found multiple nodes" in {
+          gridIndex ! GridNearestNode(Location(44, 92), probe.ref)
+          probe.expectMessage(
+            GridNearestNodeReply(Right(Set(
+              Node(3, Location(46, 91)),
+              Node(4, Location(46, 91))
+            )))
+          )
+        }
+
+        "jump from 180 to -180" in {
+          gridIndex ! GridNearestNode(Location(89,179), probe.ref)
+          probe.expectMessage(
+            GridNearestNodeReply(Right(Set(
+              Node(5, Location(89, -179))
+            )))
+          )
+        }
+
+      }
     }
 
 
-    "return the node in the same location that the origin" in {
-
-      runOn(node1) {
-
-      }
-
-      enterBarrier("nodes retrieved in group")
-
-    }
-
-//    "be able to add a ways in different shards" in {
-//      val probe = TestProbe[ACK]()
-//      runOn(node0) {
-//        gridIndex ! AddWay(1, Seq(0, 1, 2, 10, 11, 12), Map.empty, Some(probe.ref))
-//        probe.receiveMessage()
-//      }
-//      enterBarrier("way added")
-//    }
-//
-//    "retrieve way from multiple shards" in {
-//      val probe = TestProbe[GetWayResponse]()
-//      runOn(node0) {
-//        gridIndex ! GetWay(1, probe.ref)
-//        GetWayResponse(1,Some(
-//          Way(1, Seq(
-//            Node(0,Location(-23.0,-90.0),Map()),
-//            Node(1,Location(60.0,130.0),Map()),
-//            Node(2,Location(-23.3,-90.0),Map()),
-//            Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())
-//          ), Map.empty)
-//        )) shouldBe probe.receiveMessage()
-//      }
-//      enterBarrier("way retrieved from different shards")
-//    }
-
-    "return None if data is not there" in {
-      val probe = TestProbe[GetWayResponse]()
-      runOn(node1) {
-        gridIndex ! actor.GetWay(999, probe.ref)
-        GetWayResponse(999,None) shouldBe probe.receiveMessage()
-      }
-      enterBarrier("no data found")
-    }
 
   }
 }
