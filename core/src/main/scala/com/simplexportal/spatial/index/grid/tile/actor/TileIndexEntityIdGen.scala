@@ -25,20 +25,43 @@ object TileIdx {
   def apply(entityId: String): Either[String, TileIdx] =
     entityId.split("_") match {
       case Array(latIdx, lonIdx) =>
-        Try(TileIdx(latIdx.toInt, lonIdx.toInt)).toEither.left.map(ex =>
-          s"Error parsing ${entityId} => ${ex.getMessage}"
-        )
+        Try(TileIdx(latIdx.toInt, lonIdx.toInt)).toEither.left.map(ex => s"Error parsing ${entityId} => ${ex.getMessage}")
       case _ => Left(s"[${entityId}] is not a valid format for a TileIdx")
     }
 }
 
 case class TileIdx(latIdx: Int, lonIdx: Int) {
   def entityId: String = s"${latIdx}_${lonIdx}"
+
+  def normalize()(implicit tileIdxGen: TileIndexEntityIdGen): TileIdx =
+    TileIdx(
+      normalize(latIdx, tileIdxGen.latPartitions),
+      normalize(lonIdx, tileIdxGen.lonPartitions)
+    )
+
+  @inline private def normalize(idx: Int, partitions: Int)(implicit tileIdxGen: TileIndexEntityIdGen): Int =
+    idx % partitions match {
+      case i if i < 0 => i + partitions
+      case i          => i
+    }
+
+  def layer(layer: Int)(
+      implicit tileIndexEntityIdGen: TileIndexEntityIdGen
+  ): Set[TileIdx] = {
+    val minLat = latIdx - layer
+    val maxLat = latIdx + layer
+    val minLon = lonIdx - layer
+    val maxLon = lonIdx + layer
+    ((minLat to maxLat flatMap (
+        lat => Seq(TileIdx(lat, minLon).normalize(), TileIdx(lat, maxLon).normalize())
+    )) ++ (minLon to maxLon flatMap (
+        lon => Seq(TileIdx(minLat, lon).normalize(), TileIdx(maxLat, lon).normalize())
+    ))).toSet
+  }
 }
 
 object TileIndexEntityIdGen {
   val defaultRoundingDecimal: Byte = 6
-
 }
 
 /**
@@ -70,14 +93,14 @@ case class TileIndexEntityIdGen(
     s"longitude partitions could not be higher than ${PRECISION_ROUNDING} "
   )
 
+  def tileIdx(lat: Double, lon: Double): TileIdx =
+    TileIdx(latPartition(lat), lonPartition(lon))
+
   def latPartition(lat: Double): Int =
     ((lat + 90) * PRECISION_ROUNDING).toInt / ((180 * PRECISION_ROUNDING) / latPartitions)
 
   def lonPartition(lon: Double): Int =
     ((lon + 180) * PRECISION_ROUNDING).toInt / ((360 * PRECISION_ROUNDING) / lonPartitions)
-
-  def tileIdx(lat: Double, lon: Double): TileIdx =
-    TileIdx(latPartition(lat), lonPartition(lon))
 
   def boundingBox(tileIdx: TileIdx): BoundingBox = BoundingBox(
     min = Location(
@@ -92,16 +115,24 @@ case class TileIndexEntityIdGen(
 
   // TODO: Think about move all neighbour calculation into TileIdx passing TileIndexEntityIdGen as implicit.
 
-  @inline private def incTileCoord(current: Int, max: Int): Int =
-    if (current >= max) 0 else current + 1
-
-  @inline private def decTileCoord(current: Int, max: Int): Int =
-    if (current == 0) max else current - 1
+  def clockNeighbours(tileIdx: TileIdx): Seq[TileIdx] = Seq(
+    northTileIdx(tileIdx),
+    northEastTileIdx(tileIdx),
+    eastTileIdx(tileIdx),
+    southEastTileIdx(tileIdx),
+    southTileIdx(tileIdx),
+    southWestTileIdx(tileIdx),
+    westTileIdx(tileIdx),
+    northWestTileIdx(tileIdx)
+  )
 
   def northTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     incTileCoord(tileIdx.latIdx, maxLatIdx),
     tileIdx.lonIdx
   )
+
+  @inline private def incTileCoord(current: Int, max: Int): Int =
+    if (current >= max) 0 else current + 1
 
   def northEastTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     incTileCoord(tileIdx.latIdx, maxLatIdx),
@@ -128,6 +159,9 @@ case class TileIndexEntityIdGen(
     decTileCoord(tileIdx.lonIdx, maxLonIdx)
   )
 
+  @inline private def decTileCoord(current: Int, max: Int): Int =
+    if (current == 0) max else current - 1
+
   def westTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     tileIdx.latIdx,
     decTileCoord(tileIdx.lonIdx, maxLonIdx)
@@ -136,17 +170,6 @@ case class TileIndexEntityIdGen(
   def northWestTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     decTileCoord(tileIdx.latIdx, maxLatIdx),
     decTileCoord(tileIdx.lonIdx, maxLonIdx)
-  )
-
-  def clockNeighbours(tileIdx: TileIdx): Seq[TileIdx] = Seq(
-    northTileIdx(tileIdx),
-    northEastTileIdx(tileIdx),
-    eastTileIdx(tileIdx),
-    southEastTileIdx(tileIdx),
-    southTileIdx(tileIdx),
-    southWestTileIdx(tileIdx),
-    westTileIdx(tileIdx),
-    northWestTileIdx(tileIdx)
   )
   // scalastyle:on magic.number
 }

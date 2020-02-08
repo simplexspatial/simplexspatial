@@ -17,7 +17,6 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import com.simplexportal.spatial.index.grid.tile
 import com.simplexportal.spatial.index.grid.tile.actor
 import com.simplexportal.spatial.index.grid.tile.actor.{GetInternalNodeResponse, GetInternalNodesResponse}
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
