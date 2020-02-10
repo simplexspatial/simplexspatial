@@ -27,25 +27,19 @@ import com.simplexportal.spatial.index.grid.lookups.{
   LookUpWayEntityIdGen,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile._
-import com.simplexportal.spatial.index.grid.tile.{
-  TileIdx,
-  TileIndex,
-  TileIndexEntityIdGen
-}
+import com.simplexportal.spatial.index.grid.tile.actor._
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.Location
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-@deprecated("Reuse AddBatchSession")
+@deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddWaySession {
 
-  // scalastyle:off method.length
-  def apply(
-      sharding: ClusterSharding,
-      addWay: AddWay,
+  def apply(addWay: AddWay)(
+      implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
   ): Behavior[NotUsed] =
     Behaviors
@@ -55,9 +49,7 @@ object AddWaySession {
         // Translate nodes ids into nodes.
         context.spawn(
           GetInternalNodesSession(
-            sharding,
-            GetInternalNodes(addWay.nodeIds, context.self),
-            tileIndexEntityIdGen
+            GetInternalNodes(addWay.nodeIds, context.self)
           ),
           s"getting_node_${UUID.randomString}"
         )
@@ -66,23 +58,22 @@ object AddWaySession {
           case GetInternalNodesResponse(nodes) =>
             validateNodes(nodes) match {
               case Success(nodes) =>
-                splitNodesInShards(nodes, tileIndexEntityIdGen)
-                  .foreach {
-                    case (tileIdx, nodes) =>
-                      // Register the node in the the tile index.
-                      pendingResponses += 1
-                      sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay
-                        .copy(
-                          nodeIds = nodes.map(_.id),
-                          replyTo = Some(context.self)
-                        )
+                splitNodesInShards(nodes).foreach {
+                  case (tileIdx, nodes) =>
+                    // Register the node in the the tile index.
+                    pendingResponses += 1
+                    sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay
+                      .copy(
+                        nodeIds = nodes.map(_.id),
+                        replyTo = Some(context.self)
+                      )
 
-                      // Register in the ways lookup.
-                      pendingResponses += 1
-                      val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
-                      sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpActor
-                        .Put(addWay.id, tileIdx, Some(context.self))
-                  }
+                    // Register in the ways lookup.
+                    pendingResponses += 1
+                    val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
+                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpActor
+                      .Put(addWay.id, tileIdx, Some(context.self))
+                }
                 Behaviors.same
               case Failure(exception) =>
                 addWay.replyTo.foreach(_ ! NotDone(exception.getMessage))
@@ -130,9 +121,8 @@ object AddWaySession {
     * @param entityIdGen
     * @return
     */
-  def splitNodesInShards(
-      nodes: Seq[TileIndex.InternalNode],
-      entityIdGen: TileIndexEntityIdGen
+  def splitNodesInShards(nodes: Seq[TileIndex.InternalNode])(
+      implicit entityIdGen: TileIndexEntityIdGen
   ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] = {
 
     def entityIdFrom =
@@ -143,7 +133,7 @@ object AddWaySession {
         nodes: Seq[TileIndex.InternalNode],
         acc: Seq[(TileIdx, Seq[TileIndex.InternalNode])],
         currentShard: (TileIdx, Seq[TileIndex.InternalNode])
-    ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] = {
+    ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] =
       nodes match {
         case Nil => acc :+ currentShard
         case node :: tail =>
@@ -159,12 +149,11 @@ object AddWaySession {
             )
           }
       }
-    }
 
     rec(
       nodes.tail,
       Seq.empty,
-      (entityIdFrom(nodes.head.location), Seq(nodes.head))
+      (entityIdFrom(nodes.head.location), Seq(nodes.head)) // FIXME: Don't use nodes.head abd use headOption
     )
   }
 

@@ -25,15 +25,14 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
 import com.simplexportal.spatial.index.grid.Grid.NodeLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpNodeEntityIdGen,
-  NodeLookUpActor
-}
-import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.typesafe.config.ConfigFactory
 import io.jvm.uuid.UUID
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -66,10 +65,13 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
   commonConfig(
     ConfigFactory
       .parseString(
-        """
-      akka.loglevel=INFO
-      akka.cluster.seed-nodes = [ "akka://GridShardingSpec@localhost:2551" ]
+        s"""
+      akka.loglevel=WARNING
+      akka.cluster.seed-nodes = [ "akka://GetNodeLocationsSessionSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
     """
       )
       .withFallback(ConfigFactory.load())
@@ -79,7 +81,7 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
 
 abstract class GetNodeLocationsSessionSpec
     extends MultiNodeSpec(GetNodeLocationsSessionSpecConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -97,7 +99,7 @@ abstract class GetNodeLocationsSessionSpec
   "The tile index" must {
     println(s"Running System [${system.name}]")
 
-    val tileEntityFn = new TileIndexEntityIdGen(2, 2)
+    val tileEntityFn = TileIndexEntityIdGen(2, 2)
     val sharding = ClusterSharding(system.toTyped)
     sharding.init(
       Entity(NodeLookUpTypeKey) { entityContext =>
@@ -208,11 +210,8 @@ abstract class GetNodeLocationsSessionSpec
   }
 }
 
-class GetNodeLocationsSessionSpecMultiJvmNode0
-    extends GetNodeLocationsSessionSpec
+class GetNodeLocationsSessionSpecMultiJvmNode0 extends GetNodeLocationsSessionSpec
 
-class GetNodeLocationsSessionSpecMultiJvmNode1
-    extends GetNodeLocationsSessionSpec
+class GetNodeLocationsSessionSpecMultiJvmNode1 extends GetNodeLocationsSessionSpec
 
-class GetNodeLocationsSessionSpecMultiJvmNode2
-    extends GetNodeLocationsSessionSpec
+class GetNodeLocationsSessionSpecMultiJvmNode2 extends GetNodeLocationsSessionSpec

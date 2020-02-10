@@ -15,10 +15,10 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.impl
 
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex._
 import com.simplexportal.spatial.model._
-import com.simplexportal.spatial.index.grid.tile.TileIndex._
 
 import scala.annotation.tailrec
 
@@ -45,7 +45,7 @@ case class TileIndex(
     nodes: Map[Long, InternalNode] = Map.empty,
     ways: Map[Long, InternalWay] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
-) {
+) extends NearestNodeSearch {
 
   // Generate a tuple a map with all tagsIds and another with the value indexed by tagId.
   private def attributesToDictionary(
@@ -58,18 +58,10 @@ case class TileIndex(
       }
     }
 
-  def addNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String]
-  ): TileIndex = {
-    val (dic, attrs) = attributesToDictionary(attributes)
-    copy(
-      nodes = nodes + (id -> InternalNode(id, Location(lat, lon), attrs)),
-      tagsDic = tagsDic ++ dic
-    )
-  }
+  protected def dictionaryToAttributes(
+      attrs: Map[Int, String]
+  ): Map[String, String] =
+    attrs.map { case (k, v) => tagsDic(k) -> v }
 
   private def buildNewNode(
       wayId: Long,
@@ -118,6 +110,19 @@ case class TileIndex(
     }
   }
 
+  def addNode(
+      id: Long,
+      lat: Double,
+      lon: Double,
+      attributes: Map[String, String]
+  ): TileIndex = {
+    val (dic, attrs) = attributesToDictionary(attributes)
+    copy(
+      nodes = nodes + (id -> InternalNode(id, Location(lat, lon), attrs)),
+      tagsDic = tagsDic ++ dic
+    )
+  }
+
   def addWay(
       wayId: Long,
       nodeIds: Seq[Long],
@@ -152,5 +157,12 @@ case class TileIndex(
       iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
     )
   }
+
+  def toNode(internalNode: InternalNode): Node =
+    Node(
+      internalNode.id,
+      internalNode.location,
+      dictionaryToAttributes(internalNode.attributes)
+    )
 
 }

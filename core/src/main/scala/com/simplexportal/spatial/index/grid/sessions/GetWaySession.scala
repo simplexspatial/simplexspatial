@@ -17,70 +17,104 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import akka.NotUsed
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
+import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor.{
+  GetResponse => LookUpReply
+}
 import com.simplexportal.spatial.index.grid.lookups.{
   LookUpWayEntityIdGen,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
+import com.simplexportal.spatial.index.grid.tile.actor.{
+  GetWay,
+  TileIndexEntityIdGen,
+  GetWayResponse => TileReply
+}
+import com.simplexportal.spatial.index.protocol.{
+  GridGetWay,
+  GridGetWayReply,
+  GridRequest
+}
 import com.simplexportal.spatial.model.{Location, Node, Way}
+import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
 
 object GetWaySession {
 
-  def apply(
-      sharding: ClusterSharding,
-      id: Long,
-      replyTo: ActorRef[GetWayResponse]
-  ): Behavior[NotUsed] =
+  def processRequest(
+      cmd: GridGetWay,
+      context: ActorContext[GridRequest]
+  )(
+      implicit sharding: ClusterSharding,
+      tileIndexEntityIdGen: TileIndexEntityIdGen
+  ): Unit =
+    context.spawn(
+      apply(cmd),
+      s"getting_way_${UUID.randomString}"
+    )
+
+  def apply(getWay: GridGetWay)(
+      implicit sharding: ClusterSharding
+  ): Behavior[ForeignResponse] =
     Behaviors
-      .setup[AnyRef] { context =>
+      .setup { context =>
+        val adapter = adapters(context)
+
         var expectedTiles = 0
         var wayParts = Set[Way]()
 
         sharding.entityRefFor(
           WayLookUpTypeKey,
-          LookUpWayEntityIdGen.entityId(id)
-        ) ! WayLookUpActor.Get(id, context.self)
+          LookUpWayEntityIdGen.entityId(getWay.id)
+        ) ! WayLookUpActor.Get(getWay.id, adapter)
 
         Behaviors.receiveMessage {
-          case WayLookUpActor.GetResponse(_, None) =>
-            replyTo ! GetWayResponse(id, None)
-            Behaviors.stopped
-          case WayLookUpActor.GetResponse(wayId, Some(tileIds)) =>
+          case LookUpReplyWrapper(LookUpReply(wayId, Some(tileIds))) =>
             expectedTiles += tileIds.size
             tileIds.foreach(tileIdx =>
               sharding.entityRefFor(
                 TileTypeKey,
                 tileIdx.entityId
-              ) ! tile.GetWay(wayId, context.self)
+              ) ! GetWay(wayId, adapter)
             )
             Behaviors.same
-          case tile.GetWayResponse(id, Some(way)) =>
+
+          case LookUpReplyWrapper(LookUpReply(_, None)) =>
+            getWay.replyTo ! GridGetWayReply(Right(None))
+            Behaviors.stopped
+
+          case TileReplyWrapper(TileReply(wayId, maybeWay)) => {
             expectedTiles -= 1
-            wayParts = wayParts + way
+            maybeWay match {
+              case None =>
+              case Some(way) =>
+                wayParts = wayParts + way
+            }
             if (expectedTiles == 0) {
-              replyTo ! GetWayResponse(id, joinWayParts(wayParts).map { nodes =>
-                way.copy(nodes = nodes)
-              })
+              getWay.replyTo ! GridGetWayReply(Right(joinWayParts(wayParts)))
               Behaviors.stopped
             }
             Behaviors.same
+          }
           case _ =>
             Behaviors.unhandled
         }
       }
-      .narrow[NotUsed]
 
-  def joinWayParts(
-      parts: Set[Way]
-  ): Option[Seq[Node]] = {
+  private def adapters(
+      context: ActorContext[ForeignResponse]
+  ): ActorRef[AnyRef] =
+    context.messageAdapter {
+      case msg: LookUpReply => LookUpReplyWrapper(msg)
+      case msg: TileReply   => TileReplyWrapper(msg)
+    }
+
+  def joinWayParts(parts: Set[Way]): Option[Way] = {
 
     def removeHeadConnector(nodes: Seq[Node]) =
       if (nodes(0).location == Location.NaL) {
@@ -104,8 +138,17 @@ object GetWaySession {
     }
 
     firstPart.map { way =>
-      rec(way.nodes, Seq())
+      way.copy(nodes = rec(way.nodes, Seq()))
     }
+
   }
+
+  protected sealed trait ForeignResponse extends CommonInternalSerializer
+
+  protected case class LookUpReplyWrapper(response: LookUpReply)
+      extends ForeignResponse
+
+  protected case class TileReplyWrapper(response: TileReply)
+      extends ForeignResponse
 
 }

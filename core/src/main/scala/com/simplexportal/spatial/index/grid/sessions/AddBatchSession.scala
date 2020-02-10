@@ -26,48 +26,70 @@ import com.simplexportal.spatial.index.grid.lookups.{
   NodeLookUpActor,
   WayLookUpActor
 }
-import com.simplexportal.spatial.index.grid.tile.{
-  AddNode,
-  AddWay,
-  BatchActions,
-  TileIdx
+import com.simplexportal.spatial.index.grid.tile.actor.{
+  TileIdx,
+  TileIndexEntityIdGen
 }
-import com.simplexportal.spatial.index.grid.{
-  CommonInternalSerializer,
-  Grid,
-  tile
-}
+import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
+import com.simplexportal.spatial.index.protocol._
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object AddBatchSession {
 
-  sealed trait Messages extends CommonInternalSerializer
-  sealed trait Command extends Messages
-  sealed trait Response extends Messages
-  private sealed trait ForeignResponse extends Messages
+  protected sealed trait ForeignResponse extends CommonInternalSerializer
 
-  private case class LocationsWrapper(
+  protected case class LocationsWrapper(
       locs: GetNodeLocationsSession.NodeLocations
   ) extends ForeignResponse
 
-  private case class DoneWrapper() extends ForeignResponse
-  private case class NotDoneWrapper(msg: String) extends ForeignResponse
+  protected case class DoneWrapper() extends ForeignResponse
+  protected case class NotDoneWrapper(msg: String) extends ForeignResponse
 
-  // scalastyle:off method.length
-  def apply(
-      sharding: ClusterSharding,
-      cmds: Seq[tile.BatchActions],
-      maybeReplyTo: Option[ActorRef[tile.ACK]],
-      tileEntityFn: tile.TileIndexEntityIdGen
-  ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
+  private def adapters(
+      context: ActorContext[ForeignResponse]
+  ): ActorRef[AnyRef] =
+    context.messageAdapter {
+      case tile.Done()                  => DoneWrapper()
+      case tile.NotDone(msg)            => NotDoneWrapper(msg)
+      case NodeLookUpActor.Done()       => DoneWrapper()
+      case NodeLookUpActor.NotDone(msg) => NotDoneWrapper(msg)
+      case WayLookUpActor.Done()        => DoneWrapper()
+      case WayLookUpActor.NotDone(msg)  => NotDoneWrapper(msg)
+    }
+
+  implicit class GridAddBatchEnricher(gridAddBatch: GridBatchCommand) {
+    def toTileProtocol(): tile.BatchActions = gridAddBatch match {
+      case GridAddNode(id, lat, lon, attributes, _) =>
+        tile.AddNode(id, lat, lon, attributes)
+      case GridAddWay(id, nodeIds, attributes, _) =>
+        tile.AddWay(id, nodeIds, attributes)
+    }
+  }
+
+  def processRequest(
+      cmd: GridAddBatch,
+      context: ActorContext[GridRequest]
+  )(
+      implicit sharding: ClusterSharding,
+      tileIndexEntityIdGen: TileIndexEntityIdGen
+  ): Unit =
+    context.spawn(
+      apply(cmd),
+      s"adding_batch_${UUID.randomString}"
+    )
+
+  def apply(cmd: GridAddBatch)(
+      implicit sharding: ClusterSharding,
+      tileIndexEntityIdGen: TileIndexEntityIdGen
+  ): Behavior[ForeignResponse] = Behaviors.setup[ForeignResponse] { context =>
     val locsResponseAdapter: ActorRef[GetNodeLocationsSession.NodeLocations] =
       context.messageAdapter { LocationsWrapper }
 
-    val (newNodes, unknownNodes) = splitKnowNodesTileIdxs(cmds, tileEntityFn)
+    val (newNodes, unknownNodes) = splitKnowNodesTileIdxs(cmd.commands)
 
     context.spawn(
       GetNodeLocationsSession(sharding, unknownNodes, locsResponseAdapter),
@@ -84,20 +106,19 @@ object AddBatchSession {
           case Success(locationsIdx) =>
             updateIndexes(
               sharding,
-              cmds,
+              cmd.commands,
               locationsIdx,
-              maybeReplyTo
+              cmd.replyTo
             )
           case Failure(exception) =>
-            maybeReplyTo.foreach(_ ! tile.NotDone(exception.getMessage))
+            cmd.replyTo.foreach(_ ! GridNotDone(exception.getMessage))
             Behaviors.stopped
         }
     }
   }
 
-  def splitKnowNodesTileIdxs(
-      commands: Seq[tile.BatchActions],
-      tileEntityFn: tile.TileIndexEntityIdGen
+  def splitKnowNodesTileIdxs(commands: Seq[GridBatchCommand])(
+      implicit tileIndexEntityIdGen: TileIndexEntityIdGen
   ): (Map[Long, tile.TileIdx], Seq[Long]) = {
 
     val (newNodes, unknownNodes) =
@@ -106,12 +127,12 @@ object AddBatchSession {
       ) {
         case (resp, cmd) =>
           cmd match {
-            case n: tile.AddNode =>
+            case n: GridAddNode =>
               (
-                resp._1 + (n.id -> tileEntityFn.tileIdx(n.lat, n.lon)),
+                resp._1 + (n.id -> tileIndexEntityIdGen.tileIdx(n.lat, n.lon)),
                 resp._2
               )
-            case w: tile.AddWay =>
+            case w: GridAddWay =>
               (resp._1, resp._2 ++ w.nodeIds)
           }
       }
@@ -120,14 +141,14 @@ object AddBatchSession {
   }
 
   def groupByTileIdx(
-      cmds: Seq[tile.BatchActions],
+      cmds: Seq[GridBatchCommand],
       locationsIdx: Map[Long, tile.TileIdx]
-  ): Map[tile.TileIdx, Seq[tile.BatchActions]] =
-    cmds.foldLeft(Map.empty[tile.TileIdx, Seq[tile.BatchActions]]) {
-      case (acc, n: tile.AddNode) =>
+  ): Map[tile.TileIdx, Seq[GridBatchCommand]] =
+    cmds.foldLeft(Map.empty[tile.TileIdx, Seq[GridBatchCommand]]) {
+      case (acc, n: GridAddNode) =>
         val tileIdx = locationsIdx(n.id)
         acc + (tileIdx -> (acc.getOrElse(tileIdx, Seq()) :+ n))
-      case (acc, w: tile.AddWay) =>
+      case (acc, w: GridAddWay) =>
         splitWayByTile(w, locationsIdx).foldLeft(acc) {
           case (acc, (tileIdx, way)) =>
             acc + (tileIdx -> (acc.getOrElse(tileIdx, Seq()) :+ way))
@@ -135,9 +156,9 @@ object AddBatchSession {
     }
 
   def splitWayByTile(
-      way: tile.AddWay,
+      way: GridAddWay,
       nodeLocs: Map[Long, TileIdx]
-  ): Seq[(tile.TileIdx, tile.AddWay)] =
+  ): Seq[(tile.TileIdx, GridAddWay)] =
     splitWayNodesPerTile(way.nodeIds, nodeLocs).map {
       case (tileIdx, nodeIds) => (tileIdx, way.copy(nodeIds = nodeIds))
     }
@@ -185,22 +206,12 @@ object AddBatchSession {
     )
   }
 
-  private def adapters(context: ActorContext[Messages]): ActorRef[AnyRef] =
-    context.messageAdapter {
-      case tile.Done()                  => DoneWrapper()
-      case tile.NotDone(msg)            => NotDoneWrapper(msg)
-      case NodeLookUpActor.Done()       => DoneWrapper()
-      case NodeLookUpActor.NotDone(msg) => NotDoneWrapper(msg)
-      case WayLookUpActor.Done()        => DoneWrapper()
-      case WayLookUpActor.NotDone(msg)  => NotDoneWrapper(msg)
-    }
-
   def updateIndexes(
       sharding: ClusterSharding,
-      cmds: Seq[tile.BatchActions],
-      locationsIdx: Map[Long, tile.TileIdx],
-      maybeReplyTo: Option[ActorRef[tile.ACK]]
-  ): Behavior[Messages] = Behaviors.setup[Messages] { context =>
+      cmds: Seq[GridBatchCommand],
+      locationsIdx: Map[Long, TileIdx],
+      maybeReplyTo: Option[ActorRef[GridACK]]
+  ): Behavior[ForeignResponse] = Behaviors.setup[ForeignResponse] { context =>
     val adapter = adapters(context)
 
     val cmdsPerTileIdx = groupByTileIdx(cmds, locationsIdx)
@@ -234,19 +245,19 @@ object AddBatchSession {
       case (tileIdx, cmds) =>
         expectedResponses += 1
         sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) !
-          tile.AddBatch(cmds, Some(adapter))
+          tile.AddBatch(cmds.map(cmd => cmd.toTileProtocol()), Some(adapter))
     }
 
     collectAddCommandsResponses(expectedResponses, Seq.empty, maybeReplyTo)
   }
 
   def splitLookUps(
-      cmdsPerTileIdx: Map[tile.TileIdx, Seq[tile.BatchActions]]
+      cmdsPerTileIdx: Map[TileIdx, Seq[GridBatchCommand]]
   ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) = {
 
     @tailrec
     def rec(
-        remaining: Seq[(TileIdx, BatchActions)],
+        remaining: Seq[(TileIdx, GridBatchCommand)],
         nodes: Map[String, Seq[(Long, TileIdx)]],
         ways: Map[String, Seq[(Long, TileIdx)]]
     ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) =
@@ -254,7 +265,7 @@ object AddBatchSession {
         case Nil => (nodes, ways)
         case head :: tail =>
           head match {
-            case (tileIdx, AddNode(id, _, _, _, _)) =>
+            case (tileIdx, GridAddNode(id, _, _, _, _)) =>
               val shard = LookUpNodeEntityIdGen.entityId(id)
               val itemsPerShard = nodes.getOrElse(shard, Seq.empty) :+ (id, tileIdx)
               rec(
@@ -262,7 +273,7 @@ object AddBatchSession {
                 nodes + (shard -> itemsPerShard),
                 ways
               )
-            case (tileIdx, AddWay(id, _, _, _)) =>
+            case (tileIdx, GridAddWay(id, _, _, _)) =>
               val shard = LookUpWayEntityIdGen.entityId(id)
               val itemsPerShard = ways.getOrElse(shard, Seq.empty) :+ (id, tileIdx)
               rec(
@@ -285,18 +296,21 @@ object AddBatchSession {
   def collectAddCommandsResponses(
       expectedResponses: Int,
       errors: Seq[String],
-      maybeReplyTo: Option[ActorRef[tile.ACK]]
-  ): Behavior[Messages] = {
+      maybeReplyTo: Option[ActorRef[GridACK]]
+  ): Behavior[ForeignResponse] = {
 
     def reply(errors: Seq[String]) =
       maybeReplyTo.foreach { replyTo =>
         errors match {
-          case Seq() => replyTo ! tile.Done()
-          case _     => replyTo ! tile.NotDone(errors.mkString("\n"))
+          case Seq() => replyTo ! GridDone()
+          case _     => replyTo ! GridNotDone(errors.mkString("\n"))
         }
       }
 
-    def next(remainingResponses: Int, errors: Seq[String]): Behavior[Messages] =
+    def next(
+        remainingResponses: Int,
+        errors: Seq[String]
+    ): Behavior[ForeignResponse] =
       if (remainingResponses == 0) {
         reply(errors)
         Behaviors.stopped
@@ -304,7 +318,10 @@ object AddBatchSession {
         rec(remainingResponses, errors)
       }
 
-    def rec(remainingResponses: Int, errors: Seq[String]): Behavior[Messages] =
+    def rec(
+        remainingResponses: Int,
+        errors: Seq[String]
+    ): Behavior[ForeignResponse] =
       Behaviors.receiveMessagePartial {
         case DoneWrapper() =>
           next(remainingResponses - 1, errors)

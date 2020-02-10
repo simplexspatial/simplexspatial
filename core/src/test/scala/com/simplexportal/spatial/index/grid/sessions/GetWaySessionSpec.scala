@@ -17,28 +17,54 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
 import com.simplexportal.spatial.model.{Location, Node, Way}
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class GetWaySessionSpec extends WordSpecLike with Matchers {
+// scalastyle:off magic.number
+class GetWaySessionSpec extends AnyWordSpecLike with Matchers {
 
   "GetWaySession" should {
 
     "reconstruct way from parts" in {
       val from = Set(
-        Way(1,List(Node(0,Location(-23.0,-90.0),Map()), Node(1,Location.NaL,Map())),Map()),
-        Way(1,List(Node(0,Location.NaL,Map()), Node(1,Location(60.0,130.0),Map()), Node(2,Location.NaL,Map())),Map()),
-        Way(1,List(Node(1,Location.NaL,Map()), Node(2,Location(-23.3,-90.0),Map()), Node(10,Location.NaL,Map())),Map()),
-        Way(1,List(Node(2,Location.NaL,Map()), Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())),Map())
+        Way(1, List(Node(0, Location(-23.0, -90.0), Map()), Node(1, Location.NaL, Map())), Map()),
+        Way(
+          1,
+          List(Node(0, Location.NaL, Map()), Node(1, Location(60.0, 130.0), Map()), Node(2, Location.NaL, Map())),
+          Map()
+        ),
+        Way(
+          1,
+          List(Node(1, Location.NaL, Map()), Node(2, Location(-23.3, -90.0), Map()), Node(10, Location.NaL, Map())),
+          Map()
+        ),
+        Way(
+          1,
+          List(
+            Node(2, Location.NaL, Map()),
+            Node(10, Location(1.0, 1.0), Map()),
+            Node(11, Location(1.000001, 1.000001), Map()),
+            Node(12, Location(1.000002, 1.000002), Map())
+          ),
+          Map()
+        )
       )
 
-      val expected = Some( Seq(
-        Node(0,Location(-23.0,-90.0),Map()),
-        Node(1,Location(60.0,130.0),Map()),
-        Node(2,Location(-23.3,-90.0),Map()),
-        Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())
-      ))
+      val expected = Some(
+        Way(
+          1,
+          Seq(
+            Node(0, Location(-23.0, -90.0), Map()),
+            Node(1, Location(60.0, 130.0), Map()),
+            Node(2, Location(-23.3, -90.0), Map()),
+            Node(10, Location(1.0, 1.0), Map()),
+            Node(11, Location(1.000001, 1.000001), Map()),
+            Node(12, Location(1.000002, 1.000002), Map())
+          ),
+          Map()
+        )
+      )
 
       expected shouldBe GetWaySession.joinWayParts(from)
     }

@@ -20,14 +20,12 @@ package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.lookups.LookUpActor._
-import com.simplexportal.spatial.index.grid.tile.TileIndex
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.Location
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class LookUpActorSpec
-    extends ScalaTestWithActorTestKit
-    with WordSpecLike
-    with Matchers {
+class LookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
 
   "LookUpActor" must {
     "Put and Get correctly" in {
@@ -50,13 +48,15 @@ class LookUpActorSpec
       probeResponse.expectMessage(GetResponse(1000, None))
 
       lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
-      probeResponse.expectMessage(GetsResponse[Int, String](
-        Seq(
-          GetResponse(10, Some("v10")),
-          GetResponse(11, Some("v11")),
-          GetResponse(1000, None)
+      probeResponse.expectMessage(
+        GetsResponse[Int, String](
+          Seq(
+            GetResponse(10, Some("v10")),
+            GetResponse(11, Some("v11")),
+            GetResponse(1000, None)
+          )
         )
-      ))
+      )
 
     }
 
@@ -83,13 +83,15 @@ class LookUpActorSpec
       probeResponse.expectMessage(GetResponse(1000, None))
 
       lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
-      probeResponse.expectMessage(GetsResponse[Int, TileIndex.InternalNode](
-        Seq(
-          GetResponse(10, Some(node(10))),
-          GetResponse(11, Some(node(11))),
-          GetResponse(1000, None)
+      probeResponse.expectMessage(
+        GetsResponse[Int, TileIndex.InternalNode](
+          Seq(
+            GetResponse(10, Some(node(10))),
+            GetResponse(11, Some(node(11))),
+            GetResponse(1000, None)
+          )
         )
-      ))
+      )
 
     }
 

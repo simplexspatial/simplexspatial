@@ -22,7 +22,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
-import com.simplexportal.spatial.index.grid.tile.TileIdx
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 
 object NodeLookUpActor {
 

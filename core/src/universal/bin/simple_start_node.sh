@@ -43,6 +43,6 @@ done
 cd "$(dirname "$0")"/..
 
 echo "Starting node listening all interfaces and ports gRPC$ [${grpc_port}] and Artery [${cluster_port}]"
-bin/simplex-spatial-core \
+bin/simplexspatial-core \
     -Dakka.remote.artery.canonical.port=${cluster_port} \
     -Dsimplexportal.spatial.api.http.port=${grpc_port}

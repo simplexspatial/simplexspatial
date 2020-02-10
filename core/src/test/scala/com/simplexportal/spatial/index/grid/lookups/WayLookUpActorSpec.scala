@@ -20,13 +20,11 @@ package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor._
-import com.simplexportal.spatial.index.grid.tile.TileIdx
-import org.scalatest.{Matchers, WordSpecLike}
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class WayLookUpActorSpec
-  extends ScalaTestWithActorTestKit
-    with WordSpecLike
-    with Matchers {
+class WayLookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
 
   "WayLookUpActor" must {
     "Put and Get correctly" when {
@@ -57,13 +55,15 @@ class WayLookUpActorSpec
         probeResponse.expectMessage(GetResponse(1000, None))
 
         lookup ! Gets(Seq(100, 110, 1000), probeResponse.ref)
-        probeResponse.expectMessage(GetsResponse(
-          Seq(
-            GetResponse(100, Some(Set(TileIdx(10, 10), TileIdx(11, 11)))),
-            GetResponse(110, Some(Set(TileIdx(11, 11)))),
-            GetResponse(1000, None)
+        probeResponse.expectMessage(
+          GetsResponse(
+            Seq(
+              GetResponse(100, Some(Set(TileIdx(10, 10), TileIdx(11, 11)))),
+              GetResponse(110, Some(Set(TileIdx(11, 11)))),
+              GetResponse(1000, None)
+            )
           )
-        ))
+        )
       }
 
       "when do it in block" in {
@@ -85,13 +85,15 @@ class WayLookUpActorSpec
         probeResponse.expectMessage(Done())
 
         lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
-        probeResponse.expectMessage(GetsResponse(
-          Seq(
-            GetResponse(10, Some(Set(TileIdx(11, 11),TileIdx(10, 10)))),
-            GetResponse(11, Some(Set(TileIdx(11, 11)))),
-            GetResponse(1000, None)
+        probeResponse.expectMessage(
+          GetsResponse(
+            Seq(
+              GetResponse(10, Some(Set(TileIdx(11, 11), TileIdx(10, 10)))),
+              GetResponse(11, Some(Set(TileIdx(11, 11)))),
+              GetResponse(1000, None)
+            )
           )
-        ))
+        )
       }
 
     }

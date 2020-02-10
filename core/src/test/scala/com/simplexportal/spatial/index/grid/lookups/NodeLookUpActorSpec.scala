@@ -20,13 +20,11 @@ package com.simplexportal.spatial.index.grid.lookups
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor._
-import com.simplexportal.spatial.index.grid.tile.TileIdx
-import org.scalatest.{Matchers, WordSpecLike}
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class NodeLookUpActorSpec
-    extends ScalaTestWithActorTestKit
-    with WordSpecLike
-    with Matchers {
+class NodeLookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
 
   "NodeLookUpActor" must {
     "Put and Get correctly" when {

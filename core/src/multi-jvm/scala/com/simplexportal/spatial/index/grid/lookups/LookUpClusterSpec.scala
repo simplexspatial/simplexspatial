@@ -23,9 +23,11 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.TileIdx
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -55,17 +57,24 @@ object LookUpClusterSpecConfig extends MultiNodeConfig {
     """)
   )
 
-  commonConfig(ConfigFactory.parseString("""
-      akka.loglevel=ERROR
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://NodeLookUpClusterSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """).withFallback(ConfigFactory.load()))
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+    """)
+      .withFallback(ConfigFactory.load())
+  )
 
 }
 
 abstract class LookUpClusterSpec
-  extends MultiNodeSpec(LookUpClusterSpecConfig)
-    with WordSpecLike
+    extends MultiNodeSpec(LookUpClusterSpecConfig)
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -78,7 +87,7 @@ abstract class LookUpClusterSpec
 
   override def afterAll(): Unit = multiNodeSpecAfterAll()
 
-  override def initialParticipants: Int =  roles.size
+  override def initialParticipants: Int = roles.size
 
   "The node lookup index" must {
     println(s"Running System [${system.name}]")
@@ -99,20 +108,21 @@ abstract class LookUpClusterSpec
       enterBarrier("all-up")
     }
 
-    "be able to add a entities in the a local lookup shard" in within(10.seconds)  {
+    "be able to add a entities in the a local lookup shard" in within(10.seconds) {
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
-        val localLookUpActor = system.spawn(LookUpActor("LookUpActorIndex", "FIXED_LOOKUP_TEST_NODE0"), "LookUpActorNode0")
-        localLookUpActor ! LookUpActor.Put(0, TileIdx(0,0), Some(probe.ref))
-        localLookUpActor ! LookUpActor.Put(1, TileIdx(0,0), Some(probe.ref))
-        localLookUpActor ! LookUpActor.Put(2, TileIdx(0,0), Some(probe.ref))
+        val localLookUpActor =
+          system.spawn(LookUpActor("LookUpActorIndex", "FIXED_LOOKUP_TEST_NODE0"), "LookUpActorNode0")
+        localLookUpActor ! LookUpActor.Put(0, TileIdx(0, 0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(1, TileIdx(0, 0), Some(probe.ref))
+        localLookUpActor ! LookUpActor.Put(2, TileIdx(0, 0), Some(probe.ref))
 
         probe.receiveMessages(3)
       }
       enterBarrier("added locally")
     }
 
-    "be able to add entities in the a remote lookup node" in within(10.seconds)  {
+    "be able to add entities in the a remote lookup node" in within(10.seconds) {
       runOn(node1) {
         val probe = TestProbe[AnyRef]()
         val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")
@@ -133,7 +143,7 @@ abstract class LookUpClusterSpec
         val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")
         remoteLookUpActor ! LookUpActor.Get(10, probe.ref)
 
-        probe.expectMessage(LookUpActor.GetResponse(10, Some(TileIdx(10,10))))
+        probe.expectMessage(LookUpActor.GetResponse(10, Some(TileIdx(10, 10))))
 
       }
       enterBarrier("lookup from node2")

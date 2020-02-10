@@ -22,66 +22,68 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.simplexportal.spatial.api.grpc._
-import com.simplexportal.spatial.index.grid.tile
+import com.simplexportal.spatial.api.grpc
+import com.simplexportal.spatial.index.protocol._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.implicitConversions
 
-class DataServiceImpl(gridIndex: ActorRef[tile.Command])(
+class DataServiceImpl(gridIndex: ActorRef[GridRequest])(
     implicit
     executionContext: ExecutionContext,
     scheduler: Scheduler
-) extends DataService {
+) extends grpc.DataService {
 
   // FIXME: Temporal timeout for POC
-  implicit val timeout = Timeout(1 minutes)
+  implicit val timeout = Timeout(1.minutes)
 
-  implicit def responseAdapter(response: tile.ACK): ACK = response match {
-    case tile.Done()         => ACK().withDone(Done())
-    case tile.NotDone(error) => ACK().withNotDone(NotDone(error))
+  implicit def responseAdapter(response: GridACK): grpc.ACK = response match {
+    case GridDone()         => grpc.ACK().withDone(grpc.Done())
+    case GridNotDone(error) => grpc.ACK().withNotDone(grpc.NotDone(error))
   }
 
-  override def addNode(in: AddNodeCmd): Future[ACK] =
+  override def addNode(in: grpc.AddNodeCmd): Future[grpc.ACK] =
     gridIndex
-      .ask[tile.ACK](ref =>
-        tile.AddNode(in.id, in.lat, in.lon, in.attributes, Some(ref))
+      .ask[GridACK](ref =>
+        GridAddNode(in.id, in.lat, in.lon, in.attributes, Some(ref))
       )
       .map(responseAdapter)
 
-  override def addWay(in: AddWayCmd): Future[ACK] =
+  override def addWay(in: grpc.AddWayCmd): Future[grpc.ACK] =
     gridIndex
-      .ask[tile.ACK](ref =>
-        tile.AddWay(in.id, in.nodeIds, in.attributes, Some(ref))
+      .ask[GridACK](ref =>
+        GridAddWay(in.id, in.nodeIds, in.attributes, Some(ref))
       )
       .map(responseAdapter)
 
-  override def getMetrics(in: GetMetricsCmd): Future[Metrics] =
-    gridIndex
-      .ask[tile.Metrics](tile.GetMetrics(_))
-      .map(m => Metrics(ways = m.ways, nodes = m.nodes))
+  // TODO: Implement metrics for the cluster.
+  override def getMetrics(in: grpc.GetMetricsCmd): Future[grpc.Metrics] = ???
+//    gridIndex
+//      .ask[actor.Metrics](actor.GetMetrics(_))
+//      .map(m => grpc.Metrics(ways = m.ways, nodes = m.nodes))
 
   override def streamBatchCommands(
-      in: Source[ExecuteBatchCmd, NotUsed]
-  ): Source[ACK, NotUsed] =
+      in: Source[grpc.ExecuteBatchCmd, NotUsed]
+  ): Source[grpc.ACK, NotUsed] =
     in.map(cmd => toAddBatch(cmd))
       .via(
-        ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[tile.ACK]) =>
-          tile.AddBatch(commands, Some(replyTo))
+        ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[GridACK]) =>
+          GridAddBatch(commands, Some(replyTo))
         )
       )
       .map(responseAdapter);
 
   private def toAddBatch(
-      batchCmd: ExecuteBatchCmd
-  ): Seq[tile.BatchActions] =
+      batchCmd: grpc.ExecuteBatchCmd
+  ): Seq[GridBatchCommand] =
     batchCmd.commands.flatMap(executeCmd =>
       executeCmd.command match {
-        case ExecuteCmd.Command.Way(way) =>
-          Some(tile.AddWay(way.id, way.nodeIds, way.attributes))
-        case ExecuteCmd.Command.Node(node) =>
-          Some(tile.AddNode(node.id, node.lat, node.lon, node.attributes))
-        case ExecuteCmd.Command.Empty => None
+        case grpc.ExecuteCmd.Command.Way(way) =>
+          Some(GridAddWay(way.id, way.nodeIds, way.attributes))
+        case grpc.ExecuteCmd.Command.Node(node) =>
+          Some(GridAddNode(node.id, node.lat, node.lon, node.attributes))
+        case grpc.ExecuteCmd.Command.Empty => None
       }
     )
 }

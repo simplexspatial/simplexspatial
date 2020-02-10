@@ -17,12 +17,13 @@
 
 // scalastyle:off magic.number
 
-package com.simplexportal.spatial.index.grid.tile
+package com.simplexportal.spatial.index.grid.tile.impl
 
 import com.simplexportal.spatial.model._
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class TileIndexSpec extends WordSpecLike with Matchers {
+class TileIndexSpec extends AnyWordSpecLike with Matchers {
 
   "Tile" should {
 

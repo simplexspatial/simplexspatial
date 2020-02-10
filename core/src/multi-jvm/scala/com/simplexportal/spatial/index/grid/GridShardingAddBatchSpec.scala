@@ -23,10 +23,12 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.GetWayResponse
+import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -57,18 +59,23 @@ object GridShardingAddBatchSpecConfig extends MultiNodeConfig {
   )
 
   commonConfig(
-    ConfigFactory.parseString("""
-      akka.loglevel=INFO
+    ConfigFactory
+      .parseString(s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://GridShardingAddBatchSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """).withFallback(ConfigFactory.load())
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+    """)
+      .withFallback(ConfigFactory.load())
   )
 
 }
 
 abstract class GridShardingAddBatchSpec
     extends MultiNodeSpec(GridShardingAddBatchSpecConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -87,7 +94,7 @@ abstract class GridShardingAddBatchSpec
     println(s"Running System [${system.name}]")
 
     val gridIndex = system.spawn(
-      Grid("GridAddBatchIndexTest", 10000, 10000, 10000, 10000),
+      Grid(GridConfig("GridAddBatchIndexTest", 10000, 10000, 10000, 10000)),
       "GridAddBatchIndex"
     )
 
@@ -108,18 +115,18 @@ abstract class GridShardingAddBatchSpec
     }
 
     "be able to add nodes and ways" in {
-      val probe = TestProbe[tile.ACK]()
+      val probe = TestProbe[GridACK]()
       runOn(node0) {
 
-        gridIndex ! tile.AddBatch(
+        gridIndex ! GridAddBatch(
           Seq(
-            tile.AddNode(100, -23, -90, Map.empty),
-            tile.AddNode(101, 60, 130, Map.empty),
-            tile.AddNode(102, -23.3, -90, Map.empty),
-            tile.AddNode(110, 1, 1, Map.empty, None),
-            tile.AddNode(111, 1.000001, 1.000001, Map.empty, None),
-            tile.AddNode(112, 1.000002, 1.000002, Map.empty, None),
-            tile.AddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
+            GridAddNode(100, -23, -90, Map.empty),
+            GridAddNode(101, 60, 130, Map.empty),
+            GridAddNode(102, -23.3, -90, Map.empty),
+            GridAddNode(110, 1, 1, Map.empty, None),
+            GridAddNode(111, 1.000001, 1.000001, Map.empty, None),
+            GridAddNode(112, 1.000002, 1.000002, Map.empty, None),
+            GridAddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
           ),
           Some(probe.ref)
         )
@@ -129,32 +136,33 @@ abstract class GridShardingAddBatchSpec
     }
 
     "return None if way is not there" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GridGetWayReply]()
       runOn(node1) {
-        gridIndex ! tile.GetWay(999, probe.ref)
-        GetWayResponse(999, None) shouldBe probe.receiveMessage()
+        gridIndex ! GridGetWay(999, probe.ref)
+        GridGetWayReply(Right(None)) shouldBe probe.receiveMessage()
       }
       enterBarrier("no data found")
     }
 
     "return the way if it is there" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GridGetWayReply]()
       runOn(node1) {
-        gridIndex ! tile.GetWay(101, probe.ref)
-        GetWayResponse(
-          101,
-          Some(
-            Way(
-              101,
-              Seq(
-                Node(100, Location(-23.0, -90.0), Map()),
-                Node(101, Location(60.0, 130.0), Map()),
-                Node(102, Location(-23.3, -90.0), Map()),
-                Node(110, Location(1.0, 1.0), Map()),
-                Node(111, Location(1.000001, 1.000001), Map()),
-                Node(112, Location(1.000002, 1.000002), Map())
-              ),
-              Map()
+        gridIndex ! GridGetWay(101, probe.ref)
+        GridGetWayReply(
+          Right(
+            Some(
+              Way(
+                101,
+                Seq(
+                  Node(100, Location(-23.0, -90.0), Map()),
+                  Node(101, Location(60.0, 130.0), Map()),
+                  Node(102, Location(-23.3, -90.0), Map()),
+                  Node(110, Location(1.0, 1.0), Map()),
+                  Node(111, Location(1.000001, 1.000001), Map()),
+                  Node(112, Location(1.000002, 1.000002), Map())
+                ),
+                Map()
+              )
             )
           )
         ) shouldBe probe.receiveMessage()

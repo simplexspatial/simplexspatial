@@ -17,15 +17,18 @@
 
 package com.simplexportal.spatial.index.grid.sessions
 
-import com.simplexportal.spatial.index.grid.tile.{GetInternalNodeResponse, TileIdx, TileIndex, TileIndexEntityIdGen}
-import com.simplexportal.spatial.index.grid.tile
+import com.simplexportal.spatial.index.grid.tile.actor.{GetInternalNodeResponse, TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.simplexportal.spatial.model.Location
-import org.scalatest.{Matchers, TryValues, WordSpecLike}
+import org.scalatest.TryValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.util.Success
 
 // scalastyle:off magic.number
-class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
+class AddWaySessionSpec extends AnyWordSpecLike with Matchers with TryValues {
 
   def node(id: Long, lat: Double, lon: Double): TileIndex.InternalNode =
     TileIndex.InternalNode(id, Location(lat, lon))
@@ -36,84 +39,94 @@ class AddWaySessionSpec extends WordSpecLike with Matchers with TryValues {
 
       "retrieve splits in order 2x2" in {
         val nodes: Seq[TileIndex.InternalNode] = Seq(
-          node(1, 30, -150), node(2, 50, -100), node(3, 30, -30),
+          node(1, 30, -150),
+          node(2, 50, -100),
+          node(3, 30, -30),
           node(4, 50, 30),
-          node(5, -30, 30), node(6, -30, 100),
-          node(7, 30, 100), node(8, 30, 150)
+          node(5, -30, 30),
+          node(6, -30, 100),
+          node(7, 30, 100),
+          node(8, 30, 150)
         )
         val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
-          (TileIdx(1,0), Seq( node(1, 30, -150), node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          (TileIdx(1,1), Seq( node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          (TileIdx(0,1), Seq( node(4, 50, 30), node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          (TileIdx(1,1), Seq( node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
+          (TileIdx(1, 0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
+          (TileIdx(1, 1), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
+          (TileIdx(0, 1), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
+          (TileIdx(1, 1), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
         )
-        val tileEntityFn = new TileIndexEntityIdGen(2, 2)
-        AddWaySession.splitNodesInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
+        implicit val tileEntityFn = TileIndexEntityIdGen(2, 2)
+        AddWaySession.splitNodesInShards(nodes) shouldBe expectedShardedNodes
       }
 
       "retrieve splits in order 2x4" in {
         val nodes: Seq[TileIndex.InternalNode] = Seq(
-          node(1, 30, -150), node(2, 50, -100),
+          node(1, 30, -150),
+          node(2, 50, -100),
           node(3, 30, -30),
           node(4, 50, 30),
           node(5, -30, 30),
           node(6, -30, 100),
-          node(7, 30, 100), node(8, 30, 150)
+          node(7, 30, 100),
+          node(8, 30, 150)
         )
         val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
-          (TileIdx(1,0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
-          (TileIdx(1,1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          (TileIdx(1,2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          (TileIdx(0,2), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
-          (TileIdx(0,3), Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          (TileIdx(1,3), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
+          (TileIdx(1, 0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
+          (TileIdx(1, 1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
+          (TileIdx(1, 2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
+          (TileIdx(0, 2), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
+          (TileIdx(0, 3), Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
+          (TileIdx(1, 3), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
         )
-        val tileEntityFn = new TileIndexEntityIdGen(2, 4)
-        AddWaySession.splitNodesInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
+        implicit val tileEntityFn = TileIndexEntityIdGen(2, 4)
+        AddWaySession.splitNodesInShards(nodes) shouldBe expectedShardedNodes
       }
-
 
       "retrieve splits in order 4x4" in {
         val nodes: Seq[TileIndex.InternalNode] = Seq(
-          node(1, 30, -150), node(2, 50, -100),
+          node(1, 30, -150),
+          node(2, 50, -100),
           node(3, 30, -30),
           node(4, 50, 30),
           node(5, -30, 30),
           node(6, -30, 100),
-          node(7, 30, 100), node(8, 30, 150)
+          node(7, 30, 100),
+          node(8, 30, 150)
         )
         val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
-          (TileIdx(1,0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
-          (TileIdx(1,1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
-          (TileIdx(1,2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
-          (TileIdx(0,2), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
-          (TileIdx(0,3), Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
-          (TileIdx(1,3), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
+          (TileIdx(1, 0), Seq(node(1, 30, -150), node(2, 50, -100), node(3, 30, -30))),
+          (TileIdx(1, 1), Seq(node(2, 50, -100), node(3, 30, -30), node(4, 50, 30))),
+          (TileIdx(1, 2), Seq(node(3, 30, -30), node(4, 50, 30), node(5, -30, 30))),
+          (TileIdx(0, 2), Seq(node(4, 50, 30), node(5, -30, 30), node(6, -30, 100))),
+          (TileIdx(0, 3), Seq(node(5, -30, 30), node(6, -30, 100), node(7, 30, 100))),
+          (TileIdx(1, 3), Seq(node(6, -30, 100), node(7, 30, 100), node(8, 30, 150)))
         )
 
-        val tileEntityFn = new TileIndexEntityIdGen(2, 4)
-        AddWaySession.splitNodesInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
+        implicit val tileEntityFn = TileIndexEntityIdGen(2, 4)
+        AddWaySession.splitNodesInShards(nodes) shouldBe expectedShardedNodes
       }
 
       "retrieve splits in order even if all is in one shard" in {
         val nodes: Seq[TileIndex.InternalNode] = Seq(
-            node(1, 30, -150),
-            node(2, 50, -100),
-            node(3, 30, -30),
-            node(4, 31, -31),
-            node(5, 32, -32)
+          node(1, 30, -150),
+          node(2, 50, -100),
+          node(3, 30, -30),
+          node(4, 31, -31),
+          node(5, 32, -32)
         )
         val expectedShardedNodes: Seq[(TileIdx, Seq[TileIndex.InternalNode])] = Seq(
-          (TileIdx(1,0), Seq(
-            node(1, 30, -150),
-            node(2, 50, -100),
-            node(3, 30, -30),
-            node(4, 31, -31),
-            node(5, 32, -32)
-          ))
+          (
+            TileIdx(1, 0),
+            Seq(
+              node(1, 30, -150),
+              node(2, 50, -100),
+              node(3, 30, -30),
+              node(4, 31, -31),
+              node(5, 32, -32)
+            )
+          )
         )
-        val tileEntityFn = new TileIndexEntityIdGen(2, 2)
-        AddWaySession.splitNodesInShards(nodes, tileEntityFn) shouldBe expectedShardedNodes
+        implicit val tileEntityFn = TileIndexEntityIdGen(2, 2)
+        AddWaySession.splitNodesInShards(nodes) shouldBe expectedShardedNodes
       }
 
     }

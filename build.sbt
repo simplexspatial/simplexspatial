@@ -3,7 +3,10 @@ import sbt.Keys.{description, startYear}
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+scapegoatVersion in ThisBuild := "1.3.11"
+
 lazy val commonSettings = Seq(
+  scapegoatIgnoredFiles := Seq(".*/src_managed/.*"),
   organization := "com.simplexportal.spatial",
   organizationHomepage := Some(url("http://www.simplexportal.com")),
   organizationName := "SimplexPortal Ltd",
@@ -23,7 +26,8 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
-  scalaVersion := "2.12.10"
+  scalaVersion := "2.12.10",
+  scalacOptions ++= Seq("-deprecation", "-feature")
 //  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
 //  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 //  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
@@ -48,13 +52,14 @@ lazy val commonSettings = Seq(
   ),*/
 )
 
-lazy val akkaVersion = "2.6.1"
-lazy val scalatestVersion = "3.0.8"
+lazy val akkaVersion = "2.6.3"
+lazy val scalatestVersion = "3.1.0"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
 lazy val akkaPersistenceNowhereVersion = "1.0.2"
 lazy val akkaKryoSerializationVersion = "1.1.0"
 lazy val scalaUUIDVersion = "0.3.1"
+lazy val jtsVersion = "1.16.1"
 
 lazy val root = (project in file("."))
   .settings(
@@ -98,7 +103,7 @@ lazy val core = (project in file("core"))
   )
   .settings(
     commonSettings,
-    name := "simplex-spatial-core",
+    name := "simplexspatial-core",
     description := "Core",
     javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.9" % "runtime;test",
     mainClass in (Compile, packageBin) := Some(
@@ -115,10 +120,12 @@ lazy val core = (project in file("core"))
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
       "ch.qos.logback" % "logback-classic" % "1.2.3",
-      "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion
+      "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
+      "org.locationtech.jts" % "jts-core" % jtsVersion
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
+      "org.scalactic" %% "scalactic" % scalatestVersion,
       "com.github.pathikrit" %% "better-files" % betterFilesVersion,
       "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion
     ).map(_ % Test)
@@ -135,7 +142,7 @@ lazy val loadOSM = (project in file("load_osm"))
   .enablePlugins(JavaAppPackaging)
   .settings(
     commonSettings,
-    name := "simplex-spatial-osm-loader",
+    name := "simplexspatial-osm-loader",
     description := "OSM Loader",
     mainClass in (Compile, packageBin) := Some(
       "com.simplexportal.spatial.loadosm.Main"

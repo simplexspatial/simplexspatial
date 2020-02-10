@@ -23,10 +23,12 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.grid.tile.{GetInternalNode, GetInternalNodeResponse, GetWayResponse, TileIndex}
+import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -56,17 +58,26 @@ object GridShardingSpecConfig extends MultiNodeConfig {
     """)
   )
 
-  commonConfig(ConfigFactory.parseString("""
-      akka.loglevel=INFO
+  commonConfig(
+    ConfigFactory
+      .parseString(
+        s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://GridShardingSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """).withFallback(ConfigFactory.load()))
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+    """
+      )
+      .withFallback(ConfigFactory.load())
+  )
 
 }
 
 abstract class GridShardingSpec
-  extends MultiNodeSpec(GridShardingSpecConfig)
-    with WordSpecLike
+    extends MultiNodeSpec(GridShardingSpecConfig)
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -79,12 +90,15 @@ abstract class GridShardingSpec
 
   override def afterAll(): Unit = multiNodeSpecAfterAll()
 
-  override def initialParticipants: Int =  roles.size
+  override def initialParticipants: Int = roles.size
 
   "The tile index" must {
     println(s"Running System [${system.name}]")
 
-    val gridIndex = system.spawn(Grid("GridIndexTest", 10000, 10000, 10000, 10000), "GridIndex")
+    val gridIndex = system.spawn(
+      Grid(GridConfig("GridIndexTest", 10000, 10000, 10000, 10000)),
+      "GridIndex"
+    )
 
     "wait until all nodes are ready" in within(10.seconds) {
 
@@ -102,129 +116,132 @@ abstract class GridShardingSpec
       enterBarrier("all-up")
     }
 
-
     "be able to add nodes" in {
-      val probe = TestProbe[tile.ACK]()
+      val probe = TestProbe[GridACK]()
       runOn(node0) {
-        gridIndex ! tile.AddNode(0, -23, -90, Map.empty, Some(probe.ref))
-        gridIndex ! tile.AddNode(1, 60, 130, Map.empty, Some(probe.ref))
-        gridIndex ! tile.AddNode(2, -23.3, -90, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(0, -23, -90, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(1, 60, 130, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(2, -23.3, -90, Map.empty, Some(probe.ref))
         probe.receiveMessages(3, 20.seconds)
       }
       enterBarrier("nodes added")
     }
 
     "be able to retrieve nodes one per one" in {
-      val probe = TestProbe[tile.GetInternalNodeResponse]()
+      val probe = TestProbe[GridGetNodeReply]()
 
-      gridIndex ! tile.GetInternalNode(999, probe.ref)
-      gridIndex ! tile.GetInternalNode(0, probe.ref)
-      gridIndex ! tile.GetInternalNode(1, probe.ref)
-      gridIndex ! tile.GetInternalNode(2, probe.ref)
+      gridIndex ! GridGetNode(999, probe.ref)
+      gridIndex ! GridGetNode(0, probe.ref)
+      gridIndex ! GridGetNode(1, probe.ref)
+      gridIndex ! GridGetNode(2, probe.ref)
 
-      probe.receiveMessages(4, 1.minutes).toSet shouldBe Set(
-        tile.GetInternalNodeResponse(999, None),
-        tile.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
-        tile.GetInternalNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
-        tile.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty)))
+      probe.receiveMessages(4).toSet shouldBe Set(
+        GridGetNodeReply(Right(None)),
+        GridGetNodeReply(Right(Some(Node(0, Location(-23, -90), Map.empty)))),
+        GridGetNodeReply(Right(Some(Node(1, Location(60, 130), Map.empty)))),
+        GridGetNodeReply(Right(Some(Node(2, Location(-23.3, -90), Map.empty))))
       )
 
       enterBarrier("nodes retrieved")
     }
 
-    "be able to retrieve nodes in block" in {
-      val probe = TestProbe[tile.GetInternalNodesResponse]()
-
-      runOn(node1) {
-        gridIndex ! tile.AddNode(10, 1, 1, Map.empty, None)
-        gridIndex ! tile.AddNode(11, 1.000001, 1.000001, Map.empty, None)
-        gridIndex ! tile.AddNode(12, 1.000002, 1.000002, Map.empty, None)
-        gridIndex ! tile.GetInternalNodes(Seq(999, 0, 1, 2, 10, 11, 12), probe.ref)
-
-        Seq(
-          tile.GetInternalNodeResponse(999, None),
-          tile.GetInternalNodeResponse(0, Some(TileIndex.InternalNode(0, Location(-23, -90), Map.empty))),
-          tile.GetInternalNodeResponse(1, Some(TileIndex.InternalNode(1, Location(60, 130), Map.empty))),
-          tile.GetInternalNodeResponse(2, Some(TileIndex.InternalNode(2, Location(-23.3, -90), Map.empty))),
-          tile.GetInternalNodeResponse(10, Some(TileIndex.InternalNode(10, Location(1, 1), Map.empty))),
-          tile.GetInternalNodeResponse(11, Some(TileIndex.InternalNode(11, Location(1.000001, 1.000001), Map.empty))),
-          tile.GetInternalNodeResponse(12, Some(TileIndex.InternalNode(12, Location(1.000002, 1.000002), Map.empty)))
-        ) shouldBe(probe.receiveMessage().nodes)
-      }
-
-      enterBarrier("nodes retrieved in group")
-
-    }
-
     "be able to add a ways in different shards" in {
-      val probe = TestProbe[tile.ACK]()
+      val probe = TestProbe[GridACK]()
       runOn(node0) {
-        gridIndex ! tile.AddWay(1, Seq(0, 1, 2, 10, 11, 12), Map.empty, Some(probe.ref))
-        probe.receiveMessage()
+        // Adding extra nodes to build larger way.
+        gridIndex ! GridAddNode(10, 1, 1, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(11, 1.000001, 1.000001, Map.empty, Some(probe.ref))
+        gridIndex ! GridAddNode(12, 1.000002, 1.000002, Map.empty, Some(probe.ref))
+        probe.receiveMessages(3)
+
+        gridIndex ! GridAddWay(
+          1,
+          Seq(0, 1, 2, 10, 11, 12),
+          Map.empty,
+          Some(probe.ref)
+        )
+        probe.expectMessage(GridDone())
+
       }
       enterBarrier("way added")
     }
 
     "retrieve way from multiple shards" in {
-      val probe = TestProbe[tile.GetWayResponse]()
-      runOn(node0) {
-        gridIndex ! tile.GetWay(1, probe.ref)
-        GetWayResponse(1,Some(
-          Way(1, Seq(
-            Node(0,Location(-23.0,-90.0),Map()),
-            Node(1,Location(60.0,130.0),Map()),
-            Node(2,Location(-23.3,-90.0),Map()),
-            Node(10,Location(1.0,1.0),Map()), Node(11,Location(1.000001,1.000001),Map()), Node(12,Location(1.000002,1.000002),Map())
-          ), Map.empty)
-        )) shouldBe probe.receiveMessage()
-      }
+      val probe = TestProbe[GridGetWayReply]()
+
+      gridIndex ! GridGetWay(1, probe.ref)
+      probe.expectMessage(
+        GridGetWayReply(
+          Right(
+            Some(
+              Way(
+                1,
+                Seq(
+                  Node(0, Location(-23.0, -90.0), Map()),
+                  Node(1, Location(60.0, 130.0), Map()),
+                  Node(2, Location(-23.3, -90.0), Map()),
+                  Node(10, Location(1.0, 1.0), Map()),
+                  Node(11, Location(1.000001, 1.000001), Map()),
+                  Node(12, Location(1.000002, 1.000002), Map())
+                ),
+                Map.empty
+              )
+            )
+          )
+        )
+      )
+
       enterBarrier("way retrieved from different shards")
     }
 
     "return None if data is not there" in {
-      val probe = TestProbe[tile.GetWayResponse]()
+      val probe = TestProbe[GridGetWayReply]()
       runOn(node1) {
-        gridIndex ! tile.GetWay(999, probe.ref)
-        GetWayResponse(999,None) shouldBe probe.receiveMessage()
+        gridIndex ! GridGetWay(999, probe.ref)
+        GridGetWayReply(Right(None)) shouldBe probe.receiveMessage()
       }
       enterBarrier("no data found")
     }
 
-/*    "be able to add a ways in different shards using batched commands" in {
-      val probe = TestProbe[tile.ACK]()
+    "be able to add nodes and ways in different shards using batched commands" in {
+      val probe = TestProbe[GridACK]()
       runOn(node0) {
-        gridIndex ! tile.AddBatch(Seq(
-          tile.AddNode(130, -23, -90, Map.empty),
-          tile.AddNode(140, 60, 130, Map.empty),
-          tile.AddNode(150, -23.3, -90, Map.empty),
-          tile.AddWay(2, Seq(11, 130, 140, 150), Map.empty)
-        ), Some(probe.ref))
-        probe.receiveMessage()
+        gridIndex ! GridAddBatch(
+          Seq(
+            GridAddNode(130, -23, -90, Map.empty),
+            GridAddNode(140, 60, 130, Map.empty),
+            GridAddNode(150, -23.3, -90, Map.empty),
+            GridAddWay(2, Seq(11, 130, 140, 150), Map.empty)
+          ),
+          Some(probe.ref)
+        )
+
+        probe.expectMessage(GridDone())
+
+        val probeGetWay = TestProbe[GridGetWayReply]
+        gridIndex ! GridGetWay(2, probeGetWay.ref)
+        probeGetWay.expectMessage(
+          GridGetWayReply(
+            Right(
+              Some(
+                Way(
+                  2,
+                  Seq(
+                    Node(11, Location(1.000001, 1.000001), Map()),
+                    Node(130, Location(-23, -90), Map()),
+                    Node(140, Location(60, 130), Map()),
+                    Node(150, Location(-23.3, -90), Map())
+                  ),
+                  Map.empty
+                )
+              )
+            )
+          )
+        )
+
       }
-      enterBarrier("commands executed")
+      enterBarrier("batch commands executed")
     }
-
-    "be able to retrieve data add in batch mode" in {
-      runOn(node1) {
-        val probeNode = TestProbe[tile.GetInternalNodeResponse]()
-        gridIndex ! tile.GetInternalNode(140, probeNode.ref)
-        GetInternalNodeResponse(140,Some(
-          TileIndex.InternalNode(2, Location(60, 130), Map.empty)
-        )) shouldBe probeNode.receiveMessage()
-
-//        gridIndex ! tile.GetWay(2, probe.ref)
-//        GetWayResponse(2,Some(
-//          Way(2, Seq(
-//            Node(11,Location(1.000001,1.000001),Map()),
-//            Node(130,Location(-23.0,-90.0),Map()),
-//            Node(140,Location(60.0,130.0),Map()),
-//            Node(150,Location(-23.3,-90.0),Map())
-//          ), Map.empty)
-//        )) shouldBe probe.receiveMessage()
-      }
-      enterBarrier("data retrieved from batch mode")
-    }*/
-
 
 //    "get right metrics" in within(10.seconds)  {
 //      val probe = TestProbe[AnyRef]()

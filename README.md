@@ -1,4 +1,4 @@
-# simplex-spatial
+# SimplexSpatial
 
 Comming soon!!
 
@@ -103,7 +103,7 @@ under `core/target/universal` and another under `osm-loader/target/universal`:
 sbt clean universal:packageZipTarball
 ```
 
-It will generate a 50M tar `{source_root}/core/target/universal/simplex-spatial-core-<version>.tgz`
+It will generate a 50M tar `{source_root}/core/target/universal/simplexspatial-core-<version>.tgz`
 with all the necessary stuff to start a cluster node.
 
 ### Running
@@ -113,8 +113,8 @@ It is supposed that you have a JDK8 or higher installed in your system.
 To run a node, uncompress the tar file generated previously, and, from
 the new folder, start the node:
 ```bash
-tar -xvf simplex-spatial-core-<version>.tgz
-cd simplex-spatial-core-<version>/
+tar -xvf simplexspatial-core-<version>.tgz
+cd simplexspatial-core-<version>/
 bin/simple_start_node.sh -a <artemy port> -g <optional gRPC Port>
 ```
 
@@ -143,7 +143,7 @@ uncompressed:
 ### Running core
 
 ```bash
-bin/simplex-spatial-core \
+bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -jvm-debug 9010 \
     -J-Xms1G \
@@ -151,7 +151,7 @@ bin/simplex-spatial-core \
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.api.http.port=8080
 
-bin/simplex-spatial-core \
+bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -jvm-debug 9011 \
     -J-Xms1G \
@@ -159,7 +159,7 @@ bin/simplex-spatial-core \
     -Dakka.remote.artery.canonical.port=2551  \
     -Dsimplexportal.spatial.api.http.port=8081
 
-bin/simplex-spatial-core \
+bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -jvm-debug 9012 \
     -J-Xms1G \
@@ -172,7 +172,7 @@ bin/simplex-spatial-core \
 ### Running osm loader
 
 ```bash
-bin/simplex-spatial-osm-loader \
+bin/simplexspatial-osm-loader \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -jvm-debug 9009 \
     -J-Xms1G \
