@@ -23,10 +23,12 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.protocol.{GridACK, GridAddBatch, GridAddNode, GridAddWay, GridGetWay, GridGetWayReply}
+import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -57,18 +59,23 @@ object GridShardingAddBatchSpecConfig extends MultiNodeConfig {
   )
 
   commonConfig(
-    ConfigFactory.parseString("""
-      akka.loglevel=INFO
+    ConfigFactory
+      .parseString(s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://GridShardingAddBatchSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """).withFallback(ConfigFactory.load())
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+    """)
+      .withFallback(ConfigFactory.load())
   )
 
 }
 
 abstract class GridShardingAddBatchSpec
     extends MultiNodeSpec(GridShardingAddBatchSpecConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -142,20 +149,22 @@ abstract class GridShardingAddBatchSpec
       runOn(node1) {
         gridIndex ! GridGetWay(101, probe.ref)
         GridGetWayReply(
-          Right(Some(
-            Way(
-              101,
-              Seq(
-                Node(100, Location(-23.0, -90.0), Map()),
-                Node(101, Location(60.0, 130.0), Map()),
-                Node(102, Location(-23.3, -90.0), Map()),
-                Node(110, Location(1.0, 1.0), Map()),
-                Node(111, Location(1.000001, 1.000001), Map()),
-                Node(112, Location(1.000002, 1.000002), Map())
-              ),
-              Map()
+          Right(
+            Some(
+              Way(
+                101,
+                Seq(
+                  Node(100, Location(-23.0, -90.0), Map()),
+                  Node(101, Location(60.0, 130.0), Map()),
+                  Node(102, Location(-23.3, -90.0), Map()),
+                  Node(110, Location(1.0, 1.0), Map()),
+                  Node(111, Location(1.000001, 1.000001), Map()),
+                  Node(112, Location(1.000002, 1.000002), Map())
+                ),
+                Map()
+              )
             )
-          ))
+          )
         ) shouldBe probe.receiveMessage()
       }
       enterBarrier("way returned")

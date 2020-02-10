@@ -17,11 +17,25 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
-import org.scalatest.{Matchers, WordSpecLike}
+import com.simplexportal.spatial.model.{BoundingBox, Location}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 // scalastyle:off magic.number
-class TileIdxSpec extends WordSpecLike with Matchers {
+class TileIdxSpec extends AnyWordSpecLike with Matchers {
   "TileIdx" should {
+    "calculate the BBox from the index" in {
+      implicit val tileIdxGen = TileIndexEntityIdGen(10, 10)
+      TileIdx(0,0).bbox() should be (BoundingBox(Location(-90 + (18*0),-180+(36*0)), Location(-90+(18*1),-180+(36*1))))
+      TileIdx(1,1).bbox() should be (BoundingBox(Location(-90 + (18*1),-180+(36*1)), Location(-90+(18*2),-180+(36*2))))
+      TileIdx(2,2).bbox() should be (BoundingBox(Location(-90 + (18*2),-180+(36*2)), Location(-90+(18*3),-180+(36*3))))
+    }
+    "build from location" in {
+      implicit val tileIdxGen = TileIndexEntityIdGen(4, 4)
+      TileIdx(Location(-89, -179)) shouldBe TileIdx(0,0)
+      TileIdx(Location(89, 179)) shouldBe TileIdx(3,3)
+      TileIdx(Location(1, 1)) shouldBe TileIdx(2,2)
+    }
     "normalize idxs" in {
       implicit val tileIdxGen = TileIndexEntityIdGen(4, 4)
       TileIdx(4, 4).normalize() shouldBe TileIdx(0, 0)

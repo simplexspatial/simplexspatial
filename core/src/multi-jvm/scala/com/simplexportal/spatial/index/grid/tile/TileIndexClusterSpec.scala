@@ -25,17 +25,18 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
+import com.simplexportal.spatial.index.grid.tile.actor._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
-import com.simplexportal.spatial.index.grid.tile
-import com.simplexportal.spatial.index.grid.tile.actor.{AddNode, AddWay, GetMetrics, Metrics, TileIndexActor}
 
 /**
- * Testing a single tile in a cluster. On this way, it is possible to verify aspects like serialization.
- */
+  * Testing a single tile in a cluster. On this way, it is possible to verify aspects like serialization.
+  */
 object TileIndexClusterSpecConfig extends MultiNodeConfig {
 
   val node0 = role("node0")
@@ -60,17 +61,23 @@ object TileIndexClusterSpecConfig extends MultiNodeConfig {
     """)
   )
 
-  commonConfig(ConfigFactory.parseString("""
-      akka.loglevel=ERROR
+  commonConfig(
+    ConfigFactory.parseString(s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://TileIndexClusterSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """).withFallback(ConfigFactory.load()))
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+    """).withFallback(ConfigFactory.load())
+  )
 
 }
 
 abstract class TileIndexClusterSpec
-  extends MultiNodeSpec(TileIndexClusterSpecConfig)
-    with WordSpecLike
+    extends MultiNodeSpec(TileIndexClusterSpecConfig)
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -83,7 +90,7 @@ abstract class TileIndexClusterSpec
 
   override def afterAll(): Unit = multiNodeSpecAfterAll()
 
-  override def initialParticipants: Int =  roles.size
+  override def initialParticipants: Int = roles.size
 
   "The tile index" must {
     println(s"Running System [${system.name}]")
@@ -104,7 +111,7 @@ abstract class TileIndexClusterSpec
       enterBarrier("all-up")
     }
 
-    "be able to add a entities in the a local tile" in within(10.seconds)  {
+    "be able to add a entities in the a local tile" in within(10.seconds) {
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
         val localTileActor = system.spawn(TileIndexActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
@@ -118,7 +125,7 @@ abstract class TileIndexClusterSpec
       enterBarrier("added locally")
     }
 
-    "be able to add a entities in the a remote tile" in within(10.seconds)  {
+    "be able to add a entities in the a remote tile" in within(10.seconds) {
       runOn(node2) {
         val probe = TestProbe[AnyRef]()
         val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
@@ -140,7 +147,7 @@ abstract class TileIndexClusterSpec
         val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
         remoteTileActor ! GetMetrics(probe.ref)
 
-        probe.expectMessage(Metrics(2,6))
+        probe.expectMessage(Metrics(2, 6))
 
       }
     }

@@ -16,10 +16,7 @@
 
 package com.simplexportal.spatial.utils
 
-import com.simplexportal.spatial.model.{
-  LineSegment => ModelLineSegment,
-  Location
-}
+import com.simplexportal.spatial.model.{LineSegment => ModelLineSegment, Line => ModelLine, Location}
 import org.locationtech.jts.geom.{Coordinate, LineSegment => JTSLineSegment}
 
 /**
@@ -38,5 +35,9 @@ object ModelEnrichers {
       new Coordinate(line.start.lon, line.start.lat),
       new Coordinate(line.end.lon, line.end.lat)
     )
+  }
+
+  implicit class ModelLineEnricher(line: ModelLine) {
+    def toJTSArrayCoords(): Array[Coordinate] = line.segments.map(_.toJTS()).toArray
   }
 }

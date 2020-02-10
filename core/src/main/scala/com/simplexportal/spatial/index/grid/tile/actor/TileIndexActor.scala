@@ -17,15 +17,15 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{Behavior, SupervisorStrategy}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import scala.concurrent.duration._
 
-object TileIndexActor
-    extends TileIndexQueryHandler
-    with TileIndexActionHandler {
+object TileIndexActor extends TileIndexQueryHandler with TileIndexActionHandler {
 
   def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
@@ -36,7 +36,8 @@ object TileIndexActor
         emptyState = TileIndex(),
         commandHandler = (state, command) => onCommand(tileId, state, command),
         eventHandler = (state, event) => applyEvent(state, event)
-      )
+      ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 3))
+        .onPersistFailure(SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
     }
 
   def onCommand(

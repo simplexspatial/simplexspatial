@@ -16,13 +16,14 @@
 
 package com.simplexportal.spatial.utils
 
-import org.scalatest.{Matchers, WordSpecLike}
 import com.simplexportal.spatial.model.{LineSegment, Location}
-import org.locationtech.jts.geom.{Coordinate, LineSegment => JTSLineSegment}
 import com.simplexportal.spatial.utils.ModelEnrichers._
+import org.locationtech.jts.geom.{Coordinate, LineSegment => JTSLineSegment}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 // scalastyle:off magic.number
-class ModelEnrichersSpec extends WordSpecLike with Matchers {
+class ModelEnrichersSpec extends AnyWordSpecLike with Matchers {
 
   "ModelEnrichers" should {
 

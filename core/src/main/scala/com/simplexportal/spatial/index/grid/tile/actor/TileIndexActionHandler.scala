@@ -42,10 +42,8 @@ trait TileIndexActionHandler {
     case AddBatch(cmds, replyTo) =>
       Effect
         .persist(BatchAdded(cmds.map {
-          case AddNode(id, lat, lon, attributes, _) =>
-            NodeAdded(id, lat, lon, attributes)
-          case AddWay(id, nodeIds, attributes, _) =>
-            WayAdded(id, nodeIds, attributes)
+          case AddNode(id, lat, lon, attributes, _) => NodeAdded(id, lat, lon, attributes)
+          case AddWay(id, nodeIds, attributes, _)   => WayAdded(id, nodeIds, attributes)
         }(breakOut)))
         .thenRun { _ =>
           replyTo.foreach(_ ! Done())

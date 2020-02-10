@@ -25,7 +25,10 @@ import org.locationtech.jts.geom.Coordinate
 case class NearestNode(
     nodes: Set[Node],
     distance: Double
-)
+) {
+
+  def chooseNearest(b: NearestNode): NearestNode = if (b.distance < distance) b else this
+}
 
 trait NearestNodeSearch {
   this: TileIndex =>

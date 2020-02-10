@@ -19,47 +19,6 @@ package com.simplexportal.spatial.index.grid.tile.actor
 
 import com.simplexportal.spatial.model.{BoundingBox, Location}
 
-import scala.util.Try
-
-object TileIdx {
-  def apply(entityId: String): Either[String, TileIdx] =
-    entityId.split("_") match {
-      case Array(latIdx, lonIdx) =>
-        Try(TileIdx(latIdx.toInt, lonIdx.toInt)).toEither.left.map(ex => s"Error parsing ${entityId} => ${ex.getMessage}")
-      case _ => Left(s"[${entityId}] is not a valid format for a TileIdx")
-    }
-}
-
-case class TileIdx(latIdx: Int, lonIdx: Int) {
-  def entityId: String = s"${latIdx}_${lonIdx}"
-
-  def normalize()(implicit tileIdxGen: TileIndexEntityIdGen): TileIdx =
-    TileIdx(
-      normalize(latIdx, tileIdxGen.latPartitions),
-      normalize(lonIdx, tileIdxGen.lonPartitions)
-    )
-
-  @inline private def normalize(idx: Int, partitions: Int)(implicit tileIdxGen: TileIndexEntityIdGen): Int =
-    idx % partitions match {
-      case i if i < 0 => i + partitions
-      case i          => i
-    }
-
-  def layer(layer: Int)(
-      implicit tileIndexEntityIdGen: TileIndexEntityIdGen
-  ): Set[TileIdx] = {
-    val minLat = latIdx - layer
-    val maxLat = latIdx + layer
-    val minLon = lonIdx - layer
-    val maxLon = lonIdx + layer
-    ((minLat to maxLat flatMap (
-        lat => Seq(TileIdx(lat, minLon).normalize(), TileIdx(lat, maxLon).normalize())
-    )) ++ (minLon to maxLon flatMap (
-        lon => Seq(TileIdx(minLat, lon).normalize(), TileIdx(maxLat, lon).normalize())
-    ))).toSet
-  }
-}
-
 object TileIndexEntityIdGen {
   val defaultRoundingDecimal: Byte = 6
 }
@@ -102,17 +61,6 @@ case class TileIndexEntityIdGen(
   def lonPartition(lon: Double): Int =
     ((lon + 180) * PRECISION_ROUNDING).toInt / ((360 * PRECISION_ROUNDING) / lonPartitions)
 
-  def boundingBox(tileIdx: TileIdx): BoundingBox = BoundingBox(
-    min = Location(
-      -90 + ((180 / latPartitions) * tileIdx.latIdx),
-      -180 + ((360 / lonPartitions) * tileIdx.lonIdx)
-    ),
-    max = Location(
-      -90 + ((180 / latPartitions) * (tileIdx.latIdx + 1)),
-      -180 + ((360 / lonPartitions) * (tileIdx.lonIdx + 1))
-    )
-  )
-
   // TODO: Think about move all neighbour calculation into TileIdx passing TileIndexEntityIdGen as implicit.
 
   def clockNeighbours(tileIdx: TileIdx): Seq[TileIdx] = Seq(
@@ -131,9 +79,6 @@ case class TileIndexEntityIdGen(
     tileIdx.lonIdx
   )
 
-  @inline private def incTileCoord(current: Int, max: Int): Int =
-    if (current >= max) 0 else current + 1
-
   def northEastTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     incTileCoord(tileIdx.latIdx, maxLatIdx),
     incTileCoord(tileIdx.lonIdx, maxLonIdx)
@@ -149,6 +94,9 @@ case class TileIndexEntityIdGen(
     incTileCoord(tileIdx.lonIdx, maxLonIdx)
   )
 
+  @inline private def incTileCoord(current: Int, max: Int): Int =
+    if (current >= max) 0 else current + 1
+
   def southTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     decTileCoord(tileIdx.latIdx, maxLatIdx),
     tileIdx.lonIdx
@@ -159,9 +107,6 @@ case class TileIndexEntityIdGen(
     decTileCoord(tileIdx.lonIdx, maxLonIdx)
   )
 
-  @inline private def decTileCoord(current: Int, max: Int): Int =
-    if (current == 0) max else current - 1
-
   def westTileIdx(tileIdx: TileIdx): TileIdx = TileIdx(
     tileIdx.latIdx,
     decTileCoord(tileIdx.lonIdx, maxLonIdx)
@@ -171,5 +116,8 @@ case class TileIndexEntityIdGen(
     decTileCoord(tileIdx.latIdx, maxLatIdx),
     decTileCoord(tileIdx.lonIdx, maxLonIdx)
   )
+
+  @inline private def decTileCoord(current: Int, max: Int): Int =
+    if (current == 0) max else current - 1
   // scalastyle:on magic.number
 }

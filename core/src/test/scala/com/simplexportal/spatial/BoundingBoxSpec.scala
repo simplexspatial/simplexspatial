@@ -17,15 +17,28 @@
 
 package com.simplexportal.spatial
 
-import com.simplexportal.spatial.model.{BoundingBox, LineSegment, Location}
-import org.scalatest.{Matchers, WordSpecLike}
+import com.simplexportal.spatial.model.{BoundingBox, Line, LineSegment, Location}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 // scalastyle:off magic.number
 
-class BoundingBoxSpec extends WordSpecLike with Matchers {
+class BoundingBoxSpec extends AnyWordSpecLike with Matchers {
   "BoundingBox" should {
 
     val bbox = BoundingBox(Location(-10, -20), Location(10, 20))
+
+    "generate line representing edge" in {
+      bbox.toLine() shouldBe Line(
+        Seq(
+          Location(10, -20),
+          Location(10, 20),
+          Location(-10, 20),
+          Location(-10, -20),
+          Location(10, -20)
+        )
+      )
+    }
 
     "calculate neighbours" in {
       bbox.northEdge() shouldBe LineSegment(Location(10, -20), Location(10, 20))

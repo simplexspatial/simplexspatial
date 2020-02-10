@@ -30,7 +30,9 @@ import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntity
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.typesafe.config.ConfigFactory
 import io.jvm.uuid.UUID
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -63,10 +65,13 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
   commonConfig(
     ConfigFactory
       .parseString(
-        """
-      akka.loglevel=INFO
+        s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://GetNodeLocationsSessionSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
     """
       )
       .withFallback(ConfigFactory.load())
@@ -76,7 +81,7 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
 
 abstract class GetNodeLocationsSessionSpec
     extends MultiNodeSpec(GetNodeLocationsSessionSpecConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -205,11 +210,8 @@ abstract class GetNodeLocationsSessionSpec
   }
 }
 
-class GetNodeLocationsSessionSpecMultiJvmNode0
-    extends GetNodeLocationsSessionSpec
+class GetNodeLocationsSessionSpecMultiJvmNode0 extends GetNodeLocationsSessionSpec
 
-class GetNodeLocationsSessionSpecMultiJvmNode1
-    extends GetNodeLocationsSessionSpec
+class GetNodeLocationsSessionSpecMultiJvmNode1 extends GetNodeLocationsSessionSpec
 
-class GetNodeLocationsSessionSpecMultiJvmNode2
-    extends GetNodeLocationsSessionSpec
+class GetNodeLocationsSessionSpecMultiJvmNode2 extends GetNodeLocationsSessionSpec

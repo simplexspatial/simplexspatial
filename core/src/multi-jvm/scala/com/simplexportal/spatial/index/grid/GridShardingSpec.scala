@@ -26,7 +26,9 @@ import akka.testkit.ImplicitSender
 import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
@@ -59,10 +61,13 @@ object GridShardingSpecConfig extends MultiNodeConfig {
   commonConfig(
     ConfigFactory
       .parseString(
-        """
-      akka.loglevel=INFO
+        s"""
+      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://GridShardingSpec@localhost:2551" ]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
     """
       )
       .withFallback(ConfigFactory.load())
@@ -72,7 +77,7 @@ object GridShardingSpecConfig extends MultiNodeConfig {
 
 abstract class GridShardingSpec
     extends MultiNodeSpec(GridShardingSpecConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
@@ -165,24 +170,26 @@ abstract class GridShardingSpec
       val probe = TestProbe[GridGetWayReply]()
 
       gridIndex ! GridGetWay(1, probe.ref)
-      probe.expectMessage(GridGetWayReply(
-        Right(
-          Some(
-            Way(
-              1,
-              Seq(
-                Node(0, Location(-23.0, -90.0), Map()),
-                Node(1, Location(60.0, 130.0), Map()),
-                Node(2, Location(-23.3, -90.0), Map()),
-                Node(10, Location(1.0, 1.0), Map()),
-                Node(11, Location(1.000001, 1.000001), Map()),
-                Node(12, Location(1.000002, 1.000002), Map())
-              ),
-              Map.empty
+      probe.expectMessage(
+        GridGetWayReply(
+          Right(
+            Some(
+              Way(
+                1,
+                Seq(
+                  Node(0, Location(-23.0, -90.0), Map()),
+                  Node(1, Location(60.0, 130.0), Map()),
+                  Node(2, Location(-23.3, -90.0), Map()),
+                  Node(10, Location(1.0, 1.0), Map()),
+                  Node(11, Location(1.000001, 1.000001), Map()),
+                  Node(12, Location(1.000002, 1.000002), Map())
+                ),
+                Map.empty
+              )
             )
           )
         )
-      ))
+      )
 
       enterBarrier("way retrieved from different shards")
     }
@@ -199,33 +206,38 @@ abstract class GridShardingSpec
     "be able to add nodes and ways in different shards using batched commands" in {
       val probe = TestProbe[GridACK]()
       runOn(node0) {
-        gridIndex ! GridAddBatch(Seq(
-          GridAddNode(130, -23, -90, Map.empty),
-          GridAddNode(140, 60, 130, Map.empty),
-          GridAddNode(150, -23.3, -90, Map.empty),
-          GridAddWay(2, Seq(11, 130, 140, 150), Map.empty)
-        ), Some(probe.ref))
+        gridIndex ! GridAddBatch(
+          Seq(
+            GridAddNode(130, -23, -90, Map.empty),
+            GridAddNode(140, 60, 130, Map.empty),
+            GridAddNode(150, -23.3, -90, Map.empty),
+            GridAddWay(2, Seq(11, 130, 140, 150), Map.empty)
+          ),
+          Some(probe.ref)
+        )
 
         probe.expectMessage(GridDone())
 
         val probeGetWay = TestProbe[GridGetWayReply]
         gridIndex ! GridGetWay(2, probeGetWay.ref)
-        probeGetWay.expectMessage(GridGetWayReply(
-          Right(
-            Some(
-              Way(
-                2,
-                Seq(
-                  Node(11, Location(1.000001, 1.000001), Map()),
-                  Node(130, Location(-23, -90), Map()),
-                  Node(140, Location(60, 130), Map()),
-                  Node(150, Location(-23.3, -90), Map())
-                ),
-                Map.empty
+        probeGetWay.expectMessage(
+          GridGetWayReply(
+            Right(
+              Some(
+                Way(
+                  2,
+                  Seq(
+                    Node(11, Location(1.000001, 1.000001), Map()),
+                    Node(130, Location(-23, -90), Map()),
+                    Node(140, Location(60, 130), Map()),
+                    Node(150, Location(-23.3, -90), Map())
+                  ),
+                  Map.empty
+                )
               )
             )
           )
-        ))
+        )
 
       }
       enterBarrier("batch commands executed")

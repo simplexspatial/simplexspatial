@@ -20,9 +20,11 @@
 package com.simplexportal.spatial.index.grid.tile.impl
 
 import com.simplexportal.spatial.model.{Location, Node}
-import org.scalatest.{Inside, Matchers, WordSpecLike}
+import org.scalatest.Inside
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class NearestNodeSearchSpec extends WordSpecLike with Matchers with Inside {
+class NearestNodeSearchSpec extends AnyWordSpecLike with Matchers with Inside {
 
   "TileGISSearch" should {
     val index = TileIndex()
@@ -34,19 +36,21 @@ class NearestNodeSearchSpec extends WordSpecLike with Matchers with Inside {
     "fine the nearest node" when {
 
       "there is only one result" in {
-        inside(index.nearestNode(Location(6, 9))) { case Some(NearestNode(nodes, distance)) =>
-          nodes shouldBe Set(Node(1, Location(7, 10), Map.empty))
-          distance shouldBe 1.4 +- 0.1
+        inside(index.nearestNode(Location(6, 9))) {
+          case Some(NearestNode(nodes, distance)) =>
+            nodes shouldBe Set(Node(1, Location(7, 10), Map.empty))
+            distance shouldBe 1.4 +- 0.1
         }
       }
 
       "there are more than one result" in {
-        inside(index.nearestNode(Location(0,0))) { case Some(NearestNode(nodes, distance)) =>
-          nodes shouldBe Set(
-            Node(1, Location(7, 10), Map.empty),
-            Node(4, Location(-7, -10), Map.empty)
-          )
-          distance shouldBe 12.2 +- 0.1
+        inside(index.nearestNode(Location(0, 0))) {
+          case Some(NearestNode(nodes, distance)) =>
+            nodes shouldBe Set(
+              Node(1, Location(7, 10), Map.empty),
+              Node(4, Location(-7, -10), Map.empty)
+            )
+            distance shouldBe 12.2 +- 0.1
         }
       }
 

@@ -38,19 +38,28 @@ package model {
     val NaL = Location(NO_LATITUDE, NO_LONGITUDE)
   }
 
-  case class LineSegment(start: Location, end: Location)
-      extends Geometry
-      with AdjacentRepresentation
+  final case class Line(segments: Seq[Location]) extends Geometry
 
-  case class Location(lat: Double, lon: Double)
-      extends Geometry
-      with AdjacentRepresentation
+  final case class LineSegment(start: Location, end: Location) extends Geometry with AdjacentRepresentation
+
+  final case class Location(lat: Double, lon: Double) extends Geometry with AdjacentRepresentation
 
   object BoundingBox {
     val MAX = BoundingBox(Location.MIN, Location.MAX)
   }
 
-  case class BoundingBox(min: Location, max: Location) extends Geometry {
+  final case class BoundingBox(min: Location, max: Location) extends Geometry {
+
+    def toLine(): Line =
+      Line(
+        Seq(
+          Location(max.lat, min.lon),
+          Location(max.lat, max.lon),
+          Location(min.lat, max.lon),
+          Location(min.lat, min.lon),
+          Location(max.lat, min.lon)
+        )
+      )
 
     def northEdge(): LineSegment =
       LineSegment(Location(max.lat, min.lon), Location(max.lat, max.lon))
@@ -84,13 +93,13 @@ package model {
     )
   }
 
-  case class Node(
+  final case class Node(
       id: Long,
       location: Location,
       attributes: Map[String, String] = Map.empty
   )
 
-  case class Way(
+  final case class Way(
       id: Long,
       nodes: Seq[Node],
       attributes: Map[String, String] = Map.empty
