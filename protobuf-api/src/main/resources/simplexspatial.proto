@@ -10,6 +10,7 @@ service DataService {
     rpc AddWay (AddWayCmd) returns (ACK);
     rpc StreamBatchCommands (stream ExecuteBatchCmd) returns (stream ACK);
     rpc GetMetrics (GetMetricsCmd) returns (Metrics);
+    rpc SearchNearestNode (SearchNearestNodeCmd) returns (NearestNodeReply);
 }
 
 message ACK {
@@ -56,5 +57,34 @@ message GetMetricsCmd {
 message Metrics {
     uint64 ways = 1;
     uint64 nodes = 2;
+}
+
+message SearchNearestNodeCmd {
+    double lon = 1;
+    double lat = 2;
+}
+
+message NearestNodeReply {
+    oneof ACK {
+        NearestNode done = 1;
+        NotDone notDone = 2;
+    }
+}
+
+message NearestNode {
+    repeated Node nodes = 1;
+}
+
+message Node {
+    uint64 id = 1;
+    double lon = 2;
+    double lat = 3;
+    map<string, string> attributes = 4;
+}
+
+message Way {
+    uint64 id = 1;
+    repeated Node nodes = 2;
+    map<string, string> attributes = 3;
 }
 
