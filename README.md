@@ -46,8 +46,8 @@ simplexportal.spatial {
 
 ```
 
-Remind that the server is based in [AKKA](https://akka.io/), so you are
-can set any parameters related to AKKA as well.
+Remind that the server is based in [AKKA](https://akka.io/), so you can
+set any parameters related to AKKA as well.
 
 In relation to the AKKA cluster and in this stage of the project, it is
 important to configure the way that the cluster is going to work. This

@@ -67,7 +67,7 @@ lazy val root = (project in file("."))
     name := "SimplexSpatial",
     description := "Geospatial distributed server"
   )
-  .aggregate(protobufApi, core, loadOSM)
+  .aggregate(protobufApi, core, grpcClientScala /*, loadOSM*/ )
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
@@ -84,7 +84,8 @@ lazy val grpcClientScala = (project in file("grpc-client-scala"))
   .settings(
     commonSettings,
     name := "grpc-client-scala",
-    description := "gRPC Client for Scala"
+    description := "gRPC Client for Scala",
+    packageDescription := "SimplexSpatial gRPC Client for Scala"
   )
   .dependsOn(protobufApi)
 
@@ -137,21 +138,3 @@ lazy val core = (project in file("core"))
     packageDescription := "SimplexSpatial Server"
   )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")
-
-lazy val loadOSM = (project in file("load_osm"))
-  .enablePlugins(JavaAppPackaging)
-  .settings(
-    commonSettings,
-    name := "simplexspatial-osm-loader",
-    description := "OSM Loader",
-    mainClass in (Compile, packageBin) := Some(
-      "com.simplexportal.spatial.loadosm.Main"
-    ),
-    libraryDependencies ++= Seq(
-      "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
-      "org.backuity.clist" %% "clist-core" % "3.5.1",
-      "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided",
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
-    )
-  )
-  .dependsOn(grpcClientScala)
