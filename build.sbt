@@ -67,7 +67,7 @@ lazy val root = (project in file("."))
     name := "SimplexSpatial",
     description := "Geospatial distributed server"
   )
-  .aggregate(protobufApi, core, grpcClientScala /*, loadOSM*/ )
+  .aggregate(protobufApi, core, grpcClientScala)
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
