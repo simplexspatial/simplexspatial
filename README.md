@@ -118,7 +118,7 @@ cd simplexspatial-core-<version>/
 bin/simple_start_node.sh -a <artemy port> -g <optional gRPC Port>
 ```
 
-The default configuration is looking for seeds in `127.0.1.1:2520` and
+The default configuration is looking for seeds in `127.0.1.1:2550` and
 `127.0.1.1:2551` It means that for the first two nodes to start, Artery
 should listen ports 2550 and 2551. For other nodes, use port 0 to pickup
 randomly one free port or set another free port.
