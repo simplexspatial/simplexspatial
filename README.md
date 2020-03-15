@@ -1,4 +1,6 @@
 # SimplexSpatial
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_shield)
+
 
 Comming soon!!
 
@@ -187,3 +189,7 @@ bin/simplexspatial-osm-loader \
 ## Notes
 
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_large)
