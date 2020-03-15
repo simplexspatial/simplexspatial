@@ -67,7 +67,7 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
       .parseString(
         s"""
       akka.cluster.seed-nodes = [ "akka://GetNodeLocationsSessionSpec@localhost:2551" ]
-      akka.persistence.snapshot-store.local.dir = "target/snapshots/${this.getClass.getName}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/GetNodeLocationsSessionSpec"
     """
       )
       .withFallback(ConfigFactory.load("application-default-multijvm.conf"))

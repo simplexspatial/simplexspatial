@@ -65,7 +65,7 @@ object TileIndexClusterSpecConfig extends MultiNodeConfig {
     ConfigFactory
       .parseString(s"""
       akka.cluster.seed-nodes = [ "akka://TileIndexClusterSpec@localhost:2551" ]
-      akka.persistence.snapshot-store.local.dir = "target/snapshots/${this.getClass.getName}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/TileIndexClusterSpec"
     """)
       .withFallback(ConfigFactory.load("application-default-multijvm.conf"))
   )

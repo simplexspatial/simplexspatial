@@ -62,7 +62,7 @@ object GridShardingAddBatchSpecConfig extends MultiNodeConfig {
     ConfigFactory
       .parseString(s"""
       akka.cluster.seed-nodes = [ "akka://GridShardingAddBatchSpec@localhost:2551" ]
-      akka.persistence.snapshot-store.local.dir = "target/snapshots/${this.getClass.getName}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/GridShardingAddBatchSpec"
     """)
       .withFallback(ConfigFactory.load("application-default-multijvm.conf"))
   )

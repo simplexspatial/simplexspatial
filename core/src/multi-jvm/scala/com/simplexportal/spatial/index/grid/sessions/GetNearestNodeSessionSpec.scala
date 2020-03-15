@@ -62,7 +62,7 @@ object GetNearestNodeSessionSpecConfig extends MultiNodeConfig {
     ConfigFactory
       .parseString(s"""
       akka.cluster.seed-nodes = [ "akka://GetNearestNodeSessionSpec@localhost:2551" ]
-      akka.persistence.snapshot-store.local.dir = "target/snapshots/${this.getClass.getName}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/GetNearestNodeSessionSpec"
     """)
       .withFallback(ConfigFactory.load("application-default-multijvm.conf"))
   )
