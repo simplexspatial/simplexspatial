@@ -60,14 +60,10 @@ object LookUpClusterSpecConfig extends MultiNodeConfig {
   commonConfig(
     ConfigFactory
       .parseString(s"""
-      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://NodeLookUpClusterSpec@localhost:2551" ]
-      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      akka.persistence.journal.inmem.test-serialization = on
-      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/LookUpClusterSpec"
     """)
-      .withFallback(ConfigFactory.load())
+      .withFallback(ConfigFactory.load("application-default-multijvm.conf"))
   )
 
 }
@@ -92,7 +88,7 @@ abstract class LookUpClusterSpec
   "The node lookup index" must {
     println(s"Running System [${system.name}]")
 
-    "wait until all nodes are ready" in within(10.seconds) {
+    "wait until all nodes are ready" in {
 
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
@@ -108,7 +104,7 @@ abstract class LookUpClusterSpec
       enterBarrier("all-up")
     }
 
-    "be able to add a entities in the a local lookup shard" in within(10.seconds) {
+    "be able to add a entities in the a local lookup shard" in {
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
         val localLookUpActor =
@@ -122,7 +118,7 @@ abstract class LookUpClusterSpec
       enterBarrier("added locally")
     }
 
-    "be able to add entities in the a remote lookup node" in within(10.seconds) {
+    "be able to add entities in the a remote lookup node" in {
       runOn(node1) {
         val probe = TestProbe[AnyRef]()
         val remoteLookUpActor = system.actorSelection(node(node0) / "user" / "LookUpActorNode0")

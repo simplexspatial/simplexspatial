@@ -66,15 +66,11 @@ object GetNodeLocationsSessionSpecConfig extends MultiNodeConfig {
     ConfigFactory
       .parseString(
         s"""
-      akka.loglevel=WARNING
       akka.cluster.seed-nodes = [ "akka://GetNodeLocationsSessionSpec@localhost:2551" ]
-      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      akka.persistence.journal.inmem.test-serialization = on
-      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/GetNodeLocationsSessionSpec"
     """
       )
-      .withFallback(ConfigFactory.load())
+      .withFallback(ConfigFactory.load("application-default-multijvm.conf"))
   )
 
 }
@@ -107,7 +103,7 @@ abstract class GetNodeLocationsSessionSpec
       }
     )
 
-    "wait until all nodes are ready" in within(10.seconds) {
+    "wait until all nodes are ready" in {
 
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])

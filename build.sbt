@@ -52,12 +52,11 @@ lazy val commonSettings = Seq(
   ),*/
 )
 
-lazy val akkaVersion = "2.6.3"
-lazy val scalatestVersion = "3.1.0"
+lazy val akkaVersion = "2.6.4"
+lazy val scalatestVersion = "3.1.1"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
-lazy val akkaPersistenceNowhereVersion = "1.0.2"
-lazy val akkaKryoSerializationVersion = "1.1.0"
+lazy val akkaKryoSerializationVersion = "1.1.3"
 lazy val scalaUUIDVersion = "0.3.1"
 lazy val jtsVersion = "1.16.1"
 
@@ -67,7 +66,7 @@ lazy val root = (project in file("."))
     name := "SimplexSpatial",
     description := "Geospatial distributed server"
   )
-  .aggregate(protobufApi, core, loadOSM)
+  .aggregate(protobufApi, core, grpcClientScala)
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
@@ -84,7 +83,8 @@ lazy val grpcClientScala = (project in file("grpc-client-scala"))
   .settings(
     commonSettings,
     name := "grpc-client-scala",
-    description := "gRPC Client for Scala"
+    description := "gRPC Client for Scala",
+    packageDescription := "SimplexSpatial gRPC Client for Scala"
   )
   .dependsOn(protobufApi)
 
@@ -115,10 +115,9 @@ lazy val core = (project in file("core"))
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
-      "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
+      "com.github.enalmada" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
       "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
-      "com.acervera.akka" %% "akka-persistence-nowhere" % akkaPersistenceNowhereVersion,
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
       "org.locationtech.jts" % "jts-core" % jtsVersion
@@ -137,21 +136,3 @@ lazy val core = (project in file("core"))
     packageDescription := "SimplexSpatial Server"
   )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")
-
-lazy val loadOSM = (project in file("load_osm"))
-  .enablePlugins(JavaAppPackaging)
-  .settings(
-    commonSettings,
-    name := "simplexspatial-osm-loader",
-    description := "OSM Loader",
-    mainClass in (Compile, packageBin) := Some(
-      "com.simplexportal.spatial.loadosm.Main"
-    ),
-    libraryDependencies ++= Seq(
-      "com.acervera.osm4scala" %% "osm4scala-core" % "1.0.1",
-      "org.backuity.clist" %% "clist-core" % "3.5.1",
-      "org.backuity.clist" %% "clist-macros" % "3.5.1" % "provided",
-      "ch.qos.logback" % "logback-classic" % "1.2.3"
-    )
-  )
-  .dependsOn(grpcClientScala)

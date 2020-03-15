@@ -46,8 +46,8 @@ simplexportal.spatial {
 
 ```
 
-Remind that the server is based in [AKKA](https://akka.io/), so you are
-can set any parameters related to AKKA as well.
+Remind that the server is based in [AKKA](https://akka.io/), so you can
+set any parameters related to AKKA as well.
 
 In relation to the AKKA cluster and in this stage of the project, it is
 important to configure the way that the cluster is going to work. This
@@ -118,7 +118,7 @@ cd simplexspatial-core-<version>/
 bin/simple_start_node.sh -a <artemy port> -g <optional gRPC Port>
 ```
 
-The default configuration is looking for seeds in `127.0.1.1:2520` and
+The default configuration is looking for seeds in `127.0.1.1:2550` and
 `127.0.1.1:2551` It means that for the first two nodes to start, Artery
 should listen ports 2550 and 2551. For other nodes, use port 0 to pickup
 randomly one free port or set another free port.

@@ -62,15 +62,12 @@ object TileIndexClusterSpecConfig extends MultiNodeConfig {
   )
 
   commonConfig(
-    ConfigFactory.parseString(s"""
-      akka.loglevel=WARNING
+    ConfigFactory
+      .parseString(s"""
       akka.cluster.seed-nodes = [ "akka://TileIndexClusterSpec@localhost:2551" ]
-      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      akka.persistence.journal.inmem.test-serialization = on
-      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-      akka.persistence.snapshot-store.local.dir = "target/snapshots-${this.getClass.getName}"
-    """).withFallback(ConfigFactory.load())
+      akka.persistence.snapshot-store.local.dir = "target/snapshots/TileIndexClusterSpec"
+    """)
+      .withFallback(ConfigFactory.load("application-default-multijvm.conf"))
   )
 
 }
@@ -95,7 +92,7 @@ abstract class TileIndexClusterSpec
   "The tile index" must {
     println(s"Running System [${system.name}]")
 
-    "wait until all nodes are ready" in within(10.seconds) {
+    "wait until all nodes are ready" in {
 
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
@@ -111,7 +108,7 @@ abstract class TileIndexClusterSpec
       enterBarrier("all-up")
     }
 
-    "be able to add a entities in the a local tile" in within(10.seconds) {
+    "be able to add a entities in the a local tile" in {
       runOn(node0) {
         val probe = TestProbe[AnyRef]()
         val localTileActor = system.spawn(TileIndexActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
@@ -125,7 +122,7 @@ abstract class TileIndexClusterSpec
       enterBarrier("added locally")
     }
 
-    "be able to add a entities in the a remote tile" in within(10.seconds) {
+    "be able to add a entities in the a remote tile" in {
       runOn(node2) {
         val probe = TestProbe[AnyRef]()
         val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
