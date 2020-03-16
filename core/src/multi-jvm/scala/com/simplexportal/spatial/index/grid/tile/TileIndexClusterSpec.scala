@@ -122,7 +122,7 @@ abstract class TileIndexClusterSpec
       enterBarrier("added locally")
     }
 
-    "be able to add a entities in the a remote tile" in {
+    "be able to add an entities in the a remote tile" in {
       runOn(node2) {
         val probe = TestProbe[AnyRef]()
         val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
