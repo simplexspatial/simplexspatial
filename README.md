@@ -110,7 +110,7 @@ with all the necessary stuff to start a cluster node.
 
 ### Running
 
-It is supposed that you have a JDK8 or higher installed in your system.
+It supposed that you have a JDK8 or higher installed in your system.
 
 To run a node, uncompress the tar file generated previously, and, from
 the new folder, start the node:
@@ -128,14 +128,14 @@ randomly one free port or set another free port.
 More information about Artery in the
 [AKKA documentation](https://doc.akka.io/docs/akka/current/remoting-artery.html).
 
+### Install Dependencies
+- Cassandra.
+
+
 ### Running thru sbt
 To create a package with all necessary inside, execute the follow command:
 ```bash
 sbt "core/runMain com.simplexportal.spatial.Main"
-```
-
-```bash
-sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main --block-size=300 /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf"
 ```
 
 ## Running thru CLI
@@ -170,21 +170,6 @@ bin/simplexspatial-core \
     -Dsimplexportal.spatial.api.http.port=8082
 
 ```
-
-### Running osm loader
-
-```bash
-bin/simplexspatial-osm-loader \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9009 \
-    -J-Xms1G \
-    -J-Xmx4G  \
-    --block-size=300 \
-    /home/angelcc/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf
-```
-
-
-
 
 ## Notes
 

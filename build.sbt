@@ -1,4 +1,5 @@
 import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
+import sbt.Compile
 import sbt.Keys.{description, startYear}
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -27,9 +28,8 @@ lazy val commonSettings = Seq(
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.10",
-  scalacOptions ++= Seq("-deprecation", "-feature")
-//  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
-//  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+  Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 //  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
   /*  scalacOptions ++= Seq(
     "-target:jvm-1.8",
@@ -59,6 +59,7 @@ lazy val betterFilesVersion = "3.8.0"
 lazy val akkaKryoSerializationVersion = "1.1.3"
 lazy val scalaUUIDVersion = "0.3.1"
 lazy val jtsVersion = "1.16.1"
+lazy val cassandraPersistenceVersion = "0.103" /*"1.0.0-M0+62-3f04cae0"*/
 
 lazy val root = (project in file("."))
   .settings(
@@ -112,6 +113,7 @@ lazy val core = (project in file("core"))
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
@@ -120,7 +122,8 @@ lazy val core = (project in file("core"))
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
-      "org.locationtech.jts" % "jts-core" % jtsVersion
+      "org.locationtech.jts" % "jts-core" % jtsVersion,
+      "com.typesafe.akka" %% "akka-persistence-cassandra" % cassandraPersistenceVersion
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
