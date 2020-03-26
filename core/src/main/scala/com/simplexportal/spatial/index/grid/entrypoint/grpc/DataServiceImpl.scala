@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplexportal.spatial.index.grid.grpc
+package com.simplexportal.spatial.index.grid.entrypoint.grpc
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
@@ -22,8 +22,8 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.simplexportal.spatial.api.grpc
-import com.simplexportal.spatial.api.grpc.{NearestNodeReply, SearchNearestNodeCmd}
+import com.simplexportal.spatial.index.grid.entrypoint.grpc
+import com.simplexportal.spatial.index.grid.entrypoint.grpc.{NearestNodeReply, SearchNearestNodeCmd}
 import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.Location
 

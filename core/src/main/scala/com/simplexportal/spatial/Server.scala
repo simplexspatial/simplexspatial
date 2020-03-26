@@ -22,8 +22,8 @@ import akka.grpc.scaladsl.ServiceHandler
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
-import com.simplexportal.spatial.api.grpc.DataServiceHandler
-import com.simplexportal.spatial.index.grid.grpc.DataServiceImpl
+import com.simplexportal.spatial.index.grid.entrypoint.grpc.DataServiceHandler
+import com.simplexportal.spatial.index.grid.entrypoint.grpc.DataServiceImpl
 import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
 import com.typesafe.config.Config
 

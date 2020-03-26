@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "com.simplexportal.spatial.api.grpc";
+option java_package = "com.simplexportal.spatial.index.grid.entrypoint.grpc";
 option optimize_for = SPEED;
 
-package com.simplexportal.spatial.api.grpc;
+package com.simplexportal.spatial.index.grid.entrypoint.grpc;
 
 service DataService {
     rpc AddNode (AddNodeCmd) returns (ACK);
