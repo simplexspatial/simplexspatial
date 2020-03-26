@@ -129,7 +129,12 @@ More information about Artery in the
 [AKKA documentation](https://doc.akka.io/docs/akka/current/remoting-artery.html).
 
 ### Install Dependencies
-- Cassandra.
+
+For production:
+- Cassandra
+
+For testing:
+- Postgres: `docker run --name akka-postgres -p 5432:5432 -e POSTGRES_PASSWORD=pass -d postgres`
 
 
 ### Running thru sbt

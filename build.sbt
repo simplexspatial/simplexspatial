@@ -59,7 +59,8 @@ lazy val betterFilesVersion = "3.8.0"
 lazy val akkaKryoSerializationVersion = "1.1.3"
 lazy val scalaUUIDVersion = "0.3.1"
 lazy val jtsVersion = "1.16.1"
-lazy val cassandraPersistenceVersion = "0.103" /*"1.0.0-M0+62-3f04cae0"*/
+lazy val jdbcPersistenceVersion = "3.5.3"
+lazy val postgresJDBCDriver = "42.2.11"
 
 lazy val root = (project in file("."))
   .settings(
@@ -123,7 +124,8 @@ lazy val core = (project in file("core"))
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
       "org.locationtech.jts" % "jts-core" % jtsVersion,
-      "com.typesafe.akka" %% "akka-persistence-cassandra" % cassandraPersistenceVersion
+      "com.github.dnvriend" %% "akka-persistence-jdbc" % jdbcPersistenceVersion,
+      "org.postgresql" % "postgresql" % postgresJDBCDriver
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
