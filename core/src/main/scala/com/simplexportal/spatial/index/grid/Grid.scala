@@ -20,22 +20,12 @@ package com.simplexportal.spatial.index.grid
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.scaladsl.{
-  ClusterSharding,
-  Entity,
-  EntityTypeKey
-}
+import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import akka.util.Timeout
-import com.simplexportal.spatial.index.grid.lookups.{
-  NodeLookUpActor,
-  WayLookUpActor
-}
+import com.simplexportal.spatial.index.grid.lookups.{NodeLookUpActor, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.sessions._
-import com.simplexportal.spatial.index.grid.tile.actor.{
-  Command,
-  TileIndexActor,
-  TileIndexEntityIdGen
-}
+import com.simplexportal.spatial.index.grid.sessions.addbatch.AddBatchSession
+import com.simplexportal.spatial.index.grid.tile.actor.{Command, TileIndexActor, TileIndexEntityIdGen}
 import com.simplexportal.spatial.index.protocol._
 import com.typesafe.config.ConfigFactory
 
