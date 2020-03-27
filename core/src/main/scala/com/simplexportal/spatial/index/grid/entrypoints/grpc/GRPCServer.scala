@@ -34,8 +34,9 @@ object GRPCServer {
       mat: Materializer,
       system: ActorSystem
   ): Future[Http.ServerBinding] = {
-    val interface = config.getString("simplexportal.spatial.api.http.interface")
-    val port = config.getInt("simplexportal.spatial.api.http.port")
+
+    val interface = config.getString("simplexportal.spatial.entrypoint.grpc.interface")
+    val port = config.getInt("simplexportal.spatial.entrypoint.grpc.port")
 
     val grpcHandler = GRPCEntryPointHandler.partial(new GRPCEntryPointImpl(gridIndex))
     // val algorithmServiceHandler = ....

@@ -24,6 +24,7 @@ import com.simplexportal.spatial.model.{Location, Node, Way}
 /**
   * Define the protocol used by the Grid.
   */
+// FIXME: Don't use package to define the model.
 package object protocol {
 
   sealed trait GridMessage extends Message
@@ -71,25 +72,20 @@ package object protocol {
 
   // All Queries
 
-  final case class GridGetNode(id: Long, replyTo: ActorRef[GridGetNodeReply])
-      extends GridQuery
+  final case class GridGetNode(id: Long, replyTo: ActorRef[GridGetNodeReply]) extends GridQuery
 
-  final case class GridGetNodeReply(payload: Either[String, Option[Node]])
-      extends GridReply[Option[Node]]
+  final case class GridGetNodeReply(payload: Either[String, Option[Node]]) extends GridReply[Option[Node]]
 
-  final case class GridGetWay(id: Long, replyTo: ActorRef[GridGetWayReply])
-      extends GridQuery
+  final case class GridGetWay(id: Long, replyTo: ActorRef[GridGetWayReply]) extends GridQuery
 
-  final case class GridGetWayReply(payload: Either[String, Option[Way]])
-      extends GridReply[Option[Way]]
+  final case class GridGetWayReply(payload: Either[String, Option[Way]]) extends GridReply[Option[Way]]
 
   final case class GridNearestNode(
       location: Location,
       replyTo: ActorRef[GridNearestNodeReply]
   ) extends GridQuery
 
-  final case class GridNearestNodeReply(payload: Either[String, Set[Node]])
-      extends GridReply[Set[Node]]
+  final case class GridNearestNodeReply(payload: Either[String, Set[Node]]) extends GridReply[Set[Node]]
 
   // FIXME: This should be a "final case object GridDone extends GridACK {"
   final case class GridDone() extends GridACK {

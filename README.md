@@ -156,7 +156,8 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2550  \
-    -Dsimplexportal.spatial.api.http.port=8080
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080
 
 bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
@@ -164,7 +165,8 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2551  \
-    -Dsimplexportal.spatial.api.http.port=8081
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8081
 
 bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
@@ -172,13 +174,30 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2552  \
-    -Dsimplexportal.spatial.api.http.port=8082
-
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7082 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8082
 ```
 
 ## Notes
 
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
+
+## Http examples.
+Using [Httpi](https://httpie.org/)
+
+```ssh
+http PUT http://localhost:8080/node/1 lon=3.0001 lat=-2.4444
+```
+
+or
+
+```ssh
+http PUT http://localhost:8080/node/1 < node_file.json
+```
+
+```ssh
+http GET http://localhost:8080/hello
+```
 
 
 ## License

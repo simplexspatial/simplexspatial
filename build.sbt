@@ -53,10 +53,11 @@ lazy val commonSettings = Seq(
 )
 
 lazy val akkaVersion = "2.6.4"
+lazy val akkaHttpVersion = "10.1.11"
 lazy val scalatestVersion = "3.1.1"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
-lazy val akkaKryoSerializationVersion = "1.1.3"
+lazy val akkaKryoSerializationVersion = "1.1.0"
 lazy val scalaUUIDVersion = "0.3.1"
 lazy val jtsVersion = "1.16.1"
 lazy val jdbcPersistenceVersion = "3.5.3"
@@ -112,13 +113,15 @@ lazy val core = (project in file("core"))
       "com.simplexportal.spatial.Main"
     ),
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
-      "com.github.enalmada" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
+      "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
       "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "ch.qos.logback" % "logback-classic" % "1.2.3",
