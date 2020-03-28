@@ -127,7 +127,7 @@ protected trait DataDistribution {
         ways: Map[String, Seq[(Long, TileIdx)]]
     ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) =
       remaining match {
-        case Nil => (nodes, ways)
+        case Seq() => (nodes, ways)
         case head +: tail =>
           head match {
             case (tileIdx, GridAddNode(id, _, _, _, _)) =>
