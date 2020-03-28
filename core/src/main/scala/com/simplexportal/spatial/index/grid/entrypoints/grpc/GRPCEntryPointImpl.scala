@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplexportal.spatial.index.grid.grpc
+package com.simplexportal.spatial.index.grid.entrypoints.grpc
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
@@ -22,8 +22,7 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.simplexportal.spatial.api.grpc
-import com.simplexportal.spatial.api.grpc.{NearestNodeReply, SearchNearestNodeCmd}
+import com.simplexportal.spatial.index.grid.entrypoints.grpc
 import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.Location
 
@@ -31,11 +30,11 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
-class DataServiceImpl(gridIndex: ActorRef[GridRequest])(
+class GRPCEntryPointImpl(gridIndex: ActorRef[GridRequest])(
     implicit
     executionContext: ExecutionContext,
     scheduler: Scheduler
-) extends grpc.DataService {
+) extends GRPCEntryPoint {
 
   // FIXME: Temporal timeout for POC
   implicit val timeout = Timeout(1.minutes)

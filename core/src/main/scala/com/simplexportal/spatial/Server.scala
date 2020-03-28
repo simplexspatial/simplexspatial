@@ -18,23 +18,18 @@ package com.simplexportal.spatial
 
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.adapter._
-import akka.grpc.scaladsl.ServiceHandler
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.ActorMaterializer
-import com.simplexportal.spatial.api.grpc.DataServiceHandler
-import com.simplexportal.spatial.index.grid.grpc.DataServiceImpl
+import com.simplexportal.spatial.index.grid.entrypoints.grpc.GRPCServer
+import com.simplexportal.spatial.index.grid.entrypoints.restful.RestServer
 import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
 
 object Server {
   def run(config: Config): Unit = {
-    val interface = config.getString("simplexportal.spatial.api.http.interface")
-    val port = config.getInt("simplexportal.spatial.api.http.port")
 
     // Akka Classic implicits
     implicit val system = akka.actor.ActorSystem("SimplexSpatialSystem", config)
@@ -57,32 +52,25 @@ object Server {
       "GridIndex"
     );
 
-    val dataServiceHandler =
-      DataServiceHandler.partial(new DataServiceImpl(gridIndex))
-    // val algorithmServiceHandler = ....
-
-    val serviceHandlers: HttpRequest => Future[HttpResponse] =
-      ServiceHandler.concatOrNotFound(
-        dataServiceHandler
-        /*, algorithmServiceHandler*/
-      )
-
-    val serverBinding: Future[Http.ServerBinding] = Http()
-      .bindAndHandleAsync(
-        serviceHandlers,
-        interface = interface,
-        port = port,
-        connectionContext = HttpConnectionContext()
-      )
-
-    serverBinding.onComplete {
+    GRPCServer.start(gridIndex, config).onComplete {
       case Success(bound) =>
         println(
-          s"SimplexSpatial online at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
+          s"SimplexSpatial gRPC at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
         )
       case Failure(e) =>
-        Console.err.println("SimplexSpatial server can not start!")
-        system.log.error(e, "SimplexSpatial server can not start!")
+        Console.err.println("SimplexSpatial gRPC server can not start!")
+        system.log.error(e, "SimplexSpatial gRPC server can not start!")
+        system.terminate()
+    }
+
+    RestServer.start(gridIndex, config).onComplete {
+      case Success(bound) =>
+        println(
+          s"SimplexSpatial Rest at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
+        )
+      case Failure(e) =>
+        Console.err.println("SimplexSpatial Rest server can not start!")
+        system.log.error(e, "SimplexSpatial Rest server can not start!")
         system.terminate()
     }
 

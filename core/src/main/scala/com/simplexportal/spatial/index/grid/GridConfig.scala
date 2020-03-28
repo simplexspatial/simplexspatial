@@ -45,7 +45,7 @@ case class GridConfig(
     lonPartitions: Int
 ) {
   def description: String = s"""
-    | Starting Guardian sharding [{indexId}] with:
+    | Starting Guardian sharding [${indexId}] with:
     | -> [${nodeLookUpPartitions}] nodes lookup partitions,
     | -> [${wayLookUpPartitions}] ways lookup partitions,
     | -> [${latPartitions}] lat. partitions and [${lonPartitions}] lon. partitions.

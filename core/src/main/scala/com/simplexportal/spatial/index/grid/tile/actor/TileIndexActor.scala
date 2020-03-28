@@ -36,8 +36,8 @@ object TileIndexActor extends TileIndexQueryHandler with TileIndexActionHandler 
         emptyState = TileIndex(),
         commandHandler = (state, command) => onCommand(tileId, state, command),
         eventHandler = (state, event) => applyEvent(state, event)
-      ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 3))
-        .onPersistFailure(SupervisorStrategy.restartWithBackoff(200.millis, 5.seconds, 0.1))
+      ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 3))
+        .onPersistFailure(SupervisorStrategy.restartWithBackoff(200.millis, 3.seconds, 0.1))
     }
 
   def onCommand(

@@ -125,7 +125,7 @@ abstract class GetNodeLocationsSessionSpec
         val probe = TestProbe[GetNodeLocationsSession.NodeLocations]()
         runOn(node1) {
           system.spawn(
-            GetNodeLocationsSession(sharding, Seq(9910, 9911), probe.ref),
+            GetNodeLocationsSession(sharding, Set(9910, 9911), probe.ref),
             s"get_not_found_node_locations_${UUID.randomString}"
           )
 
@@ -144,7 +144,7 @@ abstract class GetNodeLocationsSessionSpec
         val probe = TestProbe[GetNodeLocationsSession.NodeLocations]()
         runOn(node1) {
           system.spawn(
-            GetNodeLocationsSession(sharding, Seq.empty, probe.ref),
+            GetNodeLocationsSession(sharding, Set.empty, probe.ref),
             s"get_empty_request_node_locations_${UUID.randomString}"
           )
 
@@ -184,7 +184,7 @@ abstract class GetNodeLocationsSessionSpec
       val probe = TestProbe[GetNodeLocationsSession.NodeLocations]()
       runOn(node1) {
         system.spawn(
-          GetNodeLocationsSession(sharding, Seq(0, 1, 2, 3), probe.ref),
+          GetNodeLocationsSession(sharding, Set(0, 1, 2, 3), probe.ref),
           s"get_node_locations${UUID.randomString}"
         )
 

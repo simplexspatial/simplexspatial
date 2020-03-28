@@ -2,7 +2,13 @@
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_shield)
 
 
-Comming soon!!
+SimplexSpatial is a GeoSpatial server, focus in distributed algorithms execution. It is distributed, horizontally
+scalable and fault tolerant system based in AKKA.
+
+At the moment, to different APIs has been implemented as entry points:
+- [JSON](#restful-examples): Easy to use restful API, ideally for testing or web.
+- gRPC: Ideally to intensive requests, like load data. As good example, refer to [load-osm file project](https://github.com/simplexspatial/simplexspatial-loader-osm).
+
 
 ## Other documentation
 
@@ -23,32 +29,37 @@ AKKA: [lightbend config](https://github.com/lightbend/config). It means
 than you can set and overwrite configuration properties as it is
 explained in the Lightbend Config site.
 
-`conf/application.conf` contains the specific configuration for the
+In the [published tar](#packaging), `conf/application.conf` contains the specific configuration for the
 server. This is the config file used by default from the script used to
-start the a node.
+start a node.
 
-As reference, this is the set of parameters used by the server:
+As reference, this is the set of parameters that the server uses:
 ```
 simplexportal.spatial {
-  api.http {
-    interface = "0.0.0.0"
-    port = 8080
+  entrypoint {
+    restful {
+      interface = "0.0.0.0"
+      port = 8080
+    }
+    grpc {
+      interface = "0.0.0.0"
+      port = 7080
+    }
   }
   indexes {
     grid-index {
       partitions {
-        nodes-lookup = 100
-        ways-lookup = 100
+        nodes-lookup = 50
+        ways-lookup = 50
         latitude = 10000
         longitude = 10000
       }
     }
   }
 }
-
 ```
 
-Remind that the server is based in [AKKA](https://akka.io/), so you can
+Remind that the server is base in [AKKA](https://akka.io/), so you can
 set any parameters related to AKKA as well.
 
 In relation to the AKKA cluster and in this stage of the project, it is
@@ -78,7 +89,7 @@ akka {
 
 This means that:
 - It is using in memory persistence journal, so you can not restart the
-  cluster at all. In that case, you will lost your data.
+  cluster at all. In that case, you will lose your data.
 - It is using fixed seed nodes. Remind to update the IP (in this case it
   is the local IP for Ubuntu 19.10) and ports.
 
@@ -108,16 +119,26 @@ sbt clean universal:packageZipTarball
 It will generate a 50M tar `{source_root}/core/target/universal/simplexspatial-core-<version>.tgz`
 with all the necessary stuff to start a cluster node.
 
+### Install Dependencies
+Akka persistence needs a storge system to store the journal and snapshots.
+
+For production, it is recommended to use a distributed storage, like Cassandra
+
+For testing ( default configuration ) Postgresql is used. In the `conf` folder, there is a `docker-compose.yml` file to
+be able to start all dependencies for testing.
+```ssh
+docker-compose up -d
+```
+
+
 ### Running
 
-It is supposed that you have a JDK8 or higher installed in your system.
+It supposed that you have a JDK8 (recommended) or higher installed in your system.
 
-To run a node, uncompress the tar file generated previously, and, from
-the new folder, start the node:
+Uncompress the package file and move to the generated folder:
 ```bash
 tar -xvf simplexspatial-core-<version>.tgz
 cd simplexspatial-core-<version>/
-bin/simple_start_node.sh -a <artemy port> -g <optional gRPC Port>
 ```
 
 The default configuration is looking for seeds in `127.0.1.1:2550` and
@@ -125,17 +146,58 @@ The default configuration is looking for seeds in `127.0.1.1:2550` and
 should listen ports 2550 and 2551. For other nodes, use port 0 to pickup
 randomly one free port or set another free port.
 
-More information about Artery in the
-[AKKA documentation](https://doc.akka.io/docs/akka/current/remoting-artery.html).
+Node 1:
+```ssh
+bin/simplexspatial-core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9010 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=2550  \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080
+```
+
+Node 1:
+```ssh
+bin/simplexspatial-core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9010 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=2550  \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080
+```
+
+Node 2:
+```ssh
+bin/simplexspatial-core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -jvm-debug 9011 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=2551  \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8081
+```
+
+Other nodes:
+```ssh
+bin/simplexspatial-core \
+    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dakka.remote.artery.canonical.port=0  \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=0 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=0
+```
+
 
 ### Running thru sbt
 To create a package with all necessary inside, execute the follow command:
 ```bash
 sbt "core/runMain com.simplexportal.spatial.Main"
-```
-
-```bash
-sbt "loadOSM/runMain com.simplexportal.spatial.loadosm.Main --block-size=300 /home/angelcerveraclaudio/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf"
 ```
 
 ## Running thru CLI
@@ -151,7 +213,8 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2550  \
-    -Dsimplexportal.spatial.api.http.port=8080
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080
 
 bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
@@ -159,7 +222,8 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2551  \
-    -Dsimplexportal.spatial.api.http.port=8081
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8081
 
 bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
@@ -167,28 +231,111 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2552  \
-    -Dsimplexportal.spatial.api.http.port=8082
-
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7082 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8082
 ```
 
-### Running osm loader
+## Restful examples
+Using [Httpi](https://httpie.org/)
 
-```bash
-bin/simplexspatial-osm-loader \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9009 \
-    -J-Xms1G \
-    -J-Xmx4G  \
-    --block-size=300 \
-    /home/angelcc/Downloads/osm/ireland-and-northern-ireland-latest.osm.pbf
+### Nodes
+
+- Add a node
+
+    ```ssh
+    http PUT http://localhost:8080/node/1 lon:=3.0001 lat:=-2.4444 attributes:={}
+    ```
+    
+    or
+    
+    `node_file.json` content:
+    ```json
+    {
+      "lon": 10.100001, "lat": -22.000002, "attributes": {}
+    }
+    ```
+    Request to insert node:
+    ```ssh
+    http PUT http://localhost:8080/node/1 < node_file.json
+    ```
+
+- Get a Node
+    ```ssh
+    http GET http://localhost:8080/node/1
+    ```
+
+### Ways
+
+- Add a Way
+
+    ```ssh
+    http PUT http://localhost:8080/way/10 nodes:=[1,2] attributes:={}
+    ```
+    
+    or
+    
+    `way_file.json` content:
+    ```json
+    {
+      "nodes": [1, 2],
+      "attributes": { }
+    }
+    ```
+    Request to insert way:
+    ```ssh
+    http PUT http://localhost:8080/node/10 < way_file.json
+    ```
+
+- Get a Way
+    ```ssh
+    http GET http://localhost:8080/way/10
+    ```
+  
+### Batch mode
+To execute a sequence of commands in one request.
+
+`batch_commands.json` content:
+```json
+{
+  "nodes": [
+    {
+      "id": 100001,
+      "lon": 1.100001,
+      "lat": -1.000002,
+      "attributes": {}
+    },
+    {
+      "id": 100002,
+      "lon": 2.100001,
+      "lat": -2.000002,
+      "attributes": {}
+    }
+  ],
+  "ways": [
+    {
+      "id": 100010,
+      "nodes": [
+        100001,
+        100002
+      ],
+      "attributes": {
+        "name": "Two points way."
+      }
+    }
+  ]
+}
 ```
 
-
-
+Request to execute all commands in batch mode:
+```ssh
+http PUT http://localhost:8080/batch < batch_commands.json
+```
 
 ## Notes
 
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
+- More information about Artery in the [AKKA documentation](https://doc.akka.io/docs/akka/current/remoting-artery.html).
+
 
 
 ## License
