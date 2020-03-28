@@ -135,6 +135,8 @@ docker-compose up -d
 
 It supposed that you have a JDK8 (recommended) or higher installed in your system.
 
+#### Running thru CLI
+
 Uncompress the package file and move to the generated folder:
 ```bash
 tar -xvf simplexspatial-core-<version>.tgz
@@ -145,18 +147,6 @@ The default configuration is looking for seeds in `127.0.1.1:2550` and
 `127.0.1.1:2551` It means that for the first two nodes to start, Artery
 should listen ports 2550 and 2551. For other nodes, use port 0 to pickup
 randomly one free port or set another free port.
-
-Node 1:
-```ssh
-bin/simplexspatial-core \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9010 \
-    -J-Xms1G \
-    -J-Xmx4G  \
-    -Dakka.remote.artery.canonical.port=2550  \
-    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8080
-```
 
 Node 1:
 ```ssh
@@ -194,46 +184,12 @@ bin/simplexspatial-core \
 ```
 
 
-### Running thru sbt
+#### Running thru sbt
 To create a package with all necessary inside, execute the follow command:
 ```bash
 sbt "core/runMain com.simplexportal.spatial.Main"
 ```
 
-## Running thru CLI
-Using the previous zip, uncompress it and from the folder where you
-uncompressed:
-
-### Running core
-
-```bash
-bin/simplexspatial-core \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9010 \
-    -J-Xms1G \
-    -J-Xmx4G  \
-    -Dakka.remote.artery.canonical.port=2550  \
-    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8080
-
-bin/simplexspatial-core \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9011 \
-    -J-Xms1G \
-    -J-Xmx4G  \
-    -Dakka.remote.artery.canonical.port=2551  \
-    -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8081
-
-bin/simplexspatial-core \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9012 \
-    -J-Xms1G \
-    -J-Xmx4G  \
-    -Dakka.remote.artery.canonical.port=2552  \
-    -Dsimplexportal.spatial.entrypoint.grpc.port=7082 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8082
-```
 
 ## Restful examples
 Using [Httpi](https://httpie.org/)
