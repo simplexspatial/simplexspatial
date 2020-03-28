@@ -36,10 +36,9 @@ object NodeLookUpActor {
 
   case class NotDone(error: String) extends ACK
 
-  case class GetResponse(id: Long, maybeNodeEntityId: Option[TileIdx])
-      extends Response
+  case class GetResponse(id: Long, maybeNodeEntityId: Option[TileIdx]) extends Response
 
-  case class GetsResponse(gets: Seq[GetResponse]) extends Response
+  case class GetsResponse(gets: Set[GetResponse]) extends Response
 
   trait Command extends Message
 
@@ -49,13 +48,11 @@ object NodeLookUpActor {
       replyTo: Option[ActorRef[ACK]]
   ) extends Command
 
-  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]])
-      extends Command
+  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]]) extends Command
 
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
 
-  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse])
-      extends Command
+  case class Gets(ids: Set[Long], replyTo: ActorRef[GetsResponse]) extends Command
 
   trait Event extends Message
 

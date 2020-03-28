@@ -21,22 +21,11 @@ import akka.NotUsed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.Grid.{
-  NodeLookUpTypeKey,
-  TileTypeKey
-}
+import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.GetResponse
-import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpNodeEntityIdGen,
-  NodeLookUpActor
-}
-import com.simplexportal.spatial.index.grid.tile.actor.{
-  TileIdx,
-  TileIndexEntityIdGen
-}
-import com.simplexportal.spatial.index.grid.tile.{
-  actor => tile
-} // FIXME: Use adapter to access foreign protocol.
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.{actor => tile} // FIXME: Use adapter to access foreign protocol.
 
 /**
   * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.
@@ -53,7 +42,7 @@ object GetInternalNodesSession {
     Behaviors
       .setup[AnyRef] { context =>
         // Request locations of every node in the tile index.
-        val uniqueNodes = getNodes.ids.distinct
+        val uniqueNodes = getNodes.ids.toSet
 
         // Group by look-up entity id to get node locations.
         uniqueNodes

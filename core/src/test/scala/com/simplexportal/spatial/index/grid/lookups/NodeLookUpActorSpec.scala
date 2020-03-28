@@ -47,10 +47,10 @@ class NodeLookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
         lookup ! Get(1000, probeResponse.ref)
         probeResponse.expectMessage(GetResponse(1000, None))
 
-        lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
+        lookup ! Gets(Set(10, 11, 1000), probeResponse.ref)
         probeResponse.expectMessage(
           GetsResponse(
-            Seq(
+            Set(
               GetResponse(10, Some(TileIdx(10, 10))),
               GetResponse(11, Some(TileIdx(11, 11))),
               GetResponse(1000, None)
@@ -76,10 +76,10 @@ class NodeLookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
         )
         probeResponse.expectMessage(Done())
 
-        lookup ! Gets(Seq(10, 11, 1000), probeResponse.ref)
+        lookup ! Gets(Set(10, 11, 1000), probeResponse.ref)
         probeResponse.expectMessage(
           GetsResponse(
-            Seq(
+            Set(
               GetResponse(10, Some(TileIdx(10, 10))),
               GetResponse(11, Some(TileIdx(11, 11))),
               GetResponse(1000, None)

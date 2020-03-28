@@ -21,10 +21,14 @@ import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, Look
 import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.simplexportal.spatial.index.protocol._
+import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 
 protected trait DataDistribution {
+
+  private val logger =
+    LoggerFactory.getLogger("com.simplexportal.spatial.index.grid.sessions.addbatch.DataDistribution")
 
   /**
     * Generate a map of NodeId -> TileIdx from the definition of nodes.
@@ -112,7 +116,7 @@ protected trait DataDistribution {
     )
   }
 
-  def splitLookUps(
+  protected def splitLookUps(
       cmdsPerTileIdx: Map[TileIdx, Seq[GridBatchCommand]]
   ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) = {
 
@@ -124,7 +128,7 @@ protected trait DataDistribution {
     ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) =
       remaining match {
         case Nil => (nodes, ways)
-        case head :: tail =>
+        case head +: tail =>
           head match {
             case (tileIdx, GridAddNode(id, _, _, _, _)) =>
               val shard = LookUpNodeEntityIdGen.entityId(id)
@@ -142,13 +146,15 @@ protected trait DataDistribution {
                 nodes,
                 ways + (shard -> itemsPerShard)
               )
+            case (_, cmd) =>
+              logger.error(s"Type not supported: ${cmd}")
+              throw new Exception(s"Type not supported: ${cmd}")
           }
       }
 
-    val actions = cmdsPerTileIdx.flatMap {
-      case (tileIdx, actions) =>
-        actions.map((tileIdx, _))
-    }.toList
+    val actions: Seq[(TileIdx, GridBatchCommand)] = cmdsPerTileIdx.toSeq.flatMap {
+      case (tileIdx, actions) => actions.map(action => (tileIdx, action))
+    }
 
     rec(actions, Map.empty, Map.empty)
   }

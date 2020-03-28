@@ -25,7 +25,7 @@ import akka.http.scaladsl.server.{Directives, RequestContext, RouteResult}
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestProtocol._
-import com.simplexportal.spatial.index.protocol._
+import com.simplexportal.spatial.index.protocol.{GridBatchCommand, _}
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -94,15 +94,20 @@ object RestServer extends Directives with RestfulJsonProtocol {
       system: ActorSystem
   ) =
     path("batch") {
-      ???
-//      put {
-//        entity(as[AddBatchBody]) { body =>
-//          replyAdapter(
-//            gridIndex
-//              .ask[GridACK](ref => GridAddBatch(body.nodes.map( n => GridBatchCommand()), ref))
-//          )
-//        }
-//      }
+      put {
+        entity(as[AddBatchBody]) { body =>
+          replyAdapter(
+            gridIndex
+              .ask[GridACK](ref =>
+                GridAddBatch(
+                  body.nodes.map(n => GridAddNode(n.id, n.lat, n.lon, n.attributes)) ++
+                    body.ways.map(n => GridAddWay(n.id, n.nodes, n.attributes)),
+                  Some(ref)
+                )
+              )
+          )
+        }
+      }
     }
 
   private def nodeRoutes(gridIndex: ActorRef[GridRequest])(

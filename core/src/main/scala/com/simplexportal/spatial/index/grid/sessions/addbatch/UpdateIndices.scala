@@ -30,14 +30,15 @@ protected trait UpdateIndices extends DataDistribution with Adapter {
 
   private def updateNodeLookups(
       nodesPerTileLookup: Map[String, Seq[(Long, TileIdx)]]
-  )(implicit sharding: ClusterSharding, replyTo: ActorRef[AnyRef]): Int = nodesPerTileLookup.foldLeft(0) {
-    case (counter, (shardId, items)) =>
-      sharding.entityRefFor(Grid.NodeLookUpTypeKey, shardId) !
-        NodeLookUpActor.PutBatch(items.map {
-          case (id, tileIdx) => NodeLookUpActor.Put(id, tileIdx, None)
-        }, Some(replyTo))
-      counter + 1
-  }
+  )(implicit sharding: ClusterSharding, replyTo: ActorRef[AnyRef]): Int =
+    nodesPerTileLookup.foldLeft(0) {
+      case (counter, (shardId, items)) =>
+        sharding.entityRefFor(Grid.NodeLookUpTypeKey, shardId) !
+          NodeLookUpActor.PutBatch(items.map {
+            case (id, tileIdx) => NodeLookUpActor.Put(id, tileIdx, None)
+          }, Some(replyTo))
+        counter + 1
+    }
 
   private def updateWaysLookups(
       waysPerTileLookup: Map[String, Seq[(Long, TileIdx)]]
@@ -65,9 +66,13 @@ protected trait UpdateIndices extends DataDistribution with Adapter {
       maybeReplyTo: Option[ActorRef[GridACK]]
   )(implicit sharding: ClusterSharding): Behavior[ForeignResponse] = Behaviors.setup[ForeignResponse] { context =>
     implicit val adapter = adapters(context)
+
     val cmdsPerTileIdx = groupByTileIdx(cmds, locationsIdx)
     val (nodes, ways) = splitLookUps(cmdsPerTileIdx)
+
+    // FIXME: Tiles should be updated after lookups, and not in parallel.
     val expectedResponses = updateNodeLookups(nodes) + updateWaysLookups(ways) + updateTiles(cmdsPerTileIdx)
+
     collectAddCommandsResponses(expectedResponses, Seq.empty, maybeReplyTo)
   }
 

@@ -58,11 +58,14 @@ protected trait CollectNodeInfo extends Adapter with UpdateIndices with DataDist
 
     Behaviors.receiveMessagePartial {
       case LocationsWrapper(GetNodeLocationsSession.NodeLocations(locations)) =>
-        Try(locations.flatMap {
-          case (id, None) =>
-            throw new Exception(s"Node with id ${id} not found.")
-          case (id, Some(tileIdx)) => Some((id -> tileIdx))
-        } ++ nodesDefinitions) match {
+        Try(
+          locations.flatMap {
+            case (id, None) =>
+              throw new Exception(s"Node with id ${id} not found.")
+            case (id, Some(tileIdx)) =>
+              Some((id -> tileIdx))
+          } ++ nodesDefinitions
+        ) match {
           case Success(locationsIdx) =>
             updateIndices(
               cmd.commands,
@@ -76,8 +79,9 @@ protected trait CollectNodeInfo extends Adapter with UpdateIndices with DataDist
     }
   }
 
-  def extractNodesUsedInWays(commands: Seq[GridBatchCommand]): Seq[Long] = commands.flatMap {
-    case w: GridAddWay => w.nodeIds
-    case _             => Seq.empty
-  }
+  def extractNodesUsedInWays(commands: Seq[GridBatchCommand]): Set[Long] =
+    commands.flatMap {
+      case w: GridAddWay => w.nodeIds
+      case _             => Seq.empty
+    }.toSet
 }

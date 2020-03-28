@@ -22,10 +22,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.NodeLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpNodeEntityIdGen,
-  NodeLookUpActor
-}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 
 object GetNodeLocationsSession {
@@ -34,8 +31,7 @@ object GetNodeLocationsSession {
   sealed trait Response extends Messages
   private sealed trait ForeignResponse extends Messages
 
-  case class NodeLocations(locations: Map[Long, Option[TileIdx]])
-      extends Response
+  case class NodeLocations(locations: Map[Long, Option[TileIdx]]) extends Response
 
   private case class NodeLookUpResponseWrapper(
       response: NodeLookUpActor.GetsResponse
@@ -43,7 +39,7 @@ object GetNodeLocationsSession {
 
   def apply(
       sharding: ClusterSharding,
-      ids: Seq[Long],
+      ids: Set[Long],
       replyTo: ActorRef[NodeLocations]
   ): Behavior[Messages] =
     Behaviors.setup[Messages] { context =>
@@ -55,7 +51,7 @@ object GetNodeLocationsSession {
       var expectedResponses = 0;
 
       // Group by look-up entity id to get node locations.
-      val idsByEntityId = ids.distinct
+      val idsByEntityId = ids
         .map(id => (id, LookUpNodeEntityIdGen.entityId(id)))
         .groupBy(_._2)
         .map(e => e._1 -> e._2.map(_._1))
@@ -89,9 +85,7 @@ object GetNodeLocationsSession {
   ): Behavior[Messages] =
     Behaviors.receiveMessagePartial {
       case NodeLookUpResponseWrapper(response) =>
-        val newLocs = locations ++ response.gets.map(loc =>
-          loc.id -> loc.maybeNodeEntityId
-        )
+        val newLocs = locations ++ response.gets.map(loc => loc.id -> loc.maybeNodeEntityId)
         if (remainingResponses == 1) {
           replyTo ! NodeLocations(newLocs)
           Behaviors.stopped
