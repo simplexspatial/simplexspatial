@@ -39,8 +39,7 @@ object WayLookUpActor {
 
   case class NotDone(error: String) extends ACK
 
-  case class GetResponse(id: Long, maybeWayEntityIds: Option[Set[TileIdx]])
-      extends Response
+  case class GetResponse(id: Long, maybeWayEntityIds: Option[Set[TileIdx]]) extends Response
 
   case class GetsResponse(gets: Seq[GetResponse]) extends Response
 
@@ -52,13 +51,11 @@ object WayLookUpActor {
       replyTo: Option[ActorRef[ACK]]
   ) extends Command
 
-  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]])
-      extends Command
+  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]]) extends Command
 
   case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
 
-  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse])
-      extends Command
+  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse]) extends Command
 
   trait Event extends Message
 
@@ -125,8 +122,8 @@ object WayLookUpActor {
           remaining: Seq[(Long, TileIdx)],
           acc: Map[Long, Set[TileIdx]]
       ): Map[Long, Set[TileIdx]] = remaining match {
-        case Nil => acc
-        case head :: tail =>
+        case Seq() => acc
+        case head +: tail =>
           head match {
             case (k, v) => rec(tail, acc.multiAdd(k, v))
           }

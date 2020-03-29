@@ -23,10 +23,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpWayEntityIdGen,
-  WayLookUpActor
-}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor._
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.model.Location
@@ -135,8 +132,8 @@ object AddWaySession {
         currentShard: (TileIdx, Seq[TileIndex.InternalNode])
     ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] =
       nodes match {
-        case Nil => acc :+ currentShard
-        case node :: tail =>
+        case Seq() => acc :+ currentShard
+        case node +: tail =>
           val entityId = entityIdFrom(node.location)
           val updated_shard = (currentShard._1, currentShard._2 :+ node)
           if (entityId == currentShard._1) {

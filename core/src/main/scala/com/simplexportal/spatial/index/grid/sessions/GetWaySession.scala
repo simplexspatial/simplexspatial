@@ -22,23 +22,10 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
-import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor.{
-  GetResponse => LookUpReply
-}
-import com.simplexportal.spatial.index.grid.lookups.{
-  LookUpWayEntityIdGen,
-  WayLookUpActor
-}
-import com.simplexportal.spatial.index.grid.tile.actor.{
-  GetWay,
-  TileIndexEntityIdGen,
-  GetWayResponse => TileReply
-}
-import com.simplexportal.spatial.index.protocol.{
-  GridGetWay,
-  GridGetWayReply,
-  GridRequest
-}
+import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor.{GetResponse => LookUpReply}
+import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
+import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, TileIndexEntityIdGen, GetWayResponse => TileReply}
+import com.simplexportal.spatial.index.protocol.{GridGetWay, GridGetWayReply, GridRequest}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import io.jvm.uuid.UUID
 
@@ -132,9 +119,9 @@ object GetWaySession {
 
     @tailrec
     def rec(nodes: Seq[Node], newNodes: Seq[Node]): Seq[Node] = nodes match {
-      case Nil                            => newNodes
-      case Node(id, Location.NaL, _) :: _ => rec(idxByFirstNodeID(id), newNodes)
-      case node :: tail                   => rec(tail, newNodes :+ node)
+      case Seq()                          => newNodes
+      case Node(id, Location.NaL, _) +: _ => rec(idxByFirstNodeID(id), newNodes)
+      case node +: tail                   => rec(tail, newNodes :+ node)
     }
 
     firstPart.map { way =>
@@ -145,10 +132,8 @@ object GetWaySession {
 
   protected sealed trait ForeignResponse extends CommonInternalSerializer
 
-  protected case class LookUpReplyWrapper(response: LookUpReply)
-      extends ForeignResponse
+  protected case class LookUpReplyWrapper(response: LookUpReply) extends ForeignResponse
 
-  protected case class TileReplyWrapper(response: TileReply)
-      extends ForeignResponse
+  protected case class TileReplyWrapper(response: TileReply) extends ForeignResponse
 
 }

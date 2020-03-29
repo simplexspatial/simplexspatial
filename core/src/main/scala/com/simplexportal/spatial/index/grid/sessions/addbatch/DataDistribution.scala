@@ -93,8 +93,8 @@ protected trait DataDistribution {
         currentShard: (tile.TileIdx, Seq[Long])
     ): Seq[(tile.TileIdx, Seq[Long])] = {
       nodes match {
-        case Nil => acc :+ currentShard
-        case nodeId :: tail =>
+        case Seq() => acc :+ currentShard
+        case nodeId +: tail =>
           val entityId = nodeLocs(nodeId)
           val updated_shard = (currentShard._1, currentShard._2 :+ nodeId)
           if (entityId == currentShard._1) {
