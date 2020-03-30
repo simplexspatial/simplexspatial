@@ -287,6 +287,11 @@ Request to execute all commands in batch mode:
 http PUT http://localhost:8080/batch < batch_commands.json
 ```
 
+### Nearest node
+```ssh
+http -v GET http://localhost:8080/algorithm/nearest/node lat==43.73819 lon==7.4269
+```
+
 ## Notes
 
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties

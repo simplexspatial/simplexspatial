@@ -26,6 +26,9 @@ object RestProtocol {
     def error: Option[String]
   }
 
+  case class GetNearestNodes(lat: Double, lon: Double) extends RestfulRequest
+  case class NearestNodes(nodes: Set[Node], error: Option[String] = None) extends RestfulResponse
+
   case class AddNodeBody(lon: Double, lat: Double, attributes: Map[String, String]) extends RestfulRequest
   case class AddWayBody(nodes: Seq[Long], attributes: Map[String, String]) extends RestfulRequest
 
@@ -57,5 +60,8 @@ object RestProtocol {
 
     implicit val doneFormat = jsonFormat0(Done)
     implicit val notDoneFormat = jsonFormat1(NotDone)
+
+    implicit val getNearestNode = jsonFormat2(GetNearestNodes)
+    implicit val nearestNode = jsonFormat2(NearestNodes)
   }
 }
