@@ -21,11 +21,12 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ActorRef, Scheduler}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{Directives, RequestContext, RouteResult}
+import akka.http.scaladsl.server.{Directives, RequestContext, Route, RouteResult}
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestProtocol._
-import com.simplexportal.spatial.index.protocol.{GridBatchCommand, _}
+import com.simplexportal.spatial.index.protocol.{GridReply, _}
+import com.simplexportal.spatial.model.Location
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
@@ -36,34 +37,22 @@ object RestServer extends Directives with RestfulJsonProtocol {
 
   implicit val timeout: Timeout = 2.second
 
-  private def replyAdapter[T](resp: Future[GridReply[T]]): RequestContext => Future[RouteResult] = {
+  private def defaultResponseAdapter[T]: PartialFunction[GridReply[T], Route] = {
+    case x => complete(StatusCodes.InternalServerError, NotDone(Some(s"Nothing handling response ${x}")))
+  }
+
+  private def reply[T](
+      resp: Future[GridReply[T]],
+      applyOnSuccess: PartialFunction[GridReply[T], Route]
+  ): RequestContext => Future[RouteResult] = {
     onComplete(resp) {
-      case Success(GridDone())         => complete(Done())
-      case Success(GridNotDone(error)) => complete(StatusCodes.InternalServerError, NotDone(Some(error)))
-      case Success(GridGetNodeReply(payload)) =>
-        payload.fold(
+      case Success(GridDone()) => complete(Done())
+      case Failure(error)      => complete(NotDone(Some(error.getMessage)))
+      case Success(reply) =>
+        reply.payload.fold(
           error => complete(StatusCodes.InternalServerError, NotDone(Some(error))),
-          _ match {
-            case None       => complete(StatusCodes.NotFound, "")
-            case Some(node) => complete(Node(node.id, node.location.lat, node.location.lon, node.attributes))
-          }
+          _ => applyOnSuccess(reply)
         )
-      case Success(GridGetWayReply(payload)) =>
-        payload.fold(
-          error => complete(StatusCodes.InternalServerError, NotDone(Some(error))),
-          _ match {
-            case None => complete(StatusCodes.NotFound, "")
-            case Some(way) =>
-              complete(
-                Way(
-                  way.id,
-                  way.nodes.map(n => Node(n.id, n.location.lat, n.location.lon, n.attributes)),
-                  way.attributes
-                )
-              )
-          }
-        )
-      case Failure(error) => complete(NotDone(Some(error.getMessage)))
     }
   }
 
@@ -81,11 +70,84 @@ object RestServer extends Directives with RestfulJsonProtocol {
       concat(
         nodeRoutes(gridIndex),
         wayRoutes(gridIndex),
-        batchRoutes(gridIndex)
+        batchRoutes(gridIndex),
+        algorithmsRoutes(gridIndex)
       )
 
     Http().bindAndHandle(route, interface, port)
   }
+
+  private def nodeRoutes(gridIndex: ActorRef[GridRequest])(
+      implicit executionContext: ExecutionContext,
+      scheduler: Scheduler,
+      mat: Materializer,
+      system: ActorSystem
+  ) =
+    path("node" / LongNumber) { id =>
+      concat(
+        get {
+          def responseAdapter[T]: PartialFunction[GridReply[T], Route] = {
+            case GridGetNodeReply(Right(None)) => complete(StatusCodes.NotFound, "")
+            case GridGetNodeReply(Right(Some(node))) =>
+              complete(Node(node.id, node.location.lat, node.location.lon, node.attributes))
+          }
+          reply(
+            gridIndex
+              .ask[GridGetNodeReply](ref => GridGetNode(id, ref)),
+            responseAdapter
+          )
+        },
+        put {
+          entity(as[AddNodeBody]) { body =>
+            reply(
+              gridIndex
+                .ask[GridACK](ref => GridAddNode(id, body.lat, body.lon, body.attributes, Some(ref))),
+              defaultResponseAdapter
+            )
+          }
+        }
+      )
+    }
+
+  private def wayRoutes(gridIndex: ActorRef[GridRequest])(
+      implicit executionContext: ExecutionContext,
+      scheduler: Scheduler,
+      mat: Materializer,
+      system: ActorSystem
+  ) =
+    path("way" / LongNumber) { id =>
+      concat(
+        get {
+
+          def responseAdapter[T]: PartialFunction[GridReply[T], Route] = {
+            case GridGetWayReply(Right(None)) => complete(StatusCodes.NotFound, "")
+            case GridGetWayReply(Right(Some(way))) =>
+              complete(
+                Way(
+                  way.id,
+                  way.nodes.map(n => Node(n.id, n.location.lat, n.location.lon, n.attributes)),
+                  way.attributes
+                )
+              )
+          }
+
+          reply(
+            gridIndex
+              .ask[GridGetWayReply](ref => GridGetWay(id, ref)),
+            responseAdapter
+          )
+        },
+        put {
+          entity(as[AddWayBody]) { body =>
+            reply(
+              gridIndex
+                .ask[GridACK](ref => GridAddWay(id, body.nodes, body.attributes, Some(ref))),
+              defaultResponseAdapter
+            )
+          }
+        }
+      )
+    }
 
   private def batchRoutes(gridIndex: ActorRef[GridRequest])(
       implicit executionContext: ExecutionContext,
@@ -96,7 +158,7 @@ object RestServer extends Directives with RestfulJsonProtocol {
     path("batch") {
       put {
         entity(as[AddBatchBody]) { body =>
-          replyAdapter(
+          reply(
             gridIndex
               .ask[GridACK](ref =>
                 GridAddBatch(
@@ -104,61 +166,33 @@ object RestServer extends Directives with RestfulJsonProtocol {
                     body.ways.map(n => GridAddWay(n.id, n.nodes, n.attributes)),
                   Some(ref)
                 )
-              )
+              ),
+            defaultResponseAdapter
           )
         }
       }
     }
 
-  private def nodeRoutes(gridIndex: ActorRef[GridRequest])(
+  private def algorithmsRoutes(gridIndex: ActorRef[GridRequest])(
       implicit executionContext: ExecutionContext,
       scheduler: Scheduler,
       mat: Materializer,
       system: ActorSystem
   ) = {
-    pathPrefix("node" / LongNumber) { id =>
-      concat(
-        get {
-          replyAdapter(
-            gridIndex
-              .ask[GridGetNodeReply](ref => GridGetNode(id, ref))
-          )
-        },
-        put {
-          entity(as[AddNodeBody]) { body =>
-            replyAdapter(
-              gridIndex
-                .ask[GridACK](ref => GridAddNode(id, body.lat, body.lon, body.attributes, Some(ref)))
-            )
-          }
+    path("algorithm" / "nearest" / "node") {
+      get {
+        def responseAdapter[T]: PartialFunction[GridReply[T], Route] = {
+          case GridNearestNodeReply(Right(nodes)) =>
+            complete(NearestNodes(nodes.map(n => Node(n.id, n.location.lat, n.location.lon, n.attributes))))
         }
-      )
-    }
-  }
-
-  private def wayRoutes(gridIndex: ActorRef[GridRequest])(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
-      system: ActorSystem
-  ) = {
-    pathPrefix("way" / LongNumber) { id =>
-      concat(
-        get {
-          replyAdapter(
+        parameters('lat.as[Double], 'lon.as[Double]) { (lat, lon) =>
+          reply(
             gridIndex
-              .ask[GridGetWayReply](ref => GridGetWay(id, ref))
+              .ask[GridNearestNodeReply](ref => GridNearestNode(Location(lat, lon), ref)),
+            responseAdapter
           )
-        },
-        put {
-          entity(as[AddWayBody]) { body =>
-            replyAdapter(
-              gridIndex
-                .ask[GridACK](ref => GridAddWay(id, body.nodes, body.attributes, Some(ref)))
-            )
-          }
         }
-      )
+      }
     }
   }
 }
