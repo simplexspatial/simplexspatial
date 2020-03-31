@@ -311,4 +311,4 @@ http -v GET http://localhost:8080/algorithm/nearest/node lat==43.73819 lon==7.42
 - Using icons from [Online Web Fonts](http://www.onlinewebfonts.com) licensed by CC BY 3.0.
 - Using icons from [Font Awesome](https://fontawesome.com/) licensed by CC BY 4.0.
 
-- [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_large)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_large)
