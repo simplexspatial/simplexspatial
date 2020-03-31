@@ -55,7 +55,7 @@ cd simplexspatial
 ```
 
 ## Packaging
-The project uses `sbt` and sbt-
+The project uses `sbt` and `sbt-native-packager` to generate the artifact:
 ```ssh
 sbt clean universal:packageZipTarball
 ```
