@@ -9,7 +9,8 @@
 
 
 SimplexSpatial is a GeoSpatial server, focus in distributed algorithms execution. It is a distributed, horizontally
-scalable and fault tolerant system based in AKKA, following the four pillars of [The Reactive Manifesto](https://www.reactivemanifesto.org/) : Responsive, Resilient, Elastic and Message Driven.
+scalable and fault tolerant system based in AKKA, following the four pillars of [The Reactive Manifesto](https://www.reactivemanifesto.org/):
+Responsive, Resilient, Elastic and Message Driven.
 
 
 At the moment, to different APIs has been implemented as entry points:
@@ -306,5 +307,8 @@ http -v GET http://localhost:8080/algorithm/nearest/node lat==43.73819 lon==7.42
 
 
 
-## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_large)
+## License and attributions.
+- Using icons from [Online Web Fonts](http://www.onlinewebfonts.com) licensed by CC BY 3.0.
+- Using icons from [Font Awesome](https://fontawesome.com/) licensed by CC BY 4.0.
+
+- [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_large)
