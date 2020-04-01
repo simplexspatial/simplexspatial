@@ -10,6 +10,7 @@
 
 # SimplexSpatial
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsimplexspatial%2Fsimplexspatial?ref=badge_shield)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md) 
 
 SimplexSpatial is a GeoSpatial server, focuses on **distributed data storage and algorithms execution**. It is a distributed, horizontally scalable and fault-tolerant system based in AKKA, following the four pillars of [The Reactive Manifesto](https://www.reactivemanifesto.org/): Responsive, Resilient, Elastic and Message Driven.
 
