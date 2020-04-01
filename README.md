@@ -20,8 +20,9 @@ The project is still in a really early state, so pretty sure a lot of changes wi
 At the moment, this is the list of features implemented:
 - Two different APIs has been implemented as entry points:
   - [x] [JSON](#restful-examples): Easy to use restful API, ideally for testing or web.
-  - [x] gRPC: Ideally to intensive requests, like load data. As good example, refer to [load-osm file project](https://github.com/simplexspatial/simplexspatial-loader-osm).
-  - [ ] gRPC-Web
+  - [x] [gRPC](https://grpc.io/): Ideally to intensive requests, like load data. As good example, refer to [load-osm file project](https://github.com/simplexspatial/simplexspatial-loader-osm).
+  - [x] gRPC-Web
+  - [x] [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md)
 - [x] Add/Get Nodes or Vertices.
 - [x] Add/Get Ways or Edges.
 - [x] Batch mode / Streaming mode commands execution.
@@ -122,6 +123,10 @@ simplexportal.spatial {
     grpc {
       interface = "0.0.0.0"
       port = 7080
+    }
+    grpc-web {
+      interface = "0.0.0.0"
+      port = 6080
     }
   }
   indexes {
@@ -263,6 +268,7 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2550  \
+    -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
     -Dsimplexportal.spatial.entrypoint.restful.port=8080
 ```
@@ -275,6 +281,7 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=2551  \
+    -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
     -Dsimplexportal.spatial.entrypoint.restful.port=8081
 ```
@@ -286,6 +293,7 @@ bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dakka.remote.artery.canonical.port=0  \
+    -Dsimplexportal.spatial.entrypoint.grpc-web.port=0 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=0 \
     -Dsimplexportal.spatial.entrypoint.restful.port=0
 ```

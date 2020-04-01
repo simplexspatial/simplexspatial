@@ -24,6 +24,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{Directives, RequestContext, Route, RouteResult}
 import akka.stream.Materializer
 import akka.util.Timeout
+import com.simplexportal.spatial.StartUpServerResult
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestProtocol._
 import com.simplexportal.spatial.index.protocol.{GridReply, _}
 import com.simplexportal.spatial.model.Location
@@ -61,7 +62,7 @@ object RestServer extends Directives with RestfulJsonProtocol {
       scheduler: Scheduler,
       mat: Materializer,
       system: ActorSystem
-  ): Future[Http.ServerBinding] = {
+  ): StartUpServerResult = {
 
     val interface = config.getString("simplexportal.spatial.entrypoint.restful.interface")
     val port = config.getInt("simplexportal.spatial.entrypoint.restful.port")
@@ -74,7 +75,7 @@ object RestServer extends Directives with RestfulJsonProtocol {
         algorithmsRoutes(gridIndex)
       )
 
-    Http().bindAndHandle(route, interface, port)
+    StartUpServerResult("SimplexSpatial Restful", Http().bindAndHandle(route, interface, port))
   }
 
   private def nodeRoutes(gridIndex: ActorRef[GridRequest])(

@@ -18,6 +18,7 @@ package com.simplexportal.spatial
 
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.adapter._
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.index.grid.entrypoints.grpc.GRPCServer
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestServer
@@ -25,8 +26,10 @@ import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
+
+case class StartUpServerResult(name: String, state: Future[Http.ServerBinding])
 
 object Server {
   def run(config: Config): Unit = {
@@ -52,26 +55,19 @@ object Server {
       "GridIndex"
     );
 
-    GRPCServer.start(gridIndex, config).onComplete {
-      case Success(bound) =>
-        println(
-          s"SimplexSpatial gRPC at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
-        )
-      case Failure(e) =>
-        Console.err.println("SimplexSpatial gRPC server can not start!")
-        system.log.error(e, "SimplexSpatial gRPC server can not start!")
-        system.terminate()
-    }
+    val servers: Set[StartUpServerResult] = GRPCServer.start(gridIndex, config) + RestServer.start(gridIndex, config)
 
-    RestServer.start(gridIndex, config).onComplete {
-      case Success(bound) =>
-        println(
-          s"SimplexSpatial Rest at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
-        )
-      case Failure(e) =>
-        Console.err.println("SimplexSpatial Rest server can not start!")
-        system.log.error(e, "SimplexSpatial Rest server can not start!")
-        system.terminate()
+    servers.foreach { endpoint =>
+      endpoint.state.onComplete {
+        case Success(bound) =>
+          println(
+            s"${endpoint.name}  at http://${bound.localAddress.getHostString}:${bound.localAddress.getPort}/"
+          )
+        case Failure(e) =>
+          Console.err.println(s"${endpoint.name} server can not start because ${e.getMessage}!")
+          system.log.error(e, s"${endpoint.name} server can not start!")
+          system.terminate()
+      }
     }
 
     Await.result(system.whenTerminated, Duration.Inf)

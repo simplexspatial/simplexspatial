@@ -18,41 +18,70 @@ package com.simplexportal.spatial.index.grid.entrypoints.grpc
 
 import akka.actor.ActorSystem
 import akka.actor.typed.{ActorRef, Scheduler}
-import akka.grpc.scaladsl.ServiceHandler
+import akka.grpc.scaladsl.{ServerReflection, ServiceHandler, WebHandler}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.Materializer
+import com.simplexportal.spatial.StartUpServerResult
 import com.simplexportal.spatial.index.protocol.GridRequest
 import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object GRPCServer {
+
   def start(gridIndex: ActorRef[GridRequest], config: Config)(
       implicit executionContext: ExecutionContext,
       scheduler: Scheduler,
       mat: Materializer,
       system: ActorSystem
-  ): Future[Http.ServerBinding] = {
-
-    val interface = config.getString("simplexportal.spatial.entrypoint.grpc.interface")
-    val port = config.getInt("simplexportal.spatial.entrypoint.grpc.port")
+  ): Set[StartUpServerResult] = {
 
     val grpcHandler = GRPCEntryPointHandler.partial(new GRPCEntryPointImpl(gridIndex))
-    // val algorithmServiceHandler = ....
+    val reflectionHandler = ServerReflection.partial(List(GRPCEntryPoint))
 
-    val serviceHandlers: HttpRequest => Future[HttpResponse] =
-      ServiceHandler.concatOrNotFound(
-        grpcHandler
-        /*, algorithmServiceHandler*/
-      )
+    Set(
+      startGRPC(config, grpcHandler, reflectionHandler),
+      startGRPCWeb(config, grpcHandler, reflectionHandler)
+    )
+  }
 
+  private def startGRPC(
+      config: Config,
+      handlers: PartialFunction[HttpRequest, Future[HttpResponse]]*
+  )(
+      implicit executionContext: ExecutionContext,
+      scheduler: Scheduler,
+      mat: Materializer,
+      system: ActorSystem
+  ): StartUpServerResult = StartUpServerResult(
+    "SimplexSpatial gRPC",
     Http()
       .bindAndHandleAsync(
-        serviceHandlers,
-        interface = interface,
-        port = port,
+        ServiceHandler.concatOrNotFound(handlers: _*),
+        interface = config.getString("simplexportal.spatial.entrypoint.grpc.interface"),
+        port = config.getInt("simplexportal.spatial.entrypoint.grpc.port"),
         connectionContext = HttpConnectionContext()
       )
-  }
+  )
+
+  private def startGRPCWeb(
+      config: Config,
+      handlers: PartialFunction[HttpRequest, Future[HttpResponse]]*
+  )(
+      implicit executionContext: ExecutionContext,
+      scheduler: Scheduler,
+      mat: Materializer,
+      system: ActorSystem
+  ): StartUpServerResult = StartUpServerResult(
+    "SimplexSpatial gRPC-Web",
+    Http()
+      .bindAndHandleAsync(
+        WebHandler.grpcWebHandler(handlers: _*),
+        interface = config.getString("simplexportal.spatial.entrypoint.grpc-web.interface"),
+        port = config.getInt("simplexportal.spatial.entrypoint.grpc-web.port"),
+        connectionContext = HttpConnectionContext()
+      )
+  )
+
 }
