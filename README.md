@@ -238,18 +238,18 @@ be able to start all dependencies for testing. In the same folder, you can find 
 So from the `conf` folder:
 - To start
     ```ssh
-    docker-compose up -d
+    docker-compose -f docker-compose-postgres.yml up -d
     ```
 
 - To create the database or clean up:
     ```ssh
-    docker cp ./schema.sql conf_db_1:/root/schema.sql
-    docker exec conf_db_1 psql akka-persistence akka -f /root/schema.sql
+    docker cp ./schema-postgres.sql conf_db_1:/root/schema-postgres.sql
+    docker exec conf_db_1 psql akka-persistence akka -f /root/schema-postgres.sql
     ```
 
 - To stop:
     ```ssh
-    docker-compose up -d
+    docker-compose -f docker-compose-postgres.yml up -d
     ```
 
 More information about [Docker Compose in the documentation](https://docs.docker.com/compose/).
@@ -267,6 +267,7 @@ bin/simplexspatial-core \
     -jvm-debug 9010 \
     -J-Xms1G \
     -J-Xmx4G  \
+    -Dconfig.file=conf/application-postgres.conf\
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
@@ -280,6 +281,7 @@ bin/simplexspatial-core \
     -jvm-debug 9011 \
     -J-Xms1G \
     -J-Xmx4G  \
+    -Dconfig.file=conf/application-postgres.conf\
     -Dakka.remote.artery.canonical.port=2551  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
@@ -292,6 +294,7 @@ bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -J-Xms1G \
     -J-Xmx4G  \
+    -Dconfig.file=conf/application-postgres.conf\
     -Dakka.remote.artery.canonical.port=0  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=0 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=0 \
