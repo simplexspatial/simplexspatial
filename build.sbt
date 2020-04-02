@@ -27,7 +27,7 @@ lazy val commonSettings = Seq(
   version := "0.0.1-SNAPSHOT",
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.12.11",
 //  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
   Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 //  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
@@ -114,17 +114,19 @@ lazy val core = (project in file("core"))
       "com.simplexportal.spatial.Main"
     ),
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
       "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+      "com.typesafe.akka" %% "akka-persistence-cassandra" % "1.0.0-RC1",
+      "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
+      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
       "ch.megard" %% "akka-http-cors" % akkaHttpCorsVersion,
-      "com.typesafe.akka" %% "akka-discovery" % akkaVersion, // FIXME: Remove after update sbt-akka-grpc
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
@@ -133,10 +135,10 @@ lazy val core = (project in file("core"))
       "org.postgresql" % "postgresql" % postgresJDBCDriver
     ) ++ Seq(
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion,
+      "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
       "org.scalatest" %% "scalatest" % scalatestVersion,
       "org.scalactic" %% "scalactic" % scalatestVersion,
-      "com.github.pathikrit" %% "better-files" % betterFilesVersion,
-      "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion
+      "com.github.pathikrit" %% "better-files" % betterFilesVersion
     ).map(_ % Test)
   )
   .enablePlugins(UniversalPlugin)
