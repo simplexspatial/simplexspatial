@@ -17,10 +17,10 @@
 
 package com.simplexportal.spatial.index.grid.sessions.addbatch
 
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, LookUpWayEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.protocol._
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -132,7 +132,7 @@ protected trait DataDistribution {
           head match {
             case (tileIdx, GridAddNode(id, _, _, _, _)) =>
               val shard = LookUpNodeEntityIdGen.entityId(id)
-              val itemsPerShard = nodes.getOrElse(shard, Seq.empty) :+ (id, tileIdx)
+              val itemsPerShard = nodes.getOrElse(shard, Seq.empty) :+ id -> tileIdx
               rec(
                 tail,
                 nodes + (shard -> itemsPerShard),
@@ -140,7 +140,7 @@ protected trait DataDistribution {
               )
             case (tileIdx, GridAddWay(id, _, _, _)) =>
               val shard = LookUpWayEntityIdGen.entityId(id)
-              val itemsPerShard = ways.getOrElse(shard, Seq.empty) :+ (id, tileIdx)
+              val itemsPerShard = ways.getOrElse(shard, Seq.empty) :+ id -> tileIdx
               rec(
                 tail,
                 nodes,

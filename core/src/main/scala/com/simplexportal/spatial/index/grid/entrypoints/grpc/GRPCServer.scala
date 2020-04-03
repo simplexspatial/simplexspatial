@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.Materializer
 import com.simplexportal.spatial.StartUpServerResult
-import com.simplexportal.spatial.index.protocol.GridRequest
+import com.simplexportal.spatial.index.grid.GridProtocol.GridRequest
 import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +33,6 @@ object GRPCServer {
   def start(gridIndex: ActorRef[GridRequest], config: Config)(
       implicit executionContext: ExecutionContext,
       scheduler: Scheduler,
-      mat: Materializer,
       system: ActorSystem
   ): Set[StartUpServerResult] = {
 
@@ -50,9 +49,7 @@ object GRPCServer {
       config: Config,
       handlers: PartialFunction[HttpRequest, Future[HttpResponse]]*
   )(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
+      implicit mat: Materializer,
       system: ActorSystem
   ): StartUpServerResult = StartUpServerResult(
     "SimplexSpatial gRPC",
@@ -69,9 +66,7 @@ object GRPCServer {
       config: Config,
       handlers: PartialFunction[HttpRequest, Future[HttpResponse]]*
   )(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
+      implicit mat: Materializer,
       system: ActorSystem
   ): StartUpServerResult = StartUpServerResult(
     "SimplexSpatial gRPC-Web",

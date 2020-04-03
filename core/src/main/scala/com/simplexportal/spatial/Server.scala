@@ -19,7 +19,6 @@ package com.simplexportal.spatial
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.Http
-import akka.stream.ActorMaterializer
 import com.simplexportal.spatial.index.grid.entrypoints.grpc.GRPCServer
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestServer
 import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
@@ -36,7 +35,6 @@ object Server {
 
     // Akka Classic implicits
     implicit val system = akka.actor.ActorSystem("SimplexSpatialSystem", config)
-    implicit val materializer = ActorMaterializer() // FIXME: How to do change it in 2.6?
     implicit val executionContext: ExecutionContext = system.dispatcher
 
     // Akka Typed implicits

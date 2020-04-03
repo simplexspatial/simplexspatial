@@ -16,7 +16,7 @@
 
 package com.simplexportal.spatial.utils
 
-import com.simplexportal.spatial.model.{LineSegment => ModelLineSegment, Line => ModelLine, Location}
+import com.simplexportal.spatial.model.{Location, Line => ModelLine, LineSegment => ModelLineSegment}
 import org.locationtech.jts.geom.{Coordinate, LineSegment => JTSLineSegment}
 
 /**

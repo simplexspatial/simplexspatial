@@ -17,8 +17,6 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
-import com.simplexportal.spatial.model.{BoundingBox, Location}
-
 object TileIndexEntityIdGen {
   val defaultRoundingDecimal: Byte = 6
 }

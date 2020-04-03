@@ -15,17 +15,16 @@
  *
  */
 
-package com.simplexportal.spatial.index
+package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.ActorRef
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.model.{Location, Node, Way}
 
 /**
   * Define the protocol used by the Grid.
   */
 // FIXME: Don't use package to define the model.
-package object protocol {
+object GridProtocol {
 
   sealed trait GridMessage extends Message
 

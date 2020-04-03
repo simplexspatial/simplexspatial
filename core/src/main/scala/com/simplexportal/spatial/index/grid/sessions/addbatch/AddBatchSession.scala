@@ -19,8 +19,8 @@ package com.simplexportal.spatial.index.grid.sessions.addbatch
 
 import akka.actor.typed.scaladsl.ActorContext
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.tile.actor.TileIndexEntityIdGen
-import com.simplexportal.spatial.index.protocol._
 import io.jvm.uuid.UUID
 
 object AddBatchSession extends CollectNodeInfo {

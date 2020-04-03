@@ -62,11 +62,11 @@ trait NearestNodeSearch {
       case (current, (_, node)) => {
         val d = origin.distance(node.location.toJTS())
         current match {
-          case None => Some(Set(node), d)
+          case None => Some((Set(node), d))
           case Some((nearestNodes, nearestDistance)) if d == nearestDistance =>
             Some((nearestNodes + node, nearestDistance))
           case Some((_, nearestDistance)) if d < nearestDistance =>
-            Some(Set(node), d)
+            Some((Set(node), d))
           case _ => current
         }
       }

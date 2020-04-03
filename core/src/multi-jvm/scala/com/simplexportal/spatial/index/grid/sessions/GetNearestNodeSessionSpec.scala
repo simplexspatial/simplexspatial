@@ -23,15 +23,13 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.{Grid, GridConfig}
-import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.{Location, Node}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.language.implicitConversions
 
 // scalastyle:off magic.number
 object GetNearestNodeSessionSpecConfig extends MultiNodeConfig {

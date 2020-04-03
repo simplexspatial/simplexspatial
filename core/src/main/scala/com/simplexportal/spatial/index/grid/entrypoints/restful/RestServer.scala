@@ -22,11 +22,10 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{Directives, RequestContext, Route, RouteResult}
-import akka.stream.Materializer
 import akka.util.Timeout
 import com.simplexportal.spatial.StartUpServerResult
+import com.simplexportal.spatial.index.grid.GridProtocol.{GridReply, _}
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestProtocol._
-import com.simplexportal.spatial.index.protocol.{GridReply, _}
 import com.simplexportal.spatial.model.Location
 import com.typesafe.config.Config
 
@@ -39,7 +38,10 @@ object RestServer extends Directives with RestfulJsonProtocol {
   implicit val timeout: Timeout = 2.second
 
   private def defaultResponseAdapter[T]: PartialFunction[GridReply[T], Route] = {
-    case x => complete(StatusCodes.InternalServerError, NotDone(Some(s"Nothing handling response ${x}")))
+    case x =>
+      complete(
+        StatusCodes.InternalServerError -> NotDone(Some(s"Nothing handling response ${x}"))
+      )
   }
 
   private def reply[T](
@@ -51,7 +53,10 @@ object RestServer extends Directives with RestfulJsonProtocol {
       case Failure(error)      => complete(NotDone(Some(error.getMessage)))
       case Success(reply) =>
         reply.payload.fold(
-          error => complete(StatusCodes.InternalServerError, NotDone(Some(error))),
+          error =>
+            complete(
+              StatusCodes.InternalServerError -> NotDone(Some(error))
+            ),
           _ => applyOnSuccess(reply)
         )
     }
@@ -60,7 +65,6 @@ object RestServer extends Directives with RestfulJsonProtocol {
   def start(gridIndex: ActorRef[GridRequest], config: Config)(
       implicit executionContext: ExecutionContext,
       scheduler: Scheduler,
-      mat: Materializer,
       system: ActorSystem
   ): StartUpServerResult = {
 
@@ -79,16 +83,13 @@ object RestServer extends Directives with RestfulJsonProtocol {
   }
 
   private def nodeRoutes(gridIndex: ActorRef[GridRequest])(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
-      system: ActorSystem
+      implicit scheduler: Scheduler
   ) =
     path("node" / LongNumber) { id =>
       concat(
         get {
           def responseAdapter[T]: PartialFunction[GridReply[T], Route] = {
-            case GridGetNodeReply(Right(None)) => complete(StatusCodes.NotFound, "")
+            case GridGetNodeReply(Right(None)) => complete(StatusCodes.NotFound)
             case GridGetNodeReply(Right(Some(node))) =>
               complete(Node(node.id, node.location.lat, node.location.lon, node.attributes))
           }
@@ -111,17 +112,14 @@ object RestServer extends Directives with RestfulJsonProtocol {
     }
 
   private def wayRoutes(gridIndex: ActorRef[GridRequest])(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
-      system: ActorSystem
+      implicit scheduler: Scheduler
   ) =
     path("way" / LongNumber) { id =>
       concat(
         get {
 
           def responseAdapter[T]: PartialFunction[GridReply[T], Route] = {
-            case GridGetWayReply(Right(None)) => complete(StatusCodes.NotFound, "")
+            case GridGetWayReply(Right(None)) => complete(StatusCodes.NotFound)
             case GridGetWayReply(Right(Some(way))) =>
               complete(
                 Way(
@@ -151,10 +149,7 @@ object RestServer extends Directives with RestfulJsonProtocol {
     }
 
   private def batchRoutes(gridIndex: ActorRef[GridRequest])(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
-      system: ActorSystem
+      implicit scheduler: Scheduler
   ) =
     path("batch") {
       put {
@@ -175,10 +170,7 @@ object RestServer extends Directives with RestfulJsonProtocol {
     }
 
   private def algorithmsRoutes(gridIndex: ActorRef[GridRequest])(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler,
-      mat: Materializer,
-      system: ActorSystem
+      implicit scheduler: Scheduler
   ) = {
     path("algorithm" / "nearest" / "node") {
       get {

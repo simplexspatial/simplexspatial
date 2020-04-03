@@ -22,10 +22,10 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
+import com.simplexportal.spatial.index.grid.GridProtocol.{GridGetWay, GridGetWayReply, GridRequest}
 import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor.{GetResponse => LookUpReply}
 import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
-import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, TileIndexEntityIdGen, GetWayResponse => TileReply}
-import com.simplexportal.spatial.index.protocol.{GridGetWay, GridGetWayReply, GridRequest}
+import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, GetWayResponse => TileReply}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import io.jvm.uuid.UUID
 
@@ -37,8 +37,7 @@ object GetWaySession {
       cmd: GridGetWay,
       context: ActorContext[GridRequest]
   )(
-      implicit sharding: ClusterSharding,
-      tileIndexEntityIdGen: TileIndexEntityIdGen
+      implicit sharding: ClusterSharding
   ): Unit =
     context.spawn(
       apply(cmd),

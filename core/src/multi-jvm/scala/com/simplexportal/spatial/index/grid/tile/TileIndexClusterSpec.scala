@@ -31,9 +31,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.duration._
-import scala.language.implicitConversions
-
 /**
   * Testing a single tile in a cluster. On this way, it is possible to verify aspects like serialization.
   */

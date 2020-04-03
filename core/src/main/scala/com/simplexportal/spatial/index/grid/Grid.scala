@@ -21,21 +21,18 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
-import akka.util.Timeout
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.lookups.{NodeLookUpActor, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.sessions._
 import com.simplexportal.spatial.index.grid.sessions.addbatch.AddBatchSession
 import com.simplexportal.spatial.index.grid.tile.actor.{Command, TileIndexActor, TileIndexEntityIdGen}
-import com.simplexportal.spatial.index.protocol._
 import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 // TODO: Every context.spawn(*Session(...), ... ) should be replaced by a spawn in the cluster, to start the session in a free node and not in this one.
 object Grid {
 
   implicit class GridAddNodeEnricher(cmd: GridBatchCommand) {
-    def toBatch(): GridAddBatch = cmd match {
+    def toBatch: GridAddBatch = cmd match {
       case addNode: GridAddNode =>
         GridAddBatch(Seq(addNode.copy(replyTo = None)), addNode.replyTo)
       case addWay: GridAddWay =>
@@ -43,10 +40,13 @@ object Grid {
     }
   }
 
-  val TileTypeKey = EntityTypeKey[Command]("TileEntity")
-  val NodeLookUpTypeKey =
+  val TileTypeKey: EntityTypeKey[Command] =
+    EntityTypeKey[Command]("TileEntity")
+
+  val NodeLookUpTypeKey: EntityTypeKey[NodeLookUpActor.Command] =
     EntityTypeKey[NodeLookUpActor.Command]("NodeLookUpEntity")
-  val WayLookUpTypeKey =
+
+  val WayLookUpTypeKey: EntityTypeKey[WayLookUpActor.Command] =
     EntityTypeKey[WayLookUpActor.Command]("WayLookUpEntity")
 
   def apply(gridConfig: GridConfig): Behavior[GridRequest] =
@@ -63,10 +63,6 @@ object Grid {
         gridConfig.latPartitions * gridConfig.lonPartitions,
         context.system
       )
-
-      implicit val ctx = context
-      implicit val timeout: Timeout = 6.seconds
-      implicit val scheduler = context.system.executionContext
 
       Behaviors.receiveMessage {
 

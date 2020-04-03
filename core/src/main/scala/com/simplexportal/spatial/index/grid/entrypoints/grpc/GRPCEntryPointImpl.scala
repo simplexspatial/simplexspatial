@@ -22,13 +22,12 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.entrypoints.grpc
-import com.simplexportal.spatial.index.protocol._
 import com.simplexportal.spatial.model.Location
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.implicitConversions
 
 class GRPCEntryPointImpl(gridIndex: ActorRef[GridRequest])(
     implicit
