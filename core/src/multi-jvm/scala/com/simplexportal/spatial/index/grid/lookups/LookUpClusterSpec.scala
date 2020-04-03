@@ -29,8 +29,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.language.implicitConversions
-
 // scalastyle:off magic.number
 object LookUpClusterSpecConfig extends MultiNodeConfig {
 

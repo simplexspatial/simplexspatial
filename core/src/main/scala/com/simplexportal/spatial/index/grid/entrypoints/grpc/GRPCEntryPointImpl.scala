@@ -28,7 +28,6 @@ import com.simplexportal.spatial.model.Location
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.implicitConversions
 
 class GRPCEntryPointImpl(gridIndex: ActorRef[GridRequest])(
     implicit

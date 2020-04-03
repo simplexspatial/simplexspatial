@@ -58,7 +58,7 @@ case class TileIdx(latIdx: Int, lonIdx: Int) {
       normalize(lonIdx, tileIdxGen.lonPartitions)
     )
 
-  @inline private def normalize(idx: Int, partitions: Int)(implicit tileIdxGen: TileIndexEntityIdGen): Int =
+  @inline private def normalize(idx: Int, partitions: Int): Int =
     idx % partitions match {
       case i if i < 0 => i + partitions
       case i          => i

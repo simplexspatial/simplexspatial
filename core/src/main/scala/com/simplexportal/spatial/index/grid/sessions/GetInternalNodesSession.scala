@@ -24,7 +24,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.GetResponse
 import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
-import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 import com.simplexportal.spatial.index.grid.tile.{actor => tile} // FIXME: Use adapter to access foreign protocol.
 
 /**
@@ -36,8 +36,7 @@ object GetInternalNodesSession {
   // scalastyle:off cyclomatic.complexity
   // scalastyle:off method.length
   def apply(getNodes: tile.GetInternalNodes)(
-      implicit sharding: ClusterSharding,
-      tileIndexEntityIdGen: TileIndexEntityIdGen
+      implicit sharding: ClusterSharding
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>

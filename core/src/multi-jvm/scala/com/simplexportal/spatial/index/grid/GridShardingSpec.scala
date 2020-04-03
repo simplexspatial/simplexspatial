@@ -31,7 +31,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
-import scala.language.implicitConversions
 
 // scalastyle:off magic.number
 object GridShardingSpecConfig extends MultiNodeConfig {

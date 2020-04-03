@@ -25,7 +25,7 @@ import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridGetNode, GridGetNodeReply, GridRequest}
 import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.{GetResponse => LookUpReply}
 import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
-import com.simplexportal.spatial.index.grid.tile.actor.{GetNode, TileIndexEntityIdGen, GetNodeResponse => TileReply}
+import com.simplexportal.spatial.index.grid.tile.actor.{GetNode, GetNodeResponse => TileReply}
 import io.jvm.uuid.UUID
 
 /**
@@ -53,8 +53,7 @@ object GetNodeSession {
       cmd: GridGetNode,
       context: ActorContext[GridRequest]
   )(
-      implicit sharding: ClusterSharding,
-      tileIndexEntityIdGen: TileIndexEntityIdGen
+      implicit sharding: ClusterSharding
   ): Unit =
     context.spawn(
       apply(cmd),
@@ -62,8 +61,7 @@ object GetNodeSession {
     )
 
   def apply(getNode: GridGetNode)(
-      implicit sharding: ClusterSharding,
-      tileIndexEntityIdGen: TileIndexEntityIdGen
+      implicit sharding: ClusterSharding
   ): Behavior[ForeignResponse] =
     Behaviors
       .setup { context =>
