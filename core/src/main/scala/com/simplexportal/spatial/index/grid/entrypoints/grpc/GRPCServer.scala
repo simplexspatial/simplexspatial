@@ -23,7 +23,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpConnectionContext}
 import akka.stream.Materializer
 import com.simplexportal.spatial.StartUpServerResult
-import com.simplexportal.spatial.index.protocol.GridRequest
+import com.simplexportal.spatial.index.grid.GridProtocol.GridRequest
 import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}

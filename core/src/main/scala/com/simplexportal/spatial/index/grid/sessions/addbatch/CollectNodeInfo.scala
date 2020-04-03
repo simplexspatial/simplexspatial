@@ -17,12 +17,12 @@
 
 package com.simplexportal.spatial.index.grid.sessions.addbatch
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.sessions.GetNodeLocationsSession
 import com.simplexportal.spatial.index.grid.tile.actor.TileIndexEntityIdGen
-import com.simplexportal.spatial.index.protocol._
 import io.jvm.uuid.UUID
 
 import scala.util.{Failure, Success, Try}

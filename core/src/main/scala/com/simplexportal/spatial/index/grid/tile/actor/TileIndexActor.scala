@@ -17,12 +17,12 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
-import akka.actor.typed.{Behavior, SupervisorStrategy}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{Behavior, SupervisorStrategy}
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.scaladsl.RetentionCriteria
-import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
+import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria}
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+
 import scala.concurrent.duration._
 
 object TileIndexActor extends TileIndexQueryHandler with TileIndexActionHandler {

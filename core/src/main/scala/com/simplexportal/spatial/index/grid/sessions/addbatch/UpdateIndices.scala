@@ -21,10 +21,10 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
+import com.simplexportal.spatial.index.grid.GridProtocol.{GridACK, GridBatchCommand, GridDone, GridNotDone}
 import com.simplexportal.spatial.index.grid.lookups.{NodeLookUpActor, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.protocol.{GridACK, GridBatchCommand, GridDone, GridNotDone}
 
 protected trait UpdateIndices extends DataDistribution with Adapter {
 

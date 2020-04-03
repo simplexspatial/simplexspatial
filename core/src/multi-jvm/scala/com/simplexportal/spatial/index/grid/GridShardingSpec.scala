@@ -23,7 +23,7 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
-import com.simplexportal.spatial.index.protocol._
+import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll

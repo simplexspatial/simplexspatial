@@ -25,8 +25,8 @@ import akka.http.scaladsl.server.{Directives, RequestContext, Route, RouteResult
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.simplexportal.spatial.StartUpServerResult
+import com.simplexportal.spatial.index.grid.GridProtocol.{GridReply, _}
 import com.simplexportal.spatial.index.grid.entrypoints.restful.RestProtocol._
-import com.simplexportal.spatial.index.protocol.{GridReply, _}
 import com.simplexportal.spatial.model.Location
 import com.typesafe.config.Config
 
