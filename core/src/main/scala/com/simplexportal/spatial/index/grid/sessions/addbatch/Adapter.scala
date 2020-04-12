@@ -23,8 +23,8 @@ import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridAddNode, GridAddWay, GridBatchCommand}
 import com.simplexportal.spatial.index.grid.sessions.GetNodeLocationsSession
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor
-import com.simplexportal.spatial.index.lookup.way.WayLookUpActor
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpProtocol
+import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol
 
 protected trait Adapter {
 
@@ -41,12 +41,12 @@ protected trait Adapter {
       context: ActorContext[ForeignResponse]
   ): ActorRef[AnyRef] =
     context.messageAdapter {
-      case tile.Done()                  => DoneWrapper()
-      case tile.NotDone(msg)            => NotDoneWrapper(msg)
-      case NodeLookUpActor.Done()       => DoneWrapper()
-      case NodeLookUpActor.NotDone(msg) => NotDoneWrapper(msg)
-      case WayLookUpActor.Done()        => DoneWrapper()
-      case WayLookUpActor.NotDone(msg)  => NotDoneWrapper(msg)
+      case tile.Done()                     => DoneWrapper()
+      case tile.NotDone(msg)               => NotDoneWrapper(msg)
+      case NodeLookUpProtocol.Done()       => DoneWrapper()
+      case NodeLookUpProtocol.NotDone(msg) => NotDoneWrapper(msg)
+      case WayLookUpProtocol.Done()        => DoneWrapper()
+      case WayLookUpProtocol.NotDone(msg)  => NotDoneWrapper(msg)
     }
 
   implicit class GridAddBatchEnricher(gridAddBatch: GridBatchCommand) {

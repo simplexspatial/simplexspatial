@@ -24,10 +24,9 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor.GetResponse
 import com.simplexportal.spatial.index.lookup.node.{
   LookUpNodeEntityIdGen,
-  NodeLookUpActor
+  NodeLookUpProtocol
 } // FIXME: Use adapter to access foreign protocol.
 
 /**
@@ -56,7 +55,7 @@ object GetInternalNodesSession {
               sharding.entityRefFor(
                 NodeLookUpTypeKey,
                 entityId
-              ) ! NodeLookUpActor.Gets(ids, context.self)
+              ) ! NodeLookUpProtocol.Gets(ids, context.self)
           }
 
         // Map that will store nodes locations while arriving.
@@ -66,9 +65,9 @@ object GetInternalNodesSession {
         var response = tile.GetInternalNodesResponse(Seq.empty)
 
         Behaviors.receiveMessage {
-          case NodeLookUpActor.GetsResponse(nodeEntities) =>
+          case NodeLookUpProtocol.GetsResponse(nodeEntities) =>
             nodeLocations = nodeLocations ++ nodeEntities.map {
-              case GetResponse(id, entityId) => (id, entityId)
+              case NodeLookUpProtocol.GetResponse(id, entityId) => (id, entityId)
             }
             if (nodeLocations.size == uniqueNodes.size) {
               // All nodes locations arrived, so group per tile entity id and get node value.

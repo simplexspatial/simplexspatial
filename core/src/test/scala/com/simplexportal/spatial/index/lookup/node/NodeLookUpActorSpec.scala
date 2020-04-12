@@ -20,7 +20,7 @@ package com.simplexportal.spatial.index.lookup.node
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
-import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor._
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpProtocol._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -29,7 +29,7 @@ class NodeLookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
   "NodeLookUpActor" must {
     "Put and Get correctly" when {
       "do it one by one" in {
-        val probeResponse = testKit.createTestProbe[NodeLookUpActor.Response]()
+        val probeResponse = testKit.createTestProbe[NodeLookUpProtocol.Response]()
         val lookup = testKit.spawn(
           NodeLookUpActor("test-one-by-one-index", "add-one-by-one-lookup"),
           "add-lookup-one-by-one-test"
@@ -60,7 +60,7 @@ class NodeLookUpActorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
       }
 
       "do it in blocks" in {
-        val probeResponse = testKit.createTestProbe[NodeLookUpActor.Response]()
+        val probeResponse = testKit.createTestProbe[NodeLookUpProtocol.Response]()
         val lookup = testKit.spawn(
           NodeLookUpActor("test-batch-index", "add-batch-lookup"),
           "add-lookup-batch-test"

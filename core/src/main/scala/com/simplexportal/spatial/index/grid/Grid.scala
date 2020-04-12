@@ -25,8 +25,8 @@ import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.sessions._
 import com.simplexportal.spatial.index.grid.sessions.addbatch.AddBatchSession
 import com.simplexportal.spatial.index.grid.tile.actor.{Command, TileIndexActor, TileIndexEntityIdGen}
-import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor
-import com.simplexportal.spatial.index.lookup.way.WayLookUpActor
+import com.simplexportal.spatial.index.lookup.node.{NodeLookUpActor, NodeLookUpProtocol}
+import com.simplexportal.spatial.index.lookup.way.{WayLookUpActor, WayLookUpProtocol}
 import com.typesafe.config.ConfigFactory
 
 // TODO: Every context.spawn(*Session(...), ... ) should be replaced by a spawn in the cluster, to start the session in a free node and not in this one.
@@ -44,11 +44,11 @@ object Grid {
   val TileTypeKey: EntityTypeKey[Command] =
     EntityTypeKey[Command]("TileEntity")
 
-  val NodeLookUpTypeKey: EntityTypeKey[NodeLookUpActor.Command] =
-    EntityTypeKey[NodeLookUpActor.Command]("NodeLookUpEntity")
+  val NodeLookUpTypeKey: EntityTypeKey[NodeLookUpProtocol.Command] =
+    EntityTypeKey[NodeLookUpProtocol.Command]("NodeLookUpEntity")
 
-  val WayLookUpTypeKey: EntityTypeKey[WayLookUpActor.Command] =
-    EntityTypeKey[WayLookUpActor.Command]("WayLookUpEntity")
+  val WayLookUpTypeKey: EntityTypeKey[WayLookUpProtocol.Command] =
+    EntityTypeKey[WayLookUpProtocol.Command]("WayLookUpEntity")
 
   def apply(gridConfig: GridConfig): Behavior[GridRequest] =
     Behaviors.setup { context =>
