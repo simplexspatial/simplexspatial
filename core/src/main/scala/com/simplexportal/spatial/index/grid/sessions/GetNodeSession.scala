@@ -23,9 +23,9 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridGetNode, GridGetNodeReply, GridRequest}
-import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.{GetResponse => LookUpReply}
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.{GetNode, GetNodeResponse => TileReply}
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor.{GetResponse => LookUpReply}
+import com.simplexportal.spatial.index.lookup.node.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import io.jvm.uuid.UUID
 
 /**

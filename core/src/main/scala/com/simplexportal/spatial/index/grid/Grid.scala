@@ -22,10 +22,11 @@ import akka.actor.typed.{ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityTypeKey}
 import com.simplexportal.spatial.index.grid.GridProtocol._
-import com.simplexportal.spatial.index.grid.lookups.{NodeLookUpActor, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.sessions._
 import com.simplexportal.spatial.index.grid.sessions.addbatch.AddBatchSession
 import com.simplexportal.spatial.index.grid.tile.actor.{Command, TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor
+import com.simplexportal.spatial.index.lookup.way.WayLookUpActor
 import com.typesafe.config.ConfigFactory
 
 // TODO: Every context.spawn(*Session(...), ... ) should be replaced by a spawn in the cluster, to start the session in a free node and not in this one.

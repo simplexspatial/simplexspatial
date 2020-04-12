@@ -17,5 +17,4 @@
 
 package com.simplexportal.spatial.index.grid
 
-// TODO: Move to a more generic package because it is not only for the Grid.
 trait CommonInternalSerializer {}

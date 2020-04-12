@@ -16,11 +16,11 @@
  */
 
 // scalastyle:off magic.number
-package com.simplexportal.spatial.index.grid.lookups
+package com.simplexportal.spatial.index.lookup.node
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor._
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

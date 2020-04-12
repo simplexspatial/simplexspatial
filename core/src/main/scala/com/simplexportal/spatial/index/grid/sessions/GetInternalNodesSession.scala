@@ -22,10 +22,13 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
-import com.simplexportal.spatial.index.grid.lookups.NodeLookUpActor.GetResponse
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
-import com.simplexportal.spatial.index.grid.tile.{actor => tile} // FIXME: Use adapter to access foreign protocol.
+import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor.GetResponse
+import com.simplexportal.spatial.index.lookup.node.{
+  LookUpNodeEntityIdGen,
+  NodeLookUpActor
+} // FIXME: Use adapter to access foreign protocol.
 
 /**
   * Actor that given a sequence of Node ids, will response with the same sequence but with the full node information.

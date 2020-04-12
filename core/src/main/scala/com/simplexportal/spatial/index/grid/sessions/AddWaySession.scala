@@ -23,16 +23,15 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor._
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.model.Location
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-@deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddWaySession {
 
   def apply(addWay: AddWay)(

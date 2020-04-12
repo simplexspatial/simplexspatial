@@ -3,3 +3,4 @@ tmp*
 target
 simplexspatial.log
 simplexspatial_loadosm.log
+/lightbend.sbt

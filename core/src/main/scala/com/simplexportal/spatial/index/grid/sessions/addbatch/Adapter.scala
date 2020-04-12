@@ -21,9 +21,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridAddNode, GridAddWay, GridBatchCommand}
-import com.simplexportal.spatial.index.grid.lookups.{NodeLookUpActor, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.sessions.GetNodeLocationsSession
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpActor
+import com.simplexportal.spatial.index.lookup.way.WayLookUpActor
 
 protected trait Adapter {
 

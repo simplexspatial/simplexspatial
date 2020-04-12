@@ -22,14 +22,13 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor
 import com.simplexportal.spatial.index.grid.tile.actor.{AddNode, Done, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.lookup.node.{LookUpNodeEntityIdGen, NodeLookUpActor}
 
 /**
   * AddNode per session actor that update all indices and stop.
   */
-@deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddNodeSession {
   def apply(addNode: AddNode)(
       implicit sharding: ClusterSharding,
