@@ -18,6 +18,7 @@
 package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.ActorRef
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.model.{Location, Node, Way}
 
 /**

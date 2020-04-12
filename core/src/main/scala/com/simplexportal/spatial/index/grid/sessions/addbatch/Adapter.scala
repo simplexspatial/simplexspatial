@@ -19,7 +19,7 @@ package com.simplexportal.spatial.index.grid.sessions.addbatch
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridAddNode, GridAddWay, GridBatchCommand}
 import com.simplexportal.spatial.index.grid.sessions.GetNodeLocationsSession
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}

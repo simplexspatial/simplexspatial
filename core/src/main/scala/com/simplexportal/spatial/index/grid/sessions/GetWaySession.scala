@@ -20,7 +20,7 @@ package com.simplexportal.spatial.index.grid.sessions
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridGetWay, GridGetWayReply, GridRequest}
 import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, GetWayResponse => TileReply}

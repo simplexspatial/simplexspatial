@@ -15,6 +15,6 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index
 
 trait CommonInternalSerializer {}
