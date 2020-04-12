@@ -23,16 +23,15 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor._
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpProtocol}
 import com.simplexportal.spatial.model.Location
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-@deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddWaySession {
 
   def apply(addWay: AddWay)(
@@ -68,7 +67,7 @@ object AddWaySession {
                     // Register in the ways lookup.
                     pendingResponses += 1
                     val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
-                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpActor
+                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpProtocol
                       .Put(addWay.id, tileIdx, Some(context.self))
                 }
                 Behaviors.same
@@ -76,7 +75,7 @@ object AddWaySession {
                 addWay.replyTo.foreach(_ ! NotDone(exception.getMessage))
                 Behaviors.stopped
             }
-          case Done() | WayLookUpActor.Done() =>
+          case Done() | WayLookUpProtocol.Done() =>
             pendingResponses -= 1
             if (pendingResponses == 0) {
               addWay.replyTo.foreach(_ ! Done())

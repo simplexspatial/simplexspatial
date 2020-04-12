@@ -22,9 +22,10 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridACK, GridBatchCommand, GridDone, GridNotDone}
-import com.simplexportal.spatial.index.grid.lookups.{NodeLookUpActor, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.lookup.node.NodeLookUpProtocol
+import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol
 
 protected trait UpdateIndices extends DataDistribution with Adapter {
 
@@ -34,8 +35,8 @@ protected trait UpdateIndices extends DataDistribution with Adapter {
     nodesPerTileLookup.foldLeft(0) {
       case (counter, (shardId, items)) =>
         sharding.entityRefFor(Grid.NodeLookUpTypeKey, shardId) !
-          NodeLookUpActor.PutBatch(items.map {
-            case (id, tileIdx) => NodeLookUpActor.Put(id, tileIdx, None)
+          NodeLookUpProtocol.PutBatch(items.map {
+            case (id, tileIdx) => NodeLookUpProtocol.Put(id, tileIdx, None)
           }, Some(replyTo))
         counter + 1
     }
@@ -45,8 +46,8 @@ protected trait UpdateIndices extends DataDistribution with Adapter {
   )(implicit sharding: ClusterSharding, replyTo: ActorRef[AnyRef]): Int = waysPerTileLookup.foldLeft(0) {
     case (counter, (shardId, items)) =>
       sharding.entityRefFor(Grid.WayLookUpTypeKey, shardId) !
-        WayLookUpActor.PutBatch(items.map {
-          case (id, tileIdx) => WayLookUpActor.Put(id, tileIdx, None)
+        WayLookUpProtocol.PutBatch(items.map {
+          case (id, tileIdx) => WayLookUpProtocol.Put(id, tileIdx, None)
         }, Some(replyTo))
       counter + 1
   }

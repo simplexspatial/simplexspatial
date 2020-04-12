@@ -18,9 +18,10 @@
 package com.simplexportal.spatial.index.grid.sessions.addbatch
 
 import com.simplexportal.spatial.index.grid.GridProtocol._
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, LookUpWayEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.lookup.node.LookUpNodeEntityIdGen
+import com.simplexportal.spatial.index.lookup.way.LookUpWayEntityIdGen
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec

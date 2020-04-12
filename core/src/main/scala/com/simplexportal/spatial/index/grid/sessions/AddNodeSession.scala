@@ -22,14 +22,13 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor
 import com.simplexportal.spatial.index.grid.tile.actor.{AddNode, Done, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.lookup.node.{LookUpNodeEntityIdGen, NodeLookUpProtocol}
 
 /**
   * AddNode per session actor that update all indices and stop.
   */
-@deprecated("Reuse AddBatchSession", "Simplexspatial Core 0.0.1")
 object AddNodeSession {
   def apply(addNode: AddNode)(
       implicit sharding: ClusterSharding,
@@ -45,7 +44,7 @@ object AddNodeSession {
           sharding.entityRefFor(TileTypeKey, tileIdx.entityId)
 
         // Add node in the lookUp index.
-        nodeLookUpActor ! NodeLookUpActor.Put(
+        nodeLookUpActor ! NodeLookUpProtocol.Put(
           addNode.id,
           tileIdx,
           addNode.replyTo.map(_ => context.self)
@@ -58,7 +57,7 @@ object AddNodeSession {
 
         addNode.replyTo match {
           case Some(clientRef) =>
-            var lookUpResponse: Option[NodeLookUpActor.Done] = None
+            var lookUpResponse: Option[NodeLookUpProtocol.Done] = None
             var tileResponse: Option[Done] = None
 
             def nextBehavior(): Behavior[AnyRef] =
@@ -73,7 +72,7 @@ object AddNodeSession {
               }
 
             Behaviors.receiveMessage {
-              case resp: NodeLookUpActor.Done =>
+              case resp: NodeLookUpProtocol.Done =>
                 lookUpResponse = Some(resp)
                 nextBehavior()
               case resp: Done =>
@@ -88,4 +87,3 @@ object AddNodeSession {
       }
       .narrow[NotUsed]
 }
-// scalastyle:on method.length

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 SimplexPortal Ltd
+ * Copyright 2020 SimplexPortal Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,53 +15,19 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.lookups
+package com.simplexportal.spatial.index.lookup.way
 
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
+import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol._
 
 import scala.annotation.tailrec
 
 // TODO: Generalize LookUp
 object WayLookUpActor {
-
-  sealed trait Message extends CommonInternalSerializer
-
-  trait Response extends Message
-
-  trait ACK extends Response
-
-  case class Done() extends ACK
-
-  case class NotDone(error: String) extends ACK
-
-  case class GetResponse(id: Long, maybeWayEntityIds: Option[Set[TileIdx]]) extends Response
-
-  case class GetsResponse(gets: Seq[GetResponse]) extends Response
-
-  trait Command extends Message
-
-  case class Put(
-      id: Long,
-      wayEntityId: TileIdx,
-      replyTo: Option[ActorRef[ACK]]
-  ) extends Command
-
-  case class PutBatch(puts: Seq[Put], replyTo: Option[ActorRef[ACK]]) extends Command
-
-  case class Get(id: Long, replyTo: ActorRef[GetResponse]) extends Command
-
-  case class Gets(ids: Seq[Long], replyTo: ActorRef[GetsResponse]) extends Command
-
-  trait Event extends Message
-
-  case class Putted(id: Long, wayEntityId: TileIdx) extends Event
-
-  case class PuttedBatch(puts: Seq[Putted]) extends Event
 
   def apply(indexId: String, partitionId: String): Behavior[Command] =
     Behaviors.setup { _ =>

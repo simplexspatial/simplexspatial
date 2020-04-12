@@ -25,9 +25,9 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity}
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
 import com.simplexportal.spatial.index.grid.Grid.NodeLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.lookup.node.{LookUpNodeEntityIdGen, NodeLookUpActor, NodeLookUpProtocol}
 import com.typesafe.config.ConfigFactory
 import io.jvm.uuid.UUID
 import org.scalatest.BeforeAndAfterAll
@@ -155,7 +155,7 @@ abstract class GetNodeLocationsSessionSpec
     }
 
     "Add nodes in different " in {
-      val probe = TestProbe[NodeLookUpActor.ACK]()
+      val probe = TestProbe[NodeLookUpProtocol.ACK]()
       runOn(node0) {
         val nodes = Seq(
           tile.AddNode(0, -23, -90, Map.empty, None),
@@ -168,7 +168,7 @@ abstract class GetNodeLocationsSessionSpec
           sharding.entityRefFor(
             NodeLookUpTypeKey,
             LookUpNodeEntityIdGen.entityId(node.id)
-          ) ! NodeLookUpActor
+          ) ! NodeLookUpProtocol
             .Put(node.id, tileIdx, Some(probe.ref))
         }
 

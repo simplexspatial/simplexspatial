@@ -15,8 +15,6 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid.lookups
+package com.simplexportal.spatial.index
 
-object LookUpWayEntityIdGen {
-  def entityId(long: Long): String = long.toString
-}
+trait CommonInternalSerializer {}

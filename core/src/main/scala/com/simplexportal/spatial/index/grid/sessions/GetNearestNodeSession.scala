@@ -20,6 +20,7 @@ package com.simplexportal.spatial.index.grid.sessions
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridNearestNode, GridNearestNodeReply, GridRequest}
 import com.simplexportal.spatial.index.grid.tile.actor.{
   TileIdx,
@@ -28,7 +29,7 @@ import com.simplexportal.spatial.index.grid.tile.actor.{
 }
 import com.simplexportal.spatial.index.grid.tile.impl.NearestNode
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.grid.{CommonInternalSerializer, Grid}
+import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.utils.ModelEnrichers._
 import io.jvm.uuid.UUID
 import org.locationtech.jts.algorithm.Distance

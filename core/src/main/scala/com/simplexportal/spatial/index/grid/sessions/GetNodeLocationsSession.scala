@@ -20,10 +20,10 @@ package com.simplexportal.spatial.index.grid.sessions
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.NodeLookUpTypeKey
-import com.simplexportal.spatial.index.grid.lookups.{LookUpNodeEntityIdGen, NodeLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
+import com.simplexportal.spatial.index.lookup.node.{LookUpNodeEntityIdGen, NodeLookUpProtocol}
 
 object GetNodeLocationsSession {
 
@@ -34,7 +34,7 @@ object GetNodeLocationsSession {
   case class NodeLocations(locations: Map[Long, Option[TileIdx]]) extends Response
 
   private case class NodeLookUpResponseWrapper(
-      response: NodeLookUpActor.GetsResponse
+      response: NodeLookUpProtocol.GetsResponse
   ) extends ForeignResponse
 
   def apply(
@@ -43,7 +43,7 @@ object GetNodeLocationsSession {
       replyTo: ActorRef[NodeLocations]
   ): Behavior[Messages] =
     Behaviors.setup[Messages] { context =>
-      val nodeLookUpResponseAdapter: ActorRef[NodeLookUpActor.GetsResponse] =
+      val nodeLookUpResponseAdapter: ActorRef[NodeLookUpProtocol.GetsResponse] =
         context.messageAdapter { resp =>
           NodeLookUpResponseWrapper(resp)
         }
@@ -66,7 +66,7 @@ object GetNodeLocationsSession {
               sharding.entityRefFor(
                 NodeLookUpTypeKey,
                 entityId
-              ) ! NodeLookUpActor.Gets(ids, nodeLookUpResponseAdapter)
+              ) ! NodeLookUpProtocol.Gets(ids, nodeLookUpResponseAdapter)
           }
       }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 SimplexPortal Ltd
+ * Copyright 2020 SimplexPortal Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  *
  */
 
-package com.simplexportal.spatial.index.grid
+package com.simplexportal.spatial.index.lookup.node
 
-// TODO: Move to a more generic package because it is not only for the Grid.
-trait CommonInternalSerializer {}
+object LookUpNodeEntityIdGen {
+  def entityId(long: Long): String = long.toString
+}

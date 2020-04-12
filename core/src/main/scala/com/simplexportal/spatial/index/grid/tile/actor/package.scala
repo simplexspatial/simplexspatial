@@ -18,7 +18,7 @@
 package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.actor.typed.ActorRef
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.tile.impl.{NearestNode, TileIndex}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 
@@ -53,8 +53,7 @@ case class GetNodeResponse(
     node: Option[Node]
 ) extends Reply
 
-case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse])
-    extends Reply
+case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse]) extends Reply
 
 case class GetInternalWayResponse(
     id: Long,
@@ -135,5 +134,4 @@ protected[tile] final case class WayAdded(
     attributes: Map[String, String]
 ) extends AtomicEvent
 
-protected[tile] final case class BatchAdded(events: Seq[AtomicEvent])
-    extends Event
+protected[tile] final case class BatchAdded(events: Seq[AtomicEvent]) extends Event

@@ -20,12 +20,12 @@ package com.simplexportal.spatial.index.grid.sessions
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import com.simplexportal.spatial.index.grid.CommonInternalSerializer
+import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridGetWay, GridGetWayReply, GridRequest}
-import com.simplexportal.spatial.index.grid.lookups.WayLookUpActor.{GetResponse => LookUpReply}
-import com.simplexportal.spatial.index.grid.lookups.{LookUpWayEntityIdGen, WayLookUpActor}
 import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, GetWayResponse => TileReply}
+import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol.{GetResponse => LookUpReply}
+import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpActor, WayLookUpProtocol}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import io.jvm.uuid.UUID
 
@@ -57,7 +57,7 @@ object GetWaySession {
         sharding.entityRefFor(
           WayLookUpTypeKey,
           LookUpWayEntityIdGen.entityId(getWay.id)
-        ) ! WayLookUpActor.Get(getWay.id, adapter)
+        ) ! WayLookUpProtocol.Get(getWay.id, adapter)
 
         Behaviors.receiveMessage {
           case LookUpReplyWrapper(LookUpReply(wayId, Some(tileIds))) =>
