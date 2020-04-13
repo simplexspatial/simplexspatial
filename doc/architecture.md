@@ -1,6 +1,6 @@
 # Simple X Spatial architecture.
 
-## Abstract Data Types (ADT)
+## Abstract Data Types (ADT) and Anti-Corruption Layer (ACL)
 Because the architecture is base in reactive oriented messages
 patterns, the way to define the system is using Abstract Data Types
 (ADT).
