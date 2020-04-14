@@ -143,12 +143,12 @@ lazy val core = (project in file("core"))
     ).map(_ % Test)
   )
   .enablePlugins(
-    BashStartScriptPlugin,
-    LauncherJarPlugin,
+    AshScriptPlugin,
     DockerPlugin
   )
   .settings(
     packageDescription := "SimplexSpatial Server",
+    dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
     dockerUpdateLatest := true,
     dockerExposedPorts ++= Seq(2550, 9010, 6080, 7080, 8080),
     defaultLinuxInstallLocation in Docker := "/opt/simplexspatial",

@@ -82,17 +82,16 @@ The new folder contains the follow structure:
 ```text
 .
 ├── bin
-│   ├── main
-│   ├── main.bat
-│   ├── simple_start_node.sh
 │   ├── simplexspatial-core
 │   └── simplexspatial-core.bat
 ├── conf
+│   ├── application-akka-commons.conf
+│   ├── application-cassandra.conf
 │   ├── application.conf
 │   ├── application.ini
-│   ├── docker-compose.yml
-│   ├── logback.xml
-│   └── schema.sql
+│   ├── application-postgres.conf
+│   ├── application-simplexspatial.conf
+│   └── logback.xml
 ├── jetty-alpn-agent
 │   └── jetty-alpn-agent-2.0.9.jar
 └── lib
@@ -263,6 +262,15 @@ From the folder where you decompressed the server, in out case `~/simplexspatial
 
 Node 1:
 ```ssh
+bin/simplexspatial-core \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dconfig.file=conf/application-postgres.conf \
+    -Dakka.remote.artery.canonical.port=2550  \
+    -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080
+
 bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -jvm-debug 9010 \
