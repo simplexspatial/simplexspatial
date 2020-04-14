@@ -1,6 +1,7 @@
 import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
 import sbt.Compile
 import sbt.Keys.{description, startYear}
+import NativePackagerHelper._
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -141,10 +142,16 @@ lazy val core = (project in file("core"))
       "com.github.pathikrit" %% "better-files" % betterFilesVersion
     ).map(_ % Test)
   )
-  .enablePlugins(UniversalPlugin)
-  .enablePlugins(BashStartScriptPlugin)
-  .enablePlugins(LauncherJarPlugin)
+  .enablePlugins(
+    BashStartScriptPlugin,
+    LauncherJarPlugin,
+    DockerPlugin
+  )
   .settings(
-    packageDescription := "SimplexSpatial Server"
+    packageDescription := "SimplexSpatial Server",
+    dockerUpdateLatest := true,
+    dockerExposedPorts ++= Seq(2550, 9010, 6080, 7080, 8080),
+    defaultLinuxInstallLocation in Docker := "/opt/simplexspatial",
+    mappings in (Universal, packageZipTarball) ++= contentOf("core/src/zip-tar")
   )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")

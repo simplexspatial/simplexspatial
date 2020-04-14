@@ -233,7 +233,7 @@ Important information about logging configuration:
 Akka persistence needs a storage system to store the journal and snapshots.
 
 - In production or for performance test, it is recommended to use a distributed storage, like Cassandra.
-- For testing ( default configuration ) Postgresql is used. In the `conf` folder, there is a `docker-compose.yml` file to
+- For testing ( default configuration ) Postgresql is enough. In the `conf` folder, there is a `docker-compose.yml` file to
 be able to start all dependencies for testing. In the same folder, you can find the SQL file with the database schema.
 
 So from the `conf` folder:

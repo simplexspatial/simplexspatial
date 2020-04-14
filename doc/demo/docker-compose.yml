@@ -1,0 +1,72 @@
+version: '2.4'
+
+services:
+  cassandra_seed:
+    image: cassandra:3
+    restart: always
+    ports:
+      - 9160:9160
+      - 9042:9042
+    mem_limit: 8gb
+#    networks:
+#      default:
+#        ipv4_address: 172.28.0.100
+#    environment:
+#      CASSANDRA_SEEDS: 172.28.0.100
+#  cassandra:
+#    image: cassandra:3
+#    restart: always
+#    mem_limit: 2gb
+#    ports:
+#      - 9160
+#      - 9042
+#    environment:
+#      CASSANDRA_SEEDS: 172.28.0.100
+#    depends_on:
+#      - "cassandra_seed"
+#  simplexspatial_seed_1:
+#    image: simplexspatial-core:latest
+#    ports:
+#      - 2550:2551
+#      - 9010:9011
+#      - 6080:6081
+#      - 7080:7081
+#      - 8080:8081
+#    networks:
+#      default:
+#        ipv4_address: 172.28.0.100
+#    environment:
+#      SEED-NODE-1: "akka://SimplexSpatialSystem@172.28.0.100:2550",
+#      SEED-NODE-2: "akka://SimplexSpatialSystem@172.28.0.101:2550"
+#    depends_on:
+#      - "cassandra_seed"
+#  simplexspatial_seed_2:
+#    image: simplexspatial-core:latest
+#    ports:
+#      - 2550:2551
+#      - 9010:9011
+#      - 6080:6081
+#      - 7080:7081
+#      - 8080:8081
+#    networks:
+#      default:
+#        ipv4_address: 172.28.0.101
+#    environment:
+#      SEED-NODE-1: "akka://SimplexSpatialSystem@172.28.0.100:2550",
+#      SEED-NODE-2: "akka://SimplexSpatialSystem@172.28.0.101:2550"
+#    depends_on:
+#      - "cassandra_seed"
+#  simplexspatial:
+#    image: simplexspatial-core:latest
+#    environment:
+#      SEED-NODE-1: "akka://SimplexSpatialSystem@172.28.0.100:2550",
+#      SEED-NODE-2: "akka://SimplexSpatialSystem@172.28.0.101:2550"
+#    depends_on:
+#      - "cassandra_seed"
+#networks:
+#  default:
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet:  172.28.0.0/16
+
