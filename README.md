@@ -41,8 +41,17 @@ The current implementation uses AKKA as Actor Model toolkit and Scala as program
 - Akka persistence to implement a CQRS model.
 
 # Launch
-Because the early state of the project, there are not deployables packages to download. You will need to build it from
-the source. But don't worry, it is not difficult:
+Because the early state of the project, there are not deployables packages to download, but there is a Docker Repository
+with the latest SNAPSHOT at [Simplexspatial Docker Repository](https://hub.docker.com/repository/docker/simplexspatial/simplexspatial)
+
+You can use the docker-compose.yml in the folder [doc/demo/docker-compose](doc/demodocker-compose) that will start an environment with:
+- Cassandra
+- Simplexspatial
+
+If you have Docker and Docker Compose installed in your system, the simplest way to run it is [checking out](Checkout the project) the project
+and executing `docker-compose up` from the folder [doc/demo/docker-compose](doc/demodocker-compose) 
+
+# Builing
 
 ## Tooling to build the artifact
 - Java 8: The server has been tested with Java 8, but it should work with newer versions as well. 
@@ -265,7 +274,7 @@ Node 1:
 bin/simplexspatial-core \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf \
+    -Dconfig.file=conf/application.conf \
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
@@ -276,7 +285,7 @@ bin/simplexspatial-core \
     -jvm-debug 9010 \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf\
+    -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
@@ -290,7 +299,7 @@ bin/simplexspatial-core \
     -jvm-debug 9011 \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf\
+    -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=2551  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
@@ -303,7 +312,7 @@ bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf\
+    -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=0  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=0 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=0 \
