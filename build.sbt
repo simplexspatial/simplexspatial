@@ -151,6 +151,7 @@ lazy val core = (project in file("core"))
     dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
     dockerUpdateLatest := true,
     dockerExposedPorts ++= Seq(2550, 9010, 6080, 7080, 8080),
+    dockerExposedVolumes := Seq("/opt/simplexspatial/conf", "/opt/simplexspatial/logs"),
     defaultLinuxInstallLocation in Docker := "/opt/simplexspatial",
     mappings in (Universal, packageZipTarball) ++= contentOf("core/src/zip-tar")
   )

@@ -2,15 +2,15 @@
 
 This is an environment that can be used to demo and testing.
 
-It is using [Docker Compose 3.7](https://docs.docker.com/compose/), so it is necessary at least Docker v18.06.0+
+It is using [Docker Compose 2.4](https://docs.docker.com/compose/), so it is necessary at least Docker v18.06.0+
 
-The environment contains a Cassandra cluster to store Akka persistence journal and snapshots. The data is stored internally
+The environment contains a Cassandra single node cluster to store Akka persistence journal and snapshots. The data is stored internally
 in the container, so it will be a clean after remove the container.
 
 ## Start environment
 ```ssh
 # Start
-docker-compose  up -d
+docker-compose up -d
 
 # Follow logs
 docker-compose logs -f
