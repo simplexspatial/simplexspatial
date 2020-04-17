@@ -15,7 +15,11 @@ services:
         ipv4_address: 172.28.0.90
     environment:
       CASSANDRA_SEEDS: 172.28.0.90
-
+  cassandra_initdb:
+    depends_on:
+      - cassandra_seed
+    build: ./cassandra-initdb
+    command: ["172.28.0.90", "bootstrap"]
   simplexspatial_seed_1:
     hostname: simplexspatial1
     image: simplexspatial/simplexspatial:latest
@@ -65,4 +69,3 @@ networks:
       driver: default
       config:
         - subnet:  172.28.0.0/24
-
