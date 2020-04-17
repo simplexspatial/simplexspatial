@@ -25,7 +25,7 @@ import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridGetWay, GridGetWayReply, GridRequest}
 import com.simplexportal.spatial.index.grid.tile.actor.{GetWay, GetWayResponse => TileReply}
 import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol.{GetResponse => LookUpReply}
-import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpActor, WayLookUpProtocol}
+import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpProtocol}
 import com.simplexportal.spatial.model.{Location, Node, Way}
 import io.jvm.uuid.UUID
 

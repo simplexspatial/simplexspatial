@@ -1,6 +1,6 @@
 import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
 import sbt.Compile
-import sbt.Keys.{description, startYear}
+import sbt.Keys.{description, scalacOptions, startYear}
 import NativePackagerHelper._
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -29,7 +29,17 @@ lazy val commonSettings = Seq(
   fork := true,
   resolvers += "osm4scala repo" at "https://dl.bintray.com/angelcervera/maven",
   scalaVersion := "2.12.11",
-  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+  addCompilerPlugin(scalafixSemanticdb),
+  Compile / scalacOptions ++= Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Xlog-reflective-calls",
+    "-Xlint",
+    "-Yrangepos",
+    "-Ywarn-unused",
+    "-Ywarn-unused-import"
+  ),
   Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
 //  run / javaOptions ++= Seq("-Xms128m", "-Xmx1024m", "-Djava.library.path=./target/native"),
   /*  scalacOptions ++= Seq(
