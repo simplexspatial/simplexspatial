@@ -1,0 +1,75 @@
+version: '2.4'
+
+services:
+  cassandra:
+    image: cassandra:3
+    restart: always
+    ports:
+      - 9160:9160
+      - 9042:9042
+    mem_limit: 10gb
+    cpus: 4
+    networks:
+      default:
+        ipv4_address: 172.28.0.90
+    environment:
+      CASSANDRA_SEEDS: 172.28.0.90
+  cassandra_initdb:
+    build: ./cassandra-initdb
+    depends_on:
+      - cassandra
+    command: ["172.28.0.90", "bootstrap"]
+  simplexspatial_seed_1:
+    hostname: simplexspatial1
+    image: simplexspatial/simplexspatial:latest
+    ports:
+      - 9011:9010
+      - 6081:6080
+      - 7081:7080
+      - 8081:8080
+    mem_limit: 2gb
+    cpus: 2
+    networks:
+      default:
+        ipv4_address: 172.28.0.101
+    volumes:
+      - ./simplexspatial/conf:/opt/simplexspatial/conf
+    depends_on:
+      - "cassandra"
+  simplexspatial_seed_2:
+    hostname: simplexspatial2
+    image: simplexspatial/simplexspatial:latest
+    ports:
+      - 9012:9010
+      - 6082:6080
+      - 7082:7080
+      - 8082:8080
+    mem_limit: 2gb
+    cpus: 2
+    networks:
+      default:
+        ipv4_address: 172.28.0.102
+    volumes:
+      - ./simplexspatial/conf:/opt/simplexspatial/conf
+    depends_on:
+      - "simplexspatial_seed_1"
+  simplexspatial:
+    image: simplexspatial/simplexspatial:latest
+    ports:
+      - 9010
+      - 6080
+      - 7080
+      - 8080
+    mem_limit: 2gb
+    cpus: 2
+    volumes:
+      - ./simplexspatial/conf:/opt/simplexspatial/conf
+    depends_on:
+      - "simplexspatial_seed_2"
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet:  172.28.0.0/24

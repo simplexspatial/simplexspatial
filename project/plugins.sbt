@@ -23,7 +23,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.5") // ALPN agent
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 
 // Package and distribution
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.6.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.7.0")
 
 // Helpers for dev time.
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")

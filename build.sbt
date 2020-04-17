@@ -1,6 +1,7 @@
 import com.typesafe.sbt.MultiJvmPlugin.multiJvmSettings
 import sbt.Compile
 import sbt.Keys.{description, startYear}
+import NativePackagerHelper._
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -93,7 +94,6 @@ lazy val grpcClientScala = (project in file("grpc-client-scala"))
   .dependsOn(protobufApi)
 
 lazy val core = (project in file("core"))
-  .enablePlugins(JavaAppPackaging)
   .enablePlugins(AkkaGrpcPlugin)
   .enablePlugins(JavaAgent) // ALPN agent
   .enablePlugins(MultiJvmPlugin)
@@ -141,10 +141,18 @@ lazy val core = (project in file("core"))
       "com.github.pathikrit" %% "better-files" % betterFilesVersion
     ).map(_ % Test)
   )
-  .enablePlugins(UniversalPlugin)
-  .enablePlugins(BashStartScriptPlugin)
-  .enablePlugins(LauncherJarPlugin)
+  .enablePlugins(
+    JavaAppPackaging,
+    DockerPlugin
+  )
   .settings(
-    packageDescription := "SimplexSpatial Server"
+    packageName in Docker := "simplexspatial/simplexspatial",
+    packageDescription := "The Reactive Geospatial Server",
+    dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
+    dockerUpdateLatest := true,
+    dockerExposedPorts ++= Seq(2550, 9010, 6080, 7080, 8080),
+    dockerExposedVolumes := Seq("/opt/simplexspatial/conf", "/opt/simplexspatial/logs"),
+    defaultLinuxInstallLocation in Docker := "/opt/simplexspatial",
+    mappings in (Universal, packageZipTarball) ++= contentOf("core/src/zip-tar")
   )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")

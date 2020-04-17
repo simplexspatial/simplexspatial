@@ -95,8 +95,7 @@ CREATE TABLE IF NOT EXISTS akka.metadata
 (
     persistence_id text PRIMARY KEY,
     deleted_to     bigint,
-    properties     map< text,
-        text>
+    properties     map<text,text>
 );
 
 CREATE TABLE IF NOT EXISTS akka.all_persistence_ids

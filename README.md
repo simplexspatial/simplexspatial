@@ -40,9 +40,20 @@ The current implementation uses AKKA as Actor Model toolkit and Scala as program
 - Akka Cluster / Sharding to distribute data and computation.
 - Akka persistence to implement a CQRS model.
 
-# Launch
-Because the early state of the project, there are not deployables packages to download. You will need to build it from
-the source. But don't worry, it is not difficult:
+# Launch (Docker Compose Demo)
+Because the early state of the project, there are not deployables packages to download, but there is a Docker Repository
+with the latest SNAPSHOT at [Simplexspatial Docker Repository](https://hub.docker.com/repository/docker/simplexspatial/simplexspatial)
+
+You can use the docker-compose.yml in the folder [doc/demo/docker-compose](doc/demo/docker-compose) that will start an environment with:
+- Cassandra
+- Simplexspatial
+
+If you have Docker and Docker Compose installed in your system, the simplest way to run it is [checking out](Checkout the project) the project
+and executing `docker-compose up` from the folder [doc/demo/docker-compose](doc/demo/docker-compose).
+
+There is a more detailed documentation at [the Demo with Docker Compose section](doc/demo/docker-compose/README.md).
+
+# Builing
 
 ## Tooling to build the artifact
 - Java 8: The server has been tested with Java 8, but it should work with newer versions as well. 
@@ -82,17 +93,16 @@ The new folder contains the follow structure:
 ```text
 .
 ├── bin
-│   ├── main
-│   ├── main.bat
-│   ├── simple_start_node.sh
 │   ├── simplexspatial-core
 │   └── simplexspatial-core.bat
 ├── conf
+│   ├── application-akka-commons.conf
+│   ├── application-cassandra.conf
 │   ├── application.conf
 │   ├── application.ini
-│   ├── docker-compose.yml
-│   ├── logback.xml
-│   └── schema.sql
+│   ├── application-postgres.conf
+│   ├── application-simplexspatial.conf
+│   └── logback.xml
 ├── jetty-alpn-agent
 │   └── jetty-alpn-agent-2.0.9.jar
 └── lib
@@ -147,8 +157,7 @@ Remind that the server is base in [AKKA](https://akka.io/), so you can
 set any parameters related to AKKA as well.
 
 ### Akka cluster configuration
-In relation to the AKKA cluster configuration, it is
-important to configure the way that the cluster is going to work.
+In relation to the AKKA cluster configuration, it is important to configure the way that the cluster is going to work.
 
 In this stage of the project, and only for testing, the default configuration is using Postgres to store the journal and
 snapshots.
@@ -233,7 +242,7 @@ Important information about logging configuration:
 Akka persistence needs a storage system to store the journal and snapshots.
 
 - In production or for performance test, it is recommended to use a distributed storage, like Cassandra.
-- For testing ( default configuration ) Postgresql is used. In the `conf` folder, there is a `docker-compose.yml` file to
+- For testing ( default configuration ) Postgresql is enough. In the `conf` folder, there is a `docker-compose.yml` file to
 be able to start all dependencies for testing. In the same folder, you can find the SQL file with the database schema.
 
 So from the `conf` folder:
@@ -264,11 +273,20 @@ From the folder where you decompressed the server, in out case `~/simplexspatial
 Node 1:
 ```ssh
 bin/simplexspatial-core \
+    -J-Xms1G \
+    -J-Xmx4G  \
+    -Dconfig.file=conf/application.conf \
+    -Dakka.remote.artery.canonical.port=2550  \
+    -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080
+
+bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -jvm-debug 9010 \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf\
+    -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
@@ -282,7 +300,7 @@ bin/simplexspatial-core \
     -jvm-debug 9011 \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf\
+    -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=2551  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
@@ -295,7 +313,7 @@ bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -J-Xms1G \
     -J-Xmx4G  \
-    -Dconfig.file=conf/application-postgres.conf\
+    -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=0  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=0 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=0 \
@@ -419,6 +437,7 @@ http -v GET http://localhost:8080/algorithm/nearest/node lat==43.73819 lon==7.42
 ## Other documentation
 - [Architecture and Design documentation](doc/architecture.md)
 - [Performance documentation](doc/performance.md)
+- [Demo](doc/demo/docker-compose)
 
 ## Notes
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
