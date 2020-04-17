@@ -44,12 +44,14 @@ The current implementation uses AKKA as Actor Model toolkit and Scala as program
 Because the early state of the project, there are not deployables packages to download, but there is a Docker Repository
 with the latest SNAPSHOT at [Simplexspatial Docker Repository](https://hub.docker.com/repository/docker/simplexspatial/simplexspatial)
 
-You can use the docker-compose.yml in the folder [doc/demo/docker-compose](doc/demodocker-compose) that will start an environment with:
+You can use the docker-compose.yml in the folder [doc/demo/docker-compose](doc/demo/docker-compose) that will start an environment with:
 - Cassandra
 - Simplexspatial
 
 If you have Docker and Docker Compose installed in your system, the simplest way to run it is [checking out](Checkout the project) the project
-and executing `docker-compose up` from the folder [doc/demo/docker-compose](doc/demodocker-compose) 
+and executing `docker-compose up` from the folder [doc/demo/docker-compose](doc/demo/docker-compose).
+
+There is a more detailed documentation at [the Demo with Docker Compose section](doc/demo/docker-compose/README.md).
 
 # Builing
 
@@ -155,8 +157,7 @@ Remind that the server is base in [AKKA](https://akka.io/), so you can
 set any parameters related to AKKA as well.
 
 ### Akka cluster configuration
-In relation to the AKKA cluster configuration, it is
-important to configure the way that the cluster is going to work.
+In relation to the AKKA cluster configuration, it is important to configure the way that the cluster is going to work.
 
 In this stage of the project, and only for testing, the default configuration is using Postgres to store the journal and
 snapshots.
@@ -436,6 +437,7 @@ http -v GET http://localhost:8080/algorithm/nearest/node lat==43.73819 lon==7.42
 ## Other documentation
 - [Architecture and Design documentation](doc/architecture.md)
 - [Performance documentation](doc/performance.md)
+- [Demo](doc/demo/docker-compose)
 
 ## Notes
 - Enable GRPC logs: -Djava.util.logging.config.file=/path/to/grpc-debug-logging.properties
