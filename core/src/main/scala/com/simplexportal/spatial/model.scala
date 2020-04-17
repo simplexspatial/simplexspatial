@@ -33,9 +33,9 @@ package model {
     val MIN_LATITUDE = -90
     val NO_LATITUDE = 91
     val NO_LONGITUDE = 181
-    val MAX = Location(MAX_LATITUDE, MAX_LONGITUDE)
-    val MIN = Location(MIN_LATITUDE, MIN_LONGITUDE)
-    val NaL = Location(NO_LATITUDE, NO_LONGITUDE)
+    val MAX: Location = Location(MAX_LATITUDE, MAX_LONGITUDE)
+    val MIN: Location = Location(MIN_LATITUDE, MIN_LONGITUDE)
+    val NaL: Location = Location(NO_LATITUDE, NO_LONGITUDE)
   }
 
   final case class Line(segments: Seq[Location]) extends Geometry
@@ -45,7 +45,7 @@ package model {
   final case class Location(lat: Double, lon: Double) extends Geometry with AdjacentRepresentation
 
   object BoundingBox {
-    val MAX = BoundingBox(Location.MIN, Location.MAX)
+    val MAX: BoundingBox = BoundingBox(Location.MIN, Location.MAX)
   }
 
   final case class BoundingBox(min: Location, max: Location) extends Geometry {
