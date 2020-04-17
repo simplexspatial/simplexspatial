@@ -40,7 +40,7 @@ The current implementation uses AKKA as Actor Model toolkit and Scala as program
 - Akka Cluster / Sharding to distribute data and computation.
 - Akka persistence to implement a CQRS model.
 
-# Launch
+# Launch (Docker Compose Demo)
 Because the early state of the project, there are not deployables packages to download, but there is a Docker Repository
 with the latest SNAPSHOT at [Simplexspatial Docker Repository](https://hub.docker.com/repository/docker/simplexspatial/simplexspatial)
 
