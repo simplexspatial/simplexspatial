@@ -85,6 +85,7 @@ lazy val root = (project in file("."))
 
 lazy val protobufApi = (project in file("protobuf-api"))
   .settings(
+    commonSettings,
     name := "protobuf-api",
     description := "Protobuf API definition"
   )
