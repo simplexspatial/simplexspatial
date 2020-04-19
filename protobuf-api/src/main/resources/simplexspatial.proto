@@ -10,6 +10,7 @@ service GRPCEntryPoint {
     rpc AddNode (AddNodeCmd) returns (ACK);
     rpc AddWay (AddWayCmd) returns (ACK);
     rpc StreamBatchCommands (stream ExecuteBatchCmd) returns (stream ACK);
+    rpc StreamBatchCommandsOneResponse (stream ExecuteBatchCmd) returns (IngestionMetrics);
     rpc GetMetrics (GetMetricsCmd) returns (Metrics);
     rpc SearchNearestNode (SearchNearestNodeCmd) returns (NearestNodeReply);
 }
@@ -53,6 +54,12 @@ message ExecuteBatchCmd {
 }
 
 message GetMetricsCmd {
+}
+
+message IngestionMetrics {
+    uint64 nodes = 1;
+    uint64 ways = 2;
+    uint64 others = 3;
 }
 
 message Metrics {
