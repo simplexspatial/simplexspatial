@@ -20,7 +20,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ActorRef, Scheduler}
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
 import com.simplexportal.spatial.index.grid.GridProtocol._
@@ -83,20 +83,6 @@ class GRPCEntryPointImpl(gridIndex: ActorRef[GridRequest])(
         ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[GridACK]) => GridAddBatch(commands, Some(replyTo)))
       )
       .map(ackAdapter);
-
-  override def streamBatchCommandsOneResponse(in: Source[ExecuteBatchCmd, NotUsed]): Future[IngestionMetrics] = {
-    in.map(cmd => toAddBatch(cmd))
-      .runFold(IngestionMetrics()) { (metrics, commands) =>
-        ActorFlow.ask[Seq[GridBatchCommand], GridAddBatch, GridACK](gridIndex)((commands, replyTo: ActorRef[GridACK]) =>
-          GridAddBatch(commands, Some(replyTo))
-        )
-        commands.foldLeft(metrics) {
-          case (m, _: GridAddNode) => m.copy(nodes = m.nodes + 1)
-          case (m, _: GridAddWay)  => m.copy(ways = m.ways + 1)
-          case (m, _)              => m.copy(others = m.others + 1)
-        }
-      }
-  }
 
   override def searchNearestNode(in: SearchNearestNodeCmd): Future[NearestNodeReply] =
     gridIndex

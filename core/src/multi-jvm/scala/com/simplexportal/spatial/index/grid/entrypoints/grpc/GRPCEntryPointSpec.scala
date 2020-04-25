@@ -116,76 +116,76 @@ abstract class GRPCEntryPointSpec
       enterBarrier("all-up")
     }
 
-    "be able to add entities in batch" in {
-      runOn(node0) {
-        val grpcService = new GRPCEntryPointImpl(gridIndex)
-
-        Await.result(
-          grpcService.streamBatchCommandsOneResponse(Source.empty),
-          500.milli
-        ) shouldBe IngestionMetrics(0, 0, 0)
-
-        Await
-          .result(
-            grpcService.streamBatchCommandsOneResponse(
-              Source.single(
-                ExecuteBatchCmd().withCommands(immutable.Seq())
-              )
-            ),
-            500.milli
-          ) shouldBe IngestionMetrics(0, 0)
-
-        Await
-          .result(
-            grpcService.streamBatchCommandsOneResponse(
-              Source.single(
-                ExecuteBatchCmd().withCommands(
-                  immutable.Seq(
-                    ExecuteCmd().withNode(AddNodeCmd(1, 0.000001, 0.000001)),
-                    ExecuteCmd().withNode(AddNodeCmd(2, 0.000002, 0.000002)),
-                    ExecuteCmd().withWay(AddWayCmd(3, Seq(1, 2)))
-                  )
-                )
-              )
-            ),
-            500.milli
-          ) shouldBe IngestionMetrics(2, 1)
-
-        Await
-          .result(
-            grpcService.streamBatchCommandsOneResponse(
-              Source(
-                immutable.Seq(
-                  ExecuteBatchCmd().withCommands(
-                    immutable.Seq(
-                      ExecuteCmd().withNode(AddNodeCmd(1, 0.000001, 0.000001)),
-                      ExecuteCmd().withNode(AddNodeCmd(2, 0.000002, 0.000002)),
-                      ExecuteCmd().withWay(AddWayCmd(3, Seq(1, 2)))
-                    )
-                  ),
-                  ExecuteBatchCmd().withCommands(
-                    immutable.Seq(
-                      ExecuteCmd().withNode(AddNodeCmd(10, 0.000001, 0.000001)),
-                      ExecuteCmd().withNode(AddNodeCmd(20, 0.000002, 0.000002)),
-                      ExecuteCmd().withNode(AddNodeCmd(30, 0.000003, 0.000003)),
-                      ExecuteCmd().withWay(AddWayCmd(31, Seq(10, 20))),
-                      ExecuteCmd().withWay(AddWayCmd(32, Seq(1, 10, 20, 30)))
-                    )
-                  ),
-                  ExecuteBatchCmd().withCommands(
-                    immutable.Seq(
-                      ExecuteCmd().withWay(AddWayCmd(300, Seq(1, 2, 10, 20)))
-                    )
-                  )
-                )
-              )
-            ),
-            500.milli
-          ) shouldBe IngestionMetrics(5, 4)
-
-      }
-      enterBarrier("entities added in batch")
-    }
+//    "be able to add entities in batch" in {
+//      runOn(node0) {
+//        val grpcService = new GRPCEntryPointImpl(gridIndex)
+//
+//        Await.result(
+//          grpcService.streamBatchCommandsOneResponse(Source.empty),
+//          500.milli
+//        ) shouldBe IngestionMetrics(0, 0, 0)
+//
+//        Await
+//          .result(
+//            grpcService.streamBatchCommandsOneResponse(
+//              Source.single(
+//                ExecuteBatchCmd().withCommands(immutable.Seq())
+//              )
+//            ),
+//            500.milli
+//          ) shouldBe IngestionMetrics(0, 0)
+//
+//        Await
+//          .result(
+//            grpcService.streamBatchCommandsOneResponse(
+//              Source.single(
+//                ExecuteBatchCmd().withCommands(
+//                  immutable.Seq(
+//                    ExecuteCmd().withNode(AddNodeCmd(1, 0.000001, 0.000001)),
+//                    ExecuteCmd().withNode(AddNodeCmd(2, 0.000002, 0.000002)),
+//                    ExecuteCmd().withWay(AddWayCmd(3, Seq(1, 2)))
+//                  )
+//                )
+//              )
+//            ),
+//            500.milli
+//          ) shouldBe IngestionMetrics(2, 1)
+//
+//        Await
+//          .result(
+//            grpcService.streamBatchCommandsOneResponse(
+//              Source(
+//                immutable.Seq(
+//                  ExecuteBatchCmd().withCommands(
+//                    immutable.Seq(
+//                      ExecuteCmd().withNode(AddNodeCmd(1, 0.000001, 0.000001)),
+//                      ExecuteCmd().withNode(AddNodeCmd(2, 0.000002, 0.000002)),
+//                      ExecuteCmd().withWay(AddWayCmd(3, Seq(1, 2)))
+//                    )
+//                  ),
+//                  ExecuteBatchCmd().withCommands(
+//                    immutable.Seq(
+//                      ExecuteCmd().withNode(AddNodeCmd(10, 0.000001, 0.000001)),
+//                      ExecuteCmd().withNode(AddNodeCmd(20, 0.000002, 0.000002)),
+//                      ExecuteCmd().withNode(AddNodeCmd(30, 0.000003, 0.000003)),
+//                      ExecuteCmd().withWay(AddWayCmd(31, Seq(10, 20))),
+//                      ExecuteCmd().withWay(AddWayCmd(32, Seq(1, 10, 20, 30)))
+//                    )
+//                  ),
+//                  ExecuteBatchCmd().withCommands(
+//                    immutable.Seq(
+//                      ExecuteCmd().withWay(AddWayCmd(300, Seq(1, 2, 10, 20)))
+//                    )
+//                  )
+//                )
+//              )
+//            ),
+//            500.milli
+//          ) shouldBe IngestionMetrics(5, 4)
+//
+//      }
+//      enterBarrier("entities added in batch")
+//    }
   }
 }
 

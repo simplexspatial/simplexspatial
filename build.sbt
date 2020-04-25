@@ -74,6 +74,7 @@ lazy val scalaUUIDVersion = "0.3.1"
 lazy val jtsVersion = "1.16.1"
 lazy val jdbcPersistenceVersion = "3.5.3"
 lazy val postgresJDBCDriver = "42.2.11"
+lazy val logbackVersion = "1.2.3"
 
 lazy val root = (project in file("."))
   .settings(
@@ -140,7 +141,7 @@ lazy val core = (project in file("core"))
       "io.altoo" %% "akka-kryo-serialization" % akkaKryoSerializationVersion,
       "ch.megard" %% "akka-http-cors" % akkaHttpCorsVersion,
       "org.fusesource.leveldbjni" % "leveldbjni-all" % leveldbVersion,
-      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "ch.qos.logback" % "logback-classic" % logbackVersion,
       "io.jvm.uuid" %% "scala-uuid" % scalaUUIDVersion,
       "org.locationtech.jts" % "jts-core" % jtsVersion,
       "com.github.dnvriend" %% "akka-persistence-jdbc" % jdbcPersistenceVersion,
