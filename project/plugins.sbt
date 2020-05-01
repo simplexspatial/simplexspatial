@@ -32,3 +32,6 @@ addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "1.0.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "1.0.9")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.14")
+
+// Lightbend Telemetry
+addSbtPlugin("com.lightbend.cinnamon" % "sbt-cinnamon" % "2.13.4")

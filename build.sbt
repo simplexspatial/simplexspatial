@@ -69,7 +69,7 @@ lazy val akkaHttpCorsVersion = "0.4.2"
 lazy val scalatestVersion = "3.1.1"
 lazy val leveldbVersion = "1.8"
 lazy val betterFilesVersion = "3.8.0"
-lazy val akkaKryoSerializationVersion = "1.1.0"
+lazy val akkaKryoSerializationVersion = "1.1.5"
 lazy val scalaUUIDVersion = "0.3.1"
 lazy val jtsVersion = "1.16.1"
 lazy val jdbcPersistenceVersion = "3.5.3"
@@ -169,3 +169,20 @@ lazy val core = (project in file("core"))
     mappings in (Universal, packageZipTarball) ++= contentOf("core/src/zip-tar")
   )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")
+  // Telemetry metrics
+  .enablePlugins(Cinnamon)
+  .settings(
+    cinnamon in run := true,
+    cinnamon in test := true,
+    libraryDependencies ++= Seq(
+      Cinnamon.library.cinnamonCHMetrics,
+      Cinnamon.library.cinnamonAkka,
+      Cinnamon.library.cinnamonAkkaTyped,
+      Cinnamon.library.cinnamonAkkaHttp,
+      Cinnamon.library.cinnamonJvmMetricsProducer,
+      Cinnamon.library.cinnamonPrometheus,
+      Cinnamon.library.cinnamonPrometheusHttpServer,
+      Cinnamon.library.cinnamonAkkaPersistence,
+      Cinnamon.library.cinnamonAkkaStream
+    )
+  )
