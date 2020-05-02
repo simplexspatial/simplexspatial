@@ -242,10 +242,10 @@ Important information about logging configuration:
 Akka persistence needs a storage system to store the journal and snapshots.
 
 - In production or for performance test, it is recommended to use a distributed storage, like Cassandra.
-- For testing ( default configuration ) Postgresql is enough. In the `conf` folder, there is a `docker-compose.yml` file to
+- For testing ( default configuration ) Postgresql is enough. In the `/dev` folder, there is a `docker-compose.yml` file to
 be able to start all dependencies for testing. In the same folder, you can find the SQL file with the database schema.
 
-So from the `conf` folder:
+To use with Postgres, from the `doc/dev` folder:
 - To start
     ```ssh
     docker-compose -f docker-compose-postgres.yml up -d
@@ -253,13 +253,13 @@ So from the `conf` folder:
 
 - To create the database or clean up:
     ```ssh
-    docker cp ./schema-postgres.sql conf_db_1:/root/schema-postgres.sql
-    docker exec conf_db_1 psql akka-persistence akka -f /root/schema-postgres.sql
+    docker cp ./schema-postgres.sql dev_db_1:/root/schema-postgres.sql
+    docker exec dev_db_1 psql akka-persistence akka -f /root/schema-postgres.sql
     ```
 
 - To stop:
     ```ssh
-    docker-compose -f docker-compose-postgres.yml up -d
+    docker-compose -f docker-compose-postgres.yml down -d
     ```
 
 More information about [Docker Compose in the documentation](https://docs.docker.com/compose/).
@@ -279,7 +279,8 @@ bin/simplexspatial-core \
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8080
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080 \
+    -Dcinnamon.prometheus.http-server.port=9001
 
 bin/simplexspatial-core \
     -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
@@ -290,34 +291,34 @@ bin/simplexspatial-core \
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7080 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8080
+    -Dsimplexportal.spatial.entrypoint.restful.port=8080 \
+    -Dcinnamon.prometheus.http-server.port=9001
 ```
 
 Node 2:
 ```ssh
 bin/simplexspatial-core \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
-    -jvm-debug 9011 \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=2551  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=8081
+    -Dsimplexportal.spatial.entrypoint.restful.port=8081 \
+    -Dcinnamon.prometheus.http-server.port=9002
 ```
 
 For other nodes, we can set the port as 0, so Akka will use a random free port:
 ```ssh
 bin/simplexspatial-core \
-    -java-home /usr/lib/jvm/java-8-openjdk-amd64 \
     -J-Xms1G \
     -J-Xmx4G  \
     -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=0  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=0 \
     -Dsimplexportal.spatial.entrypoint.grpc.port=0 \
-    -Dsimplexportal.spatial.entrypoint.restful.port=0
+    -Dsimplexportal.spatial.entrypoint.restful.port=0 \
+    -Dcinnamon.prometheus.http-server.port=0
 ```
 
 ## Examples.

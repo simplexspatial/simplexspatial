@@ -23,6 +23,7 @@ services:
     hostname: simplexspatial1
     image: simplexspatial/simplexspatial:latest
     ports:
+      - 9090:9090
       - 9011:9010
       - 6081:6080
       - 7081:7080

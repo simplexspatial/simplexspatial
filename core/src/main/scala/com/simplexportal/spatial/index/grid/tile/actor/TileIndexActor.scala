@@ -29,7 +29,7 @@ object TileIndexActor extends TileIndexQueryHandler with TileIndexActionHandler 
 
   def apply(indexId: String, tileId: String): Behavior[Command] =
     Behaviors.setup { context =>
-      context.log.info("Starting grid tile [{}]", tileId)
+      context.log.debug("Starting grid tile [{}]", tileId)
 
       EventSourcedBehavior[Command, Event, TileIndex](
         persistenceId = PersistenceId(s"Tile_${indexId}", tileId),
