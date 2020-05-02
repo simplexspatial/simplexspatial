@@ -18,7 +18,7 @@ lazy val commonSettings = Seq(
       "angelcervera",
       "Angel Cervera Claudio",
       "angelcervera@simplexportal.com",
-      url("http://github.com/angelcervera")
+      url("https://www.acervera.com")
     )
   ),
   startYear := Some(2019),
@@ -169,20 +169,6 @@ lazy val core = (project in file("core"))
     mappings in (Universal, packageZipTarball) ++= contentOf("core/src/zip-tar")
   )
   .dependsOn(protobufApi, grpcClientScala % "test->compile")
-  // Telemetry metrics
-  .enablePlugins(Cinnamon)
-  .settings(
-    cinnamon in run := true,
-    cinnamon in test := true,
-    libraryDependencies ++= Seq(
-      Cinnamon.library.cinnamonCHMetrics,
-      Cinnamon.library.cinnamonAkka,
-      Cinnamon.library.cinnamonAkkaTyped,
-      Cinnamon.library.cinnamonAkkaHttp,
-      Cinnamon.library.cinnamonJvmMetricsProducer,
-      Cinnamon.library.cinnamonPrometheus,
-      Cinnamon.library.cinnamonPrometheusHttpServer,
-      Cinnamon.library.cinnamonAkkaPersistence,
-      Cinnamon.library.cinnamonAkkaStream
-    )
-  )
+  // Telemetry
+  .enablePlugins(LightbendSubscription.enablePlugin)
+  .settings(LightbendSubscription.addSettings: _*)
