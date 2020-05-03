@@ -63,7 +63,7 @@ lazy val commonSettings = Seq(
   ),*/
 )
 
-lazy val akkaVersion = "2.6.4"
+lazy val akkaVersion = "2.6.5"
 lazy val akkaHttpVersion = "10.1.11"
 lazy val akkaHttpCorsVersion = "0.4.2"
 lazy val scalatestVersion = "3.1.1"
