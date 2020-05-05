@@ -24,6 +24,9 @@ import org.scalatest.wordspec.AnyWordSpecLike
 // scalastyle:off magic.number
 class TileIdxSpec extends AnyWordSpecLike with Matchers {
   "TileIdx" should {
+    "generate the right TileIdx" in {
+      TileIdx(123, 456).entityId should be("123_456")
+    }
     "calculate the BBox from the index" in {
       implicit val tileIdxGen = TileIndexEntityIdGen(10, 10)
       TileIdx(0,0).bbox() should be (BoundingBox(Location(-90 + (18*0),-180+(36*0)), Location(-90+(18*1),-180+(36*1))))
