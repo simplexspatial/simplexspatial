@@ -18,7 +18,7 @@
 package com.simplexportal.spatial.index.grid.sessions.addbatch
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, ActorTags, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.sessions.GetNodeLocationsSession
@@ -53,7 +53,8 @@ protected trait CollectNodeInfo extends Adapter with UpdateIndices with DataDist
 
     context.spawn(
       GetNodeLocationsSession(sharding, nodesNotPresentInThisBlock, locsResponseAdapter),
-      s"node_locations_${UUID.randomString}"
+      s"node_locations_${UUID.randomString}",
+      ActorTags("session", "session-collect-node-info")
     )
 
     Behaviors.receiveMessagePartial {

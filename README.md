@@ -273,8 +273,8 @@ From the folder where you decompressed the server, in out case `~/simplexspatial
 Node 1:
 ```ssh
 bin/simplexspatial-core \
-    -J-Xms1G \
-    -J-Xmx4G  \
+    -J-Xms5G \
+    -J-Xmx14G  \
     -Dconfig.file=conf/application.conf \
     -Dakka.remote.artery.canonical.port=2550  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6080 \
@@ -298,8 +298,8 @@ bin/simplexspatial-core \
 Node 2:
 ```ssh
 bin/simplexspatial-core \
-    -J-Xms1G \
-    -J-Xmx4G  \
+    -J-Xms5G \
+    -J-Xmx14G  \
     -Dconfig.file=conf/application.conf\
     -Dakka.remote.artery.canonical.port=2551  \
     -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
@@ -307,7 +307,15 @@ bin/simplexspatial-core \
     -Dsimplexportal.spatial.entrypoint.restful.port=8081 \
     -Dcinnamon.prometheus.http-server.port=9002
 ```
-
+bin/simplexspatial-core \
+    -J-Xms5G \
+    -J-Xmx14G  \
+    -Dconfig.file=conf/application.conf\
+    -Dakka.remote.artery.canonical.port=2551  \
+    -Dsimplexportal.spatial.entrypoint.grpc-web.port=6081 \
+    -Dsimplexportal.spatial.entrypoint.grpc.port=7081 \
+    -Dsimplexportal.spatial.entrypoint.restful.port=8081 \
+    -Dcinnamon.prometheus.http-server.port=9002
 For other nodes, we can set the port as 0, so Akka will use a random free port:
 ```ssh
 bin/simplexspatial-core \

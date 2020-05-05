@@ -17,6 +17,7 @@
 
 package com.simplexportal.spatial.index.grid.sessions.addbatch
 
+import akka.actor.typed.ActorTags
 import akka.actor.typed.scaladsl.ActorContext
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.GridProtocol._
@@ -34,7 +35,8 @@ object AddBatchSession extends CollectNodeInfo {
   ): Unit =
     context.spawn(
       collectNodeIdx(cmd),
-      s"adding_batch_${UUID.randomString}"
+      s"adding_batch_${UUID.randomString}",
+      ActorTags("session", "session-add-batch")
     )
 
 }

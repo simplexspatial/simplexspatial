@@ -18,7 +18,7 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, ActorTags, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.Grid.{TileTypeKey, WayLookUpTypeKey}
@@ -41,7 +41,8 @@ object GetWaySession {
   ): Unit =
     context.spawn(
       apply(cmd),
-      s"getting_way_${UUID.randomString}"
+      s"getting_way_${UUID.randomString}",
+      ActorTags("session", "session-get-way")
     )
 
   def apply(getWay: GridGetWay)(
