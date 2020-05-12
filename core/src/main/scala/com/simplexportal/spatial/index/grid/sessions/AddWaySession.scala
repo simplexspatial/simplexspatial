@@ -18,7 +18,7 @@
 package com.simplexportal.spatial.index.grid.sessions
 
 import akka.NotUsed
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ActorTags, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
@@ -47,7 +47,8 @@ object AddWaySession {
           GetInternalNodesSession(
             GetInternalNodes(addWay.nodeIds, context.self)
           ),
-          s"getting_node_${UUID.randomString}"
+          s"getting_node_${UUID.randomString}",
+          ActorTags("session", "session-add-way")
         )
 
         Behaviors.receiveMessage {

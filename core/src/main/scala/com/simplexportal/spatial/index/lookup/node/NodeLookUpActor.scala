@@ -33,7 +33,7 @@ object NodeLookUpActor {
         emptyState = Map.empty,
         commandHandler = (state, command) => onCommand(state, command),
         eventHandler = (state, event) => applyEvent(state, event)
-      )
+      ).withTagger(_ => Set("node-lookup"))
     }
 
   private def onCommand(
