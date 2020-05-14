@@ -45,7 +45,8 @@ case class TileIndex(
     nodes: Map[Long, InternalNode] = Map.empty,
     ways: Map[Long, InternalWay] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
-) extends NearestNodeSearch {
+) extends NearestNodeSearch
+    with API {
 
   // Generate a tuple a map with all tagsIds and another with the value indexed by tagId.
   private def attributesToDictionary(
@@ -68,7 +69,7 @@ case class TileIndex(
       prev: Option[Long],
       current: Long,
       next: Option[Long]
-  ) = {
+  ) =
     nodes.get(current) match {
       case None => // If it is not in the index, it is because it is a connector.
         InternalNode( // TODO: Calculate directions. Now, all bidirectional.
@@ -85,7 +86,6 @@ case class TileIndex(
           ins = (node.ins ++ next) ++ prev
         )
     }
-  }
 
   @tailrec
   private def updateConnections(
@@ -94,7 +94,7 @@ case class TileIndex(
       current: Long,
       nodeIds: Seq[Long],
       updated: List[(Long, InternalNode)]
-  ): List[(Long, InternalNode)] = {
+  ): List[(Long, InternalNode)] =
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -108,7 +108,6 @@ case class TileIndex(
         )
       }
     }
-  }
 
   def addNode(
       id: Long,
@@ -141,28 +140,5 @@ case class TileIndex(
       tagsDic = tagsDic ++ dic
     )
   }
-
-  def getWay(id: Long): Option[Way] = ways.get(id).map { iWay =>
-    Way(
-      id,
-      iWay.nodeIds
-        .map { nodeId =>
-          val iNode = nodes(nodeId)
-          Node(
-            iNode.id,
-            iNode.location,
-            iNode.attributes.map(attr => tagsDic(attr._1) -> attr._2)
-          )
-        },
-      iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
-    )
-  }
-
-  def toNode(internalNode: InternalNode): Node =
-    Node(
-      internalNode.id,
-      internalNode.location,
-      dictionaryToAttributes(internalNode.attributes)
-    )
 
 }

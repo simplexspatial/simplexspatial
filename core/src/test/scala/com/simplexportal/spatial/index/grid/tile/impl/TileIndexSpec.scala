@@ -80,34 +80,5 @@ class TileIndexSpec extends AnyWordSpecLike with Matchers {
       }
     }
 
-    "retrieve the API way" in {
-      exampleNetwork.getWay(100) shouldBe Some(
-        Way(
-          100,
-          Seq(
-            Node(5, Location(4, 5)),
-            Node(6, Location(2, 5)),
-            Node(3, Location(3, 10))
-          ),
-          Map("name" -> "Street Name")
-        )
-      )
-
-      exampleNetwork.getWay(101) shouldBe Some(
-        Way(
-          101,
-          Seq(
-            Node(1, Location(7, 3), Map("traffic_light" -> "true")),
-            Node(2, Location(7, 10)),
-            Node(3, Location(3, 10)),
-            Node(4, Location(3, 16))
-          ),
-          Map.empty
-        )
-      )
-
-      exampleNetwork.getWay(10) shouldBe None
-    }
-
   }
 }

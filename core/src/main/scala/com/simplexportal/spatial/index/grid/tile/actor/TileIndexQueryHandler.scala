@@ -36,7 +36,7 @@ trait TileIndexQueryHandler {
       Effect.none
 
     case GetNode(id, replyTo) =>
-      replyTo ! GetNodeResponse(id, tile.nodes.get(id).map(tile.toNode))
+      replyTo ! GetNodeResponse(id, tile.getNode(id))
       Effect.none
 
     case GetInternalNodes(ids, replyTo) =>
