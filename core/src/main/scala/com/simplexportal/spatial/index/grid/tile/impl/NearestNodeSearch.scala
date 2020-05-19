@@ -57,8 +57,8 @@ trait NearestNodeSearch {
     */
   private def nearestInternalNode(
       origin: Coordinate
-  ): Option[(Set[internal.InternalNode], Double)] =
-    nodes.foldLeft(Option.empty[(Set[internal.InternalNode], Double)]) {
+  ): Option[(Set[internal.Node], Double)] =
+    nodes.foldLeft(Option.empty[(Set[internal.Node], Double)]) {
       case (current, (_, node)) => {
         val d = origin.distance(node.location.toJTS())
         current match {

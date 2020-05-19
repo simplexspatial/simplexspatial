@@ -29,16 +29,16 @@ class APISpec extends AnyWordSpecLike with Matchers {
   "Using the API" should {
     val exampleNetwork = TileIndex(
       nodes = Map(
-        1L -> internal.InternalNode(1, model.Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
-        2L -> internal.InternalNode(2, model.Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
-        3L -> internal.InternalNode(3, model.Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
-        4L -> internal.InternalNode(4, model.Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
-        5L -> internal.InternalNode(5, model.Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
-        6L -> internal.InternalNode(6, model.Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
+        1L -> internal.Node(1, model.Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
+        2L -> internal.Node(2, model.Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
+        3L -> internal.Node(3, model.Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
+        4L -> internal.Node(4, model.Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
+        5L -> internal.Node(5, model.Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
+        6L -> internal.Node(6, model.Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
       ),
       ways = Map(
-        100L -> internal.InternalWay(100, Seq(5, 6, 3), Map(3373707 -> "Street Name")),
-        101L -> internal.InternalWay(101, Seq(1, 2, 3, 4))
+        100L -> internal.Way(100, Seq(5, 6, 3), Map(3373707 -> "Street Name")),
+        101L -> internal.Way(101, Seq(1, 2, 3, 4))
       ),
       Map(206407764 -> "traffic_light", 3373707 -> "name")
     )

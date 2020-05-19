@@ -47,7 +47,7 @@ object TileIndexProtocol {
 
   case class GetInternalNodeResponse(
       id: Long,
-      node: Option[TileIndex.InternalNode]
+      node: Option[TileIndex.Node]
   ) extends Reply
 
   case class GetNodeResponse(
@@ -59,7 +59,7 @@ object TileIndexProtocol {
 
   case class GetInternalWayResponse(
       id: Long,
-      way: Option[TileIndex.InternalWay]
+      way: Option[TileIndex.Way]
   ) extends Reply
 
   case class GetWayResponse(

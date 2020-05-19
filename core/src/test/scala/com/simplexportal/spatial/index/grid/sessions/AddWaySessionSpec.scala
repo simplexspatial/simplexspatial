@@ -30,8 +30,8 @@ import scala.util.Success
 // scalastyle:off magic.number
 class AddWaySessionSpec extends AnyWordSpecLike with Matchers with TryValues {
 
-  def node(id: Long, lat: Double, lon: Double): TileIndex.InternalNode =
-    TileIndex.InternalNode(id, Location(lat, lon))
+  def node(id: Long, lat: Double, lon: Double): TileIndex.Node =
+    TileIndex.Node(id, Location(lat, lon))
 
   "AddWaySessionSpec" when {
 

@@ -26,47 +26,32 @@ import scala.annotation.tailrec
 // FIXME: Search a better Map structure to store huge amount of data (for nodes and ways state)
 object TileIndex {
 
-  // TODO: Rename to Node and use namespace (internal.Node) to difference between internal model and API model
-  case class InternalNode(
+  sealed trait InternalModel
+
+  final case class Node(
       id: Long,
       location: model.Location,
       attributes: Map[Int, String] = Map.empty,
       ways: Set[Long] = Set.empty,
       outs: Set[Long] = Set.empty,
       ins: Set[Long] = Set.empty
-  )
+  ) extends InternalModel
 
-  // TODO: Rename to Way and use namespace (internal.Way) to difference between internal model and API model
-  case class InternalWay(
+  final case class Way(
       id: Long,
       nodeIds: Seq[Long],
       attributes: Map[Int, String] = Map.empty
-  )
+  ) extends InternalModel
 
 }
 
 case class TileIndex(
-    nodes: Map[Long, internal.InternalNode] = Map.empty,
-    ways: Map[Long, internal.InternalWay] = Map.empty,
+    nodes: Map[Long, internal.Node] = Map.empty,
+    ways: Map[Long, internal.Way] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
 ) extends NearestNodeSearch
-    with API {
-
-  // Generate a tuple a map with all tagsIds and another with the value indexed by tagId.
-  private def attributesToDictionary(
-      attributes: Map[String, String]
-  ): (Map[Int, String], Map[Int, String]) =
-    attributes.foldLeft((Map.empty[Int, String], Map.empty[Int, String])) {
-      case ((dic, attrs), attr) => {
-        val hash = attr._1.hashCode
-        (dic + (hash -> attr._1), attrs + (hash -> attr._2))
-      }
-    }
-
-  protected def dictionaryToAttributes(
-      attrs: Map[Int, String]
-  ): Map[String, String] =
-    attrs.map { case (k, v) => tagsDic(k) -> v }
+    with API
+    with AttribsDictionary {
 
   private def buildNewNode(
       wayId: Long,
@@ -75,8 +60,9 @@ case class TileIndex(
       next: Option[Long]
   ) =
     nodes.get(current) match {
-      case None => // If it is not in the index, it is because it is a connector.
-        internal.InternalNode( // TODO: Calculate directions. Now, all bidirectional.
+      case None => // FIXME: This case will not happen. If it happend, there is an error in the tile!!!!
+        // If it is not in the index, it is because it is a connector.
+        internal.Node( // TODO: Calculate directions. Now, all bidirectional.
           current,
           model.Location.NaL,
           ways = Set(wayId),
@@ -97,8 +83,8 @@ case class TileIndex(
       prev: Option[Long],
       current: Long,
       nodeIds: Seq[Long],
-      updated: List[(Long, internal.InternalNode)]
-  ): List[(Long, internal.InternalNode)] =
+      updated: List[(Long, internal.Node)]
+  ): List[(Long, internal.Node)] =
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -121,7 +107,7 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      nodes = nodes + (id -> internal.InternalNode(id, model.Location(lat, lon), attrs)),
+      nodes = nodes + (id -> internal.Node(id, model.Location(lat, lon), attrs)),
       tagsDic = tagsDic ++ dic
     )
   }
@@ -133,7 +119,7 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> internal.InternalWay(wayId, nodeIds, attrs)),
+      ways = ways + (wayId -> internal.Way(wayId, nodeIds, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,

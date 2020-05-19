@@ -60,7 +60,7 @@ class TileIndexActorSpec
         protocol.GetInternalNodeResponse(
           10,
           Some(
-            TileIndex.InternalNode(
+            TileIndex.Node(
               10,
               model.Location(5, 5),
               Map(128826956 -> "nodeAttrValue")
@@ -106,7 +106,7 @@ class TileIndexActorSpec
           100,
           Some(
             TileIndex
-              .InternalWay(100, Seq(5, 6, 3), Map(276737215 -> "wayAttrValue"))
+              .Way(100, Seq(5, 6, 3), Map(276737215 -> "wayAttrValue"))
           )
         )
       )
@@ -133,7 +133,7 @@ class TileIndexActorSpec
           100,
           Some(
             TileIndex
-              .InternalWay(100, Seq(5, 6, 3), Map(276737215 -> "wayAttrValue"))
+              .Way(100, Seq(5, 6, 3), Map(276737215 -> "wayAttrValue"))
           )
         )
       )

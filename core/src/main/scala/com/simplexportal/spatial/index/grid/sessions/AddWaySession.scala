@@ -100,7 +100,7 @@ object AddWaySession {
     */
   def validateNodes(
       responses: Seq[GetInternalNodeResponse]
-  ): Try[Seq[TileIndex.InternalNode]] = Try {
+  ): Try[Seq[TileIndex.Node]] = Try {
     responses.map { resp =>
       resp.node.getOrElse(throw new Exception(s"Node [${resp.id}] not found."))
     }
@@ -119,19 +119,19 @@ object AddWaySession {
     * @param entityIdGen
     * @return
     */
-  def splitNodesInShards(nodes: Seq[TileIndex.InternalNode])(
+  def splitNodesInShards(nodes: Seq[TileIndex.Node])(
       implicit entityIdGen: TileIndexEntityIdGen
-  ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] = {
+  ): Seq[(TileIdx, Seq[TileIndex.Node])] = {
 
     def entityIdFrom =
       (loc: Location) => entityIdGen.tileIdx(loc.lat, loc.lon)
 
     @tailrec
     def rec(
-        nodes: Seq[TileIndex.InternalNode],
-        acc: Seq[(TileIdx, Seq[TileIndex.InternalNode])],
-        currentShard: (TileIdx, Seq[TileIndex.InternalNode])
-    ): Seq[(TileIdx, Seq[TileIndex.InternalNode])] =
+        nodes: Seq[TileIndex.Node],
+        acc: Seq[(TileIdx, Seq[TileIndex.Node])],
+        currentShard: (TileIdx, Seq[TileIndex.Node])
+    ): Seq[(TileIdx, Seq[TileIndex.Node])] =
       nodes match {
         case Seq() => acc :+ currentShard
         case node +: tail =>
