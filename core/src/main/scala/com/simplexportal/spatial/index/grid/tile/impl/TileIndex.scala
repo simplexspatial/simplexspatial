@@ -50,7 +50,6 @@ case class TileIndex(
     ways: Map[Long, internal.Way] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
 ) extends NearestNodeSearch
-    with API
     with AttribsDictionary {
 
   private def buildNewNode(
@@ -99,20 +98,7 @@ case class TileIndex(
       }
     }
 
-  def addNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String]
-  ): TileIndex = {
-    val (dic, attrs) = attributesToDictionary(attributes)
-    copy(
-      nodes = nodes + (id -> internal.Node(id, model.Location(lat, lon), attrs)),
-      tagsDic = tagsDic ++ dic
-    )
-  }
-
-  def addWay(
+  private def addInternalWay(
       wayId: Long,
       nodeIds: Seq[Long],
       attributes: Map[String, String]
@@ -127,6 +113,50 @@ case class TileIndex(
         nodeIds.tail,
         List.empty
       ),
+      tagsDic = tagsDic ++ dic
+    )
+  }
+
+  def getWay(id: Long): Option[model.Way] = ways.get(id).map { iWay =>
+    model.Way(
+      id,
+      iWay.nodeIds
+        .map { nodeId =>
+          val iNode = nodes(nodeId)
+          model.Node(
+            iNode.id,
+            iNode.location,
+            iNode.attributes.map(attr => tagsDic(attr._1) -> attr._2)
+          )
+        },
+      iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
+    )
+  }
+
+  def getNode(id: Long): Option[model.Node] =
+    nodes
+      .get(id)
+      .map(iNode =>
+        model.Node(
+          iNode.id,
+          iNode.location,
+          dictionaryToAttributes(iNode.attributes)
+        )
+      )
+
+  def addWay(way: model.Way): TileIndex =
+    way.nodes
+      .foldLeft(this)((tileIdx, node) => tileIdx.addNode(node))
+      .addInternalWay(
+        way.id,
+        way.nodes.map(_.id),
+        way.attributes
+      )
+
+  def addNode(node: model.Node): TileIndex = {
+    val (dic, attrs) = attributesToDictionary(node.attributes)
+    copy(
+      nodes = nodes + (node.id -> internal.Node(node.id, node.location, attrs)),
       tagsDic = tagsDic ++ dic
     )
   }

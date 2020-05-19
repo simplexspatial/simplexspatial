@@ -37,8 +37,8 @@ object AddNodeSession {
   ): Behavior[NotUsed] =
     Behaviors
       .setup[AnyRef] { context =>
-        val nodeEntityId = LookUpNodeEntityIdGen.entityId(addNode.id)
-        val tileIdx = tileIndexEntityIdGen.tileIdx(addNode.lat, addNode.lon)
+        val nodeEntityId = LookUpNodeEntityIdGen.entityId(addNode.node.id)
+        val tileIdx = tileIndexEntityIdGen.tileIdx(addNode.node.location.lat, addNode.node.location.lon)
         val nodeLookUpActor =
           sharding.entityRefFor(NodeLookUpTypeKey, nodeEntityId)
         val tileIndexActor =
@@ -46,7 +46,7 @@ object AddNodeSession {
 
         // Add node in the lookUp index.
         nodeLookUpActor ! NodeLookUpProtocol.Put(
-          addNode.id,
+          addNode.node.id,
           tileIdx,
           addNode.replyTo.map(_ => context.self)
         )

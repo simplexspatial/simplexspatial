@@ -31,22 +31,8 @@ trait TileIndexQueryHandler {
       replyTo ! Metrics(tile.ways.size, tile.nodes.size)
       Effect.none
 
-    case GetInternalNode(id, replyTo) =>
-      replyTo ! GetInternalNodeResponse(id, tile.nodes.get(id))
-      Effect.none
-
     case GetNode(id, replyTo) =>
       replyTo ! GetNodeResponse(id, tile.getNode(id))
-      Effect.none
-
-    case GetInternalNodes(ids, replyTo) =>
-      replyTo ! GetInternalNodesResponse(
-        ids.map(id => GetInternalNodeResponse(id, tile.nodes.get(id)))
-      )
-      Effect.none
-
-    case GetInternalWay(id, replyTo) =>
-      replyTo ! GetInternalWayResponse(id, tile.ways.get(id))
       Effect.none
 
     case GetWay(id, replyTo) =>
@@ -54,7 +40,7 @@ trait TileIndexQueryHandler {
       Effect.none
 
     case GetNearestNode(origin, replyTo) =>
-      replyTo ! GetInternalNearestNodeResponse(
+      replyTo ! GetNearestNodeResponse(
         origin,
         tile.nearestNode(origin)
       )

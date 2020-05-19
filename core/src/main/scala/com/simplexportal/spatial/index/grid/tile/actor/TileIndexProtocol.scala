@@ -19,7 +19,7 @@ package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.actor.typed.ActorRef
 import com.simplexportal.spatial.index.CommonInternalSerializer
-import com.simplexportal.spatial.index.grid.tile.impl.{NearestNode, TileIndex}
+import com.simplexportal.spatial.index.grid.tile.impl.NearestNode
 import com.simplexportal.spatial.model
 
 // TODO: Remove and use share Grid protocol because this actor is part of the aggregate.
@@ -40,26 +40,14 @@ object TileIndexProtocol {
 
   case class NotDone(msg: String = "No error message") extends ACK
 
-  case class GetInternalNearestNodeResponse(
+  case class GetNearestNodeResponse(
       origin: model.Location,
       nodes: Option[NearestNode]
-  ) extends Reply
-
-  case class GetInternalNodeResponse(
-      id: Long,
-      node: Option[TileIndex.Node]
   ) extends Reply
 
   case class GetNodeResponse(
       id: Long,
       node: Option[model.Node]
-  ) extends Reply
-
-  case class GetInternalNodesResponse(nodes: Seq[GetInternalNodeResponse]) extends Reply
-
-  case class GetInternalWayResponse(
-      id: Long,
-      way: Option[TileIndex.Way]
   ) extends Reply
 
   case class GetWayResponse(
@@ -69,27 +57,12 @@ object TileIndexProtocol {
 
   final case class GetNearestNode(
       location: model.Location,
-      replyTo: ActorRef[GetInternalNearestNodeResponse]
-  ) extends Query
-
-  final case class GetInternalNode(
-      id: Long,
-      replyTo: ActorRef[GetInternalNodeResponse]
+      replyTo: ActorRef[GetNearestNodeResponse]
   ) extends Query
 
   final case class GetNode(
       id: Long,
       replyTo: ActorRef[GetNodeResponse]
-  ) extends Query
-
-  final case class GetInternalNodes(
-      ids: Seq[Long],
-      replyTo: ActorRef[GetInternalNodesResponse]
-  ) extends Query
-
-  final case class GetInternalWay(
-      id: Long,
-      replyTo: ActorRef[GetInternalWayResponse]
   ) extends Query
 
   final case class GetWay(
@@ -102,17 +75,12 @@ object TileIndexProtocol {
   sealed trait BatchActions extends Action
 
   final case class AddNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String],
+      node: model.Node,
       replyTo: Option[ActorRef[ACK]] = None
   ) extends BatchActions
 
   final case class AddWay(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String],
+      way: model.Way,
       replyTo: Option[ActorRef[ACK]] = None
   ) extends BatchActions
 
@@ -124,16 +92,11 @@ object TileIndexProtocol {
   protected[tile] sealed trait AtomicEvent extends Event
 
   protected[tile] final case class NodeAdded(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String]
+      node: model.Node
   ) extends AtomicEvent
 
   protected[tile] final case class WayAdded(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String]
+      way: model.Way
   ) extends AtomicEvent
 
   protected[tile] final case class BatchAdded(events: Seq[AtomicEvent]) extends Event

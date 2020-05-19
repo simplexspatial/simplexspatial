@@ -29,21 +29,21 @@ trait TileIndexActionHandler {
       tile: TileIndex,
       action: Action
   ): Effect[Event, TileIndex] = action match {
-    case AddNode(id, lat, lon, attributes, replyTo) =>
-      Effect.persist(NodeAdded(id, lat, lon, attributes)).thenRun { _ =>
+    case AddNode(node, replyTo) =>
+      Effect.persist(NodeAdded(node)).thenRun { _ =>
         replyTo.foreach(_ ! Done())
       }
 
-    case AddWay(id, nodeIds, attributes, replyTo) =>
-      Effect.persist(WayAdded(id, nodeIds, attributes)).thenRun { _ =>
+    case AddWay(way, replyTo) =>
+      Effect.persist(WayAdded(way)).thenRun { _ =>
         replyTo.foreach(_ ! Done())
       }
 
     case AddBatch(cmds, replyTo) =>
       Effect
         .persist(BatchAdded(cmds.map {
-          case AddNode(id, lat, lon, attributes, _) => NodeAdded(id, lat, lon, attributes)
-          case AddWay(id, nodeIds, attributes, _)   => WayAdded(id, nodeIds, attributes)
+          case AddNode(node, _) => NodeAdded(node)
+          case AddWay(way, _)   => WayAdded(way)
         }(breakOut)))
         .thenRun { _ =>
           replyTo.foreach(_ ! Done())
@@ -59,10 +59,10 @@ trait TileIndexActionHandler {
 
   private def applyAtomicEvent(tile: TileIndex, event: AtomicEvent): TileIndex =
     event match {
-      case NodeAdded(id, lat, lon, attributes) =>
-        tile.addNode(id, lat, lon, attributes)
-      case WayAdded(id, nodeIds, attributes) =>
-        tile.addWay(id, nodeIds, attributes)
+      case NodeAdded(node) =>
+        tile.addNode(node)
+      case WayAdded(way) =>
+        tile.addWay(way)
     }
 
 }

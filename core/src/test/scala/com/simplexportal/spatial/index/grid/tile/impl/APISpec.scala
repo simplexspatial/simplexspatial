@@ -27,6 +27,17 @@ import com.simplexportal.spatial.index.grid.tile.impl.{TileIndex => internal}
 class APISpec extends AnyWordSpecLike with Matchers {
 
   "Using the API" should {
+
+    val node1 = model.Node(1, model.Location(7, 3), Map("traffic_light" -> "true"))
+    val node2 = model.Node(2, model.Location(7, 10), Map.empty)
+    val node3 = model.Node(3, model.Location(3, 10), Map.empty)
+    val node4 = model.Node(4, model.Location(3, 16), Map.empty)
+    val node5 = model.Node(5, model.Location(4, 5), Map.empty)
+    val node6 = model.Node(6, model.Location(2, 5), Map.empty)
+
+    val way100 = model.Way(100, Seq(node5, node6, node3), Map("name" -> "Street Name"))
+    val way101 = model.Way(101, Seq(node1, node2, node3, node4))
+
     val exampleNetwork = TileIndex(
       nodes = Map(
         1L -> internal.Node(1, model.Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
@@ -82,6 +93,24 @@ class APISpec extends AnyWordSpecLike with Matchers {
       exampleNetwork.addNode(node).getNode(10) shouldBe Some(node)
     }
 
+    "add sharing nodes keep set of ways" in {
+      val current = TileIndex()
+        .addWay(model.Way(100, Seq(node1, node3), Map.empty))
+        .addWay(model.Way(101, Seq(node1, node2), Map.empty))
+
+      current.nodes.get(1).map(n => n.ways) shouldBe Some(Set(100, 101))
+    }
+
+    "add a way reproducing the expected index" in {
+      val current = TileIndex()
+        .addWay(model.Way(100, Seq(node5, node6, node3), Map("name" -> "Street Name")))
+        .addWay(model.Way(101, Seq(node1, node2, node3, node4), Map.empty))
+
+      current should be(exampleNetwork)
+      current.nodes.size should be(6)
+      current.ways.size should be(2)
+    }
+
     "add a Way" in {
       val way =
         model.Way(
@@ -98,6 +127,47 @@ class APISpec extends AnyWordSpecLike with Matchers {
 
       tileIdx.getNode(1001) shouldBe Some(model.Node(1001, model.Location(90, 90), Map.empty))
       tileIdx.getWay((1000)) shouldBe Some(way)
+      tileIdx.nodes.size shouldBe exampleNetwork.nodes.size + 3
+      tileIdx.ways.size shouldBe exampleNetwork.ways.size + 1
+    }
+
+    "add a Way reusing nodes" in {
+      val way =
+        model.Way(
+          1000,
+          Seq(
+            model.Node(5, model.Location(90, 90), Map.empty),
+            model.Node(1002, model.Location(90, 90), Map.empty)
+          ),
+          Map("key" -> "value")
+        )
+
+      val tileIdx = exampleNetwork.addWay(way)
+
+      tileIdx.getWay((1000)) shouldBe Some(way)
+      tileIdx.getWay((100)) shouldBe Some(
+        model.Way(
+          100,
+          Seq(
+            model.Node(5, model.Location(90.0, 90.0), Map()),
+            model.Node(6, model.Location(2.0, 5.0), Map()),
+            model.Node(3, model.Location(3.0, 10.0), Map())
+          ),
+          Map("name" -> "Street Name")
+        )
+      )
+      tileIdx.nodes.size shouldBe exampleNetwork.nodes.size + 1
+      tileIdx.ways.size shouldBe exampleNetwork.ways.size + 1
+    }
+
+    "add a way using Vectors object as list of nodes" in {
+      val current = TileIndex()
+        .addWay(model.Way(100, Vector(node5, node6, node3), Map("name" -> "Street Name")))
+        .addWay(model.Way(101, Vector(node1, node2, node3, node4), Map.empty))
+
+      current should be(exampleNetwork)
+      current.nodes.size should be(6)
+      current.ways.size should be(2)
     }
 
   }

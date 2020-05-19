@@ -47,8 +47,8 @@ protected trait Adapter {
 
   implicit class GridAddBatchEnricher(gridAddBatch: GridBatchCommand) {
     def toTileProtocol(): tile.BatchActions = gridAddBatch match {
-      case GridAddNode(model.Node(id, model.Location(lat, lon), attributes), _) =>
-        tile.AddNode(id, lat, lon, attributes)
+      case GridAddNode(node, _) =>
+        tile.AddNode(node)
 //      case GridAddWay(model.Way(id, nodes, attributes), _) =>
 //        tile.AddWay(id, nodeIds, attributes)
     }

@@ -26,12 +26,12 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class NearestNodeSearchSpec extends AnyWordSpecLike with Matchers with Inside {
 
-  "TileGISSearch" should {
+  "NearestNodeSearch" should {
     val index = TileIndex()
-      .addNode(1, 7, 10, Map.empty)
-      .addNode(2, 8, 10, Map.empty)
-      .addNode(3, 9, 10, Map.empty)
-      .addNode(4, -7, -10, Map.empty)
+      .addNode(model.Node(1, model.Location(7, 10), Map.empty))
+      .addNode(model.Node(2, model.Location(8, 10), Map.empty))
+      .addNode(model.Node(3, model.Location(9, 10), Map.empty))
+      .addNode(model.Node(4, model.Location(-7, -10), Map.empty))
 
     "fine the nearest node" when {
 

@@ -27,7 +27,7 @@ import com.simplexportal.spatial.index.grid.tile.actor._
 import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol._
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpProtocol}
-import com.simplexportal.spatial.model.Location
+import com.simplexportal.spatial.model
 import io.jvm.uuid.UUID
 
 import scala.annotation.tailrec
@@ -99,8 +99,8 @@ object AddWaySession {
     * @return Return the right sequence of nodes or error.
     */
   def validateNodes(
-      responses: Seq[GetInternalNodeResponse]
-  ): Try[Seq[TileIndex.Node]] = Try {
+      responses: Seq[GetNodeResponse]
+  ): Try[Seq[model.Node]] = Try {
     responses.map { resp =>
       resp.node.getOrElse(throw new Exception(s"Node [${resp.id}] not found."))
     }
@@ -124,7 +124,7 @@ object AddWaySession {
   ): Seq[(TileIdx, Seq[TileIndex.Node])] = {
 
     def entityIdFrom =
-      (loc: Location) => entityIdGen.tileIdx(loc.lat, loc.lon)
+      (loc: model.Location) => entityIdGen.tileIdx(loc.lat, loc.lon)
 
     @tailrec
     def rec(
