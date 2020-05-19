@@ -30,11 +30,8 @@ object RestProtocol {
   case class NearestNodes(nodes: Set[Node], error: Option[String] = None) extends RestfulResponse
 
   case class AddNodeBody(lon: Double, lat: Double, attributes: Map[String, String]) extends RestfulRequest
-  case class AddWayBody(nodes: Seq[Long], attributes: Map[String, String]) extends RestfulRequest
-
-  case class AddNodeBatchBody(id: Long, lon: Double, lat: Double, attributes: Map[String, String])
-  case class AddWayBatchBody(id: Long, nodes: Seq[Long], attributes: Map[String, String])
-  case class AddBatchBody(nodes: Seq[AddNodeBatchBody], ways: Seq[AddWayBatchBody]) extends RestfulRequest
+  case class AddWayBody(nodes: Seq[Node], attributes: Map[String, String]) extends RestfulRequest
+  case class AddBatchBody(nodes: Seq[Node], ways: Seq[Way]) extends RestfulRequest
 
   case class Node(id: Long, lon: Double, lat: Double, attributes: Map[String, String], error: Option[String] = None)
       extends RestfulResponse
@@ -48,15 +45,13 @@ object RestProtocol {
   case class NotDone(error: Option[String]) extends RestfulACKResponse
 
   trait RestfulJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
+    implicit val nodeFormat = jsonFormat5(Node)
+    implicit val wayFormat = jsonFormat4(Way)
+
     implicit val addNodeBody = jsonFormat3(AddNodeBody)
     implicit val addWayBody = jsonFormat2(AddWayBody)
 
-    implicit val addNodeBatchFormat = jsonFormat4(AddNodeBatchBody)
-    implicit val addWayBatchFormat = jsonFormat3(AddWayBatchBody)
     implicit val addBatchFormat = jsonFormat2(AddBatchBody)
-
-    implicit val nodeFormat = jsonFormat5(Node)
-    implicit val wayFormat = jsonFormat4(Way)
 
     implicit val doneFormat = jsonFormat0(Done)
     implicit val notDoneFormat = jsonFormat1(NotDone)

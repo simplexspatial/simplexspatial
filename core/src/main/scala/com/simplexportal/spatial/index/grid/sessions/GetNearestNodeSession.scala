@@ -22,11 +22,9 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridNearestNode, GridNearestNodeReply, GridRequest}
-import com.simplexportal.spatial.index.grid.tile.actor.{
-  TileIdx,
-  TileIndexEntityIdGen,
-  GetInternalNearestNodeResponse => TileReply
-}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol.{GetInternalNearestNodeResponse => TileReply}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIndexProtocol => tileProptocol}
 import com.simplexportal.spatial.index.grid.tile.impl.NearestNode
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
 import com.simplexportal.spatial.index.grid.Grid
@@ -83,7 +81,7 @@ object GetNearestNodeSession {
             }
           )
           .map(id => {
-            sharding.entityRefFor(Grid.TileTypeKey, id.entityId) ! tile.GetNearestNode(cmd.location, adapter)
+            sharding.entityRefFor(Grid.TileTypeKey, id.entityId) ! tileProptocol.GetNearestNode(cmd.location, adapter)
             id
           })
 
@@ -96,13 +94,13 @@ object GetNearestNodeSession {
             remainingRequests = requested.size
             visited = visited ++ requested
             Behaviors.receiveMessage {
-              case TileReplyWrapper(TileReply(id, _, newMaybeNearest)) =>
-                remainingRequests -= 1
-                currentFound = chooseTheNearest(currentFound, newMaybeNearest)
-                remainingRequests match {
-                  case 0 => nextLayer(layer + 1)
-                  case _ => Behaviors.same
-                }
+//              case TileReplyWrapper(TileReply(id, _, newMaybeNearest)) =>
+//                remainingRequests -= 1
+//                currentFound = chooseTheNearest(currentFound, newMaybeNearest)
+//                remainingRequests match {
+//                  case 0 => nextLayer(layer + 1)
+//                  case _ => Behaviors.same
+//                }
               case msg =>
                 context.log.error("Unexpected message {}", msg)
                 Behaviors.unhandled

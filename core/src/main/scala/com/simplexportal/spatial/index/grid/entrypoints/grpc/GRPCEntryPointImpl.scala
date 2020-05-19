@@ -20,17 +20,17 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ActorRef, Scheduler}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
-import com.simplexportal.spatial.index.grid.GridProtocol._
+import com.simplexportal.spatial.index.grid.{GridProtocol => grid}
 import com.simplexportal.spatial.index.grid.entrypoints.grpc
-import com.simplexportal.spatial.model.Location
+import com.simplexportal.spatial.model
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-class GRPCEntryPointImpl(gridIndex: ActorRef[GridRequest])(
+class GRPCEntryPointImpl(gridIndex: ActorRef[grid.GridRequest])(
     implicit
     executionContext: ExecutionContext,
     scheduler: Scheduler,
@@ -40,60 +40,67 @@ class GRPCEntryPointImpl(gridIndex: ActorRef[GridRequest])(
   // FIXME: Temporal timeout for POC
   implicit val timeout = Timeout(1.minutes)
 
-  def ackAdapter(response: GridACK): grpc.ACK = response match {
-    case GridDone()         => grpc.ACK().withDone(grpc.Done())
-    case GridNotDone(error) => grpc.ACK().withNotDone(grpc.NotDone(error))
+  implicit def toModel(node: grpc.Node): model.Node =
+    model.Node(node.id, model.Location(node.lat, node.lon), node.attributes)
+
+  implicit def toModel(way: grpc.Way): model.Way =
+    model.Way(way.id, way.nodes.map(toModel), way.attributes)
+
+  private def ackAdapter(response: grid.GridACK): grpc.AddBatchCmds.ACK = response match {
+    case grid.GridDone()         => grpc.AddBatchCmds.ACK().withDone(true)
+    case grid.GridNotDone(error) => grpc.AddBatchCmds.ACK().withDone(false).withMessage(error)
   }
 
   private def toAddBatch(
-      batchCmd: grpc.ExecuteBatchCmd
-  ): Seq[GridBatchCommand] =
-    batchCmd.commands.flatMap(executeCmd =>
-      executeCmd.command match {
-        case grpc.ExecuteCmd.Command.Way(way) =>
-          Some(GridAddWay(way.id, way.nodeIds, way.attributes))
-        case grpc.ExecuteCmd.Command.Node(node) =>
-          Some(GridAddNode(node.id, node.lat, node.lon, node.attributes))
-        case grpc.ExecuteCmd.Command.Empty => None
-      }
-    )
+      batchCmd: grpc.AddBatchCmds.AddCmd.Command
+  ): Option[grid.GridBatchCommand] =
+    batchCmd match {
+      case grpc.AddBatchCmds.AddCmd.Command.Node(node) =>
+        Some(grid.GridAddNode(node))
+      case grpc.AddBatchCmds.AddCmd.Command.Way(way) =>
+        Some(grid.GridAddWay(way))
+      case grpc.AddBatchCmds.AddCmd.Command.Empty => None
+    }
 
-  override def addNode(in: grpc.AddNodeCmd): Future[grpc.ACK] =
-    gridIndex
-      .ask[GridACK](ref => GridAddNode(in.id, in.lat, in.lon, in.attributes, Some(ref)))
-      .map(ackAdapter)
+  private def toAddBatches(
+      batchCmd: grpc.AddBatchCmds
+  ): Seq[grid.GridBatchCommand] =
+    batchCmd.commands.flatMap(executeCmd => toAddBatch(executeCmd.command))
 
-  override def addWay(in: grpc.AddWayCmd): Future[grpc.ACK] =
+  override def addBatch(in: AddBatchCmds): Future[AddBatchCmds.ACK] =
     gridIndex
-      .ask[GridACK](ref => GridAddWay(in.id, in.nodeIds, in.attributes, Some(ref)))
+      .ask[grid.GridACK](ref => grid.GridAddBatch(toAddBatches(in), Some(ref)))
       .map(ackAdapter)
 
   // TODO: Implement metrics for the cluster.
-  override def getMetrics(in: grpc.GetMetricsCmd): Future[grpc.Metrics] = ???
+  override def getMetrics(in: GetMetricsCmd): Future[GetMetricsCmd.Metrics] = ???
 //    gridIndex
 //      .ask[actor.Metrics](actor.GetMetrics(_))
 //      .map(m => grpc.Metrics(ways = m.ways, nodes = m.nodes))
 
-  // TODO: In case of error, return a GrpcServiceException
-  override def streamBatchCommands(
-      in: Source[grpc.ExecuteBatchCmd, NotUsed]
-  ): Source[grpc.ACK, NotUsed] =
-    in.map(cmd => toAddBatch(cmd))
+  override def addStreamBatches(in: Source[AddBatchCmds, NotUsed]): Source[AddBatchCmds.ACK, NotUsed] =
+    in.map(cmd => toAddBatches(cmd))
       .via(
-        ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[GridACK]) => GridAddBatch(commands, Some(replyTo)))
+        ActorFlow.ask(gridIndex)((commands, replyTo: ActorRef[grid.GridACK]) =>
+          grid.GridAddBatch(commands, Some(replyTo))
+        )
       )
-      .map(ackAdapter);
+      .map(ackAdapter)
 
-  override def searchNearestNode(in: SearchNearestNodeCmd): Future[NearestNodeReply] =
+  override def searchNearestNode(in: SearchNearestNodeCmd): Future[SearchNearestNodeCmd.NearestNodeReply] =
     gridIndex
-      .ask[GridNearestNodeReply](ref => GridNearestNode(Location(in.lat, in.lon), ref))
+      .ask[grid.GridNearestNodeReply](ref => grid.GridNearestNode(model.Location(in.lat, in.lon), ref))
       .map {
-        case GridNearestNodeReply(Right(nodes)) =>
-          grpc
+        case grid.GridNearestNodeReply(Right(nodes)) =>
+          grpc.SearchNearestNodeCmd
             .NearestNodeReply()
-            .withDone(
-              grpc.NearestNode(nodes.map(n => grpc.Node(n.id, n.location.lat, n.location.lat, n.attributes)).toSeq)
-            )
-        case GridNearestNodeReply(Left(error)) => grpc.NearestNodeReply().withNotDone(grpc.NotDone(error))
+            .withDone(true)
+            .withNodes(nodes.map(n => grpc.Node(n.id, n.location.lat, n.location.lat, n.attributes)).toSeq)
+        case grid.GridNearestNodeReply(Left(error)) =>
+          grpc.SearchNearestNodeCmd
+            .NearestNodeReply()
+            .withDone(false)
+            .withMessage(error)
       }
+
 }

@@ -105,46 +105,46 @@ abstract class TileIndexClusterSpec
       enterBarrier("all-up")
     }
 
-    "be able to add a entities in the a local tile" in {
-      runOn(node0) {
-        val probe = TestProbe[AnyRef]()
-        val localTileActor = system.spawn(TileIndexActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
-        localTileActor ! AddNode(0, 0, 0, Map.empty, Some(probe.ref))
-        localTileActor ! actor.AddNode(1, 1, 1, Map.empty, Some(probe.ref))
-        localTileActor ! actor.AddNode(2, 2, 2, Map.empty, Some(probe.ref))
-        localTileActor ! AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
+//    "be able to add a entities in the a local tile" in {
+//      runOn(node0) {
+//        val probe = TestProbe[AnyRef]()
+//        val localTileActor = system.spawn(TileIndexActor("IndexTestTile", "FIXED_INDEX_TEST_NODE0"), "TileActorNode0")
+//        localTileActor ! AddNode(0, 0, 0, Map.empty, Some(probe.ref))
+//        localTileActor ! actor.AddNode(1, 1, 1, Map.empty, Some(probe.ref))
+//        localTileActor ! actor.AddNode(2, 2, 2, Map.empty, Some(probe.ref))
+//        localTileActor ! AddWay(1, Seq(0, 1, 2), Map.empty, Some(probe.ref))
+//
+//        probe.receiveMessages(4)
+//      }
+//      enterBarrier("added locally")
+//    }
 
-        probe.receiveMessages(4)
-      }
-      enterBarrier("added locally")
-    }
+//    "be able to add an entities in the a remote tile" in {
+//      runOn(node2) {
+//        val probe = TestProbe[AnyRef]()
+//        val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
+//
+//        remoteTileActor ! actor.AddNode(10, 10, 10, Map.empty, Some(probe.ref))
+//        remoteTileActor ! actor.AddNode(11, 11, 11, Map.empty, Some(probe.ref))
+//        remoteTileActor ! actor.AddNode(12, 12, 12, Map.empty, Some(probe.ref))
+//        remoteTileActor ! actor.AddWay(11, Seq(10, 11, 12), Map.empty, Some(probe.ref))
+//
+//        probe.receiveMessages(4)
+//      }
+//
+//      enterBarrier("added remotely")
+//    }
 
-    "be able to add an entities in the a remote tile" in {
-      runOn(node2) {
-        val probe = TestProbe[AnyRef]()
-        val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
-
-        remoteTileActor ! actor.AddNode(10, 10, 10, Map.empty, Some(probe.ref))
-        remoteTileActor ! actor.AddNode(11, 11, 11, Map.empty, Some(probe.ref))
-        remoteTileActor ! actor.AddNode(12, 12, 12, Map.empty, Some(probe.ref))
-        remoteTileActor ! actor.AddWay(11, Seq(10, 11, 12), Map.empty, Some(probe.ref))
-
-        probe.receiveMessages(4)
-      }
-
-      enterBarrier("added remotely")
-    }
-
-    "retrieve metrics from the remote actor" in {
-      runOn(node2) {
-        val probe = TestProbe[AnyRef]()
-        val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
-        remoteTileActor ! GetMetrics(probe.ref)
-
-        probe.expectMessage(Metrics(2, 6))
-
-      }
-    }
+//    "retrieve metrics from the remote actor" in {
+//      runOn(node2) {
+//        val probe = TestProbe[AnyRef]()
+//        val remoteTileActor = system.actorSelection(node(node0) / "user" / "TileActorNode0")
+//        remoteTileActor ! GetMetrics(probe.ref)
+//
+//        probe.expectMessage(Metrics(2, 6))
+//
+//      }
+//    }
 
   }
 }

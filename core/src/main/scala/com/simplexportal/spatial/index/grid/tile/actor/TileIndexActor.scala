@@ -22,6 +22,7 @@ import akka.actor.typed.{Behavior, SupervisorStrategy}
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria}
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol._
 
 import scala.concurrent.duration._
 
@@ -45,8 +46,8 @@ object TileIndexActor extends TileIndexQueryHandler with TileIndexActionHandler 
       tile: TileIndex,
       command: Command
   ): Effect[Event, TileIndex] = command match {
-    case q: Query  => applyQueries(tileId, tile, q)
-    case a: Action => applyAction(tileId, tile, a)
+    case q: Query  => applyQueries(tile, q)
+    case a: Action => applyAction(tile, a)
   }
 
 }

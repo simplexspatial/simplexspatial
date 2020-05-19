@@ -19,10 +19,10 @@ package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.persistence.typed.scaladsl.Effect
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol._
 
 trait TileIndexQueryHandler {
   def applyQueries(
-      tileId: String,
       tile: TileIndex,
       query: Query
   ): Effect[Event, TileIndex] = query match {
@@ -55,7 +55,6 @@ trait TileIndexQueryHandler {
 
     case GetNearestNode(origin, replyTo) =>
       replyTo ! GetInternalNearestNodeResponse(
-        tileId,
         origin,
         tile.nearestNode(origin)
       )

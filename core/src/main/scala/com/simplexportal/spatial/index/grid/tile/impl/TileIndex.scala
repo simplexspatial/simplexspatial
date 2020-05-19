@@ -17,22 +17,26 @@
 
 package com.simplexportal.spatial.index.grid.tile.impl
 
-import com.simplexportal.spatial.index.grid.tile.impl.TileIndex._
-import com.simplexportal.spatial.model._
+import com.simplexportal.spatial.index.grid.tile.impl.{TileIndex => internal}
+import com.simplexportal.spatial.model
 
 import scala.annotation.tailrec
 
+// FIXME: Search a better Set structure to short list of Long numbers (for InternalNode and InternalWay node lists).
+// FIXME: Search a better Map structure to store huge amount of data (for nodes and ways state)
 object TileIndex {
 
+  // TODO: Rename to Node and use namespace (internal.Node) to difference between internal model and API model
   case class InternalNode(
       id: Long,
-      location: Location,
+      location: model.Location,
       attributes: Map[Int, String] = Map.empty,
       ways: Set[Long] = Set.empty,
       outs: Set[Long] = Set.empty,
       ins: Set[Long] = Set.empty
   )
 
+  // TODO: Rename to Way and use namespace (internal.Way) to difference between internal model and API model
   case class InternalWay(
       id: Long,
       nodeIds: Seq[Long],
@@ -42,8 +46,8 @@ object TileIndex {
 }
 
 case class TileIndex(
-    nodes: Map[Long, InternalNode] = Map.empty,
-    ways: Map[Long, InternalWay] = Map.empty,
+    nodes: Map[Long, internal.InternalNode] = Map.empty,
+    ways: Map[Long, internal.InternalWay] = Map.empty,
     tagsDic: Map[Int, String] = Map.empty
 ) extends NearestNodeSearch
     with API {
@@ -72,9 +76,9 @@ case class TileIndex(
   ) =
     nodes.get(current) match {
       case None => // If it is not in the index, it is because it is a connector.
-        InternalNode( // TODO: Calculate directions. Now, all bidirectional.
+        internal.InternalNode( // TODO: Calculate directions. Now, all bidirectional.
           current,
-          Location.NaL,
+          model.Location.NaL,
           ways = Set(wayId),
           outs = (Set.empty ++ next) ++ prev,
           ins = (Set.empty ++ next) ++ prev
@@ -93,8 +97,8 @@ case class TileIndex(
       prev: Option[Long],
       current: Long,
       nodeIds: Seq[Long],
-      updated: List[(Long, InternalNode)]
-  ): List[(Long, InternalNode)] =
+      updated: List[(Long, internal.InternalNode)]
+  ): List[(Long, internal.InternalNode)] =
     nodeIds match {
       case Seq() =>
         (current, buildNewNode(wayId, prev, current, None)) :: updated
@@ -117,7 +121,7 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      nodes = nodes + (id -> InternalNode(id, Location(lat, lon), attrs)),
+      nodes = nodes + (id -> internal.InternalNode(id, model.Location(lat, lon), attrs)),
       tagsDic = tagsDic ++ dic
     )
   }
@@ -129,7 +133,7 @@ case class TileIndex(
   ): TileIndex = {
     val (dic, attrs) = attributesToDictionary(attributes)
     copy(
-      ways = ways + (wayId -> InternalWay(wayId, nodeIds, attrs)),
+      ways = ways + (wayId -> internal.InternalWay(wayId, nodeIds, attrs)),
       nodes = nodes ++ updateConnections(
         wayId,
         None,

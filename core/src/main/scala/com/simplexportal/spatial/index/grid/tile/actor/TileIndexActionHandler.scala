@@ -19,13 +19,13 @@ package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.persistence.typed.scaladsl.Effect
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol._
 
 import scala.collection.breakOut
 
 trait TileIndexActionHandler {
 
   def applyAction(
-      tileId: String,
       tile: TileIndex,
       action: Action
   ): Effect[Event, TileIndex] = action match {

@@ -16,6 +16,7 @@
 
 package com.simplexportal.spatial
 
+// FIXME: Don't define case classes in a package
 package model {
 
 // TODO: Review Geometry definition to add distance and other functions.

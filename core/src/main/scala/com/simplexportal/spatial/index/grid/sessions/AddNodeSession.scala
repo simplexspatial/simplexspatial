@@ -23,7 +23,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid.{NodeLookUpTypeKey, TileTypeKey}
 import com.simplexportal.spatial.index.grid.tile.actor
-import com.simplexportal.spatial.index.grid.tile.actor.{AddNode, Done, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexEntityIdGen
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol.{AddNode, Done}
 import com.simplexportal.spatial.index.lookup.node.{LookUpNodeEntityIdGen, NodeLookUpProtocol}
 
 /**
@@ -64,7 +65,7 @@ object AddNodeSession {
               (lookUpResponse, tileResponse) match {
                 case (Some(_), Some(_)) =>
                   // we got both responses, "session" is completed!
-                  clientRef ! actor.Done()
+                  clientRef ! Done()
                   Behaviors.stopped
                 case _ =>
                   // Wait for the next response.

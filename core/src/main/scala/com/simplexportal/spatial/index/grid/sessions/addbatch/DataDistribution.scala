@@ -18,10 +18,9 @@
 package com.simplexportal.spatial.index.grid.sessions.addbatch
 
 import com.simplexportal.spatial.index.grid.GridProtocol._
+import com.simplexportal.spatial.model
 import com.simplexportal.spatial.index.grid.tile.actor.{TileIdx, TileIndexEntityIdGen}
 import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.lookup.node.LookUpNodeEntityIdGen
-import com.simplexportal.spatial.index.lookup.way.LookUpWayEntityIdGen
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
@@ -43,9 +42,9 @@ protected trait DataDistribution {
   ): Map[Long, tile.TileIdx] = commands.foldLeft(Map.empty[Long, tile.TileIdx]) {
     case (nodesIdxs, cmd) =>
       cmd match {
-        case n: GridAddNode =>
+        case GridAddNode(model.Node(id, loc, _), _) =>
           (
-            nodesIdxs + (n.id -> tileIndexEntityIdGen.tileIdx(n.lat, n.lon))
+            nodesIdxs + (id -> tileIndexEntityIdGen.tileIdx(loc.lat, loc.lon))
           )
         case _ => nodesIdxs
       }
@@ -54,25 +53,25 @@ protected trait DataDistribution {
   def groupByTileIdx(
       cmds: Seq[GridBatchCommand],
       locationsIdx: Map[Long, tile.TileIdx]
-  ): Map[tile.TileIdx, Seq[GridBatchCommand]] =
-    cmds.foldLeft(Map.empty[tile.TileIdx, Seq[GridBatchCommand]]) {
-      case (acc, n: GridAddNode) =>
-        val tileIdx = locationsIdx(n.id)
-        acc + (tileIdx -> (acc.getOrElse(tileIdx, Seq()) :+ n))
-      case (acc, w: GridAddWay) =>
-        splitWayByTile(w, locationsIdx).foldLeft(acc) {
-          case (acc, (tileIdx, way)) =>
-            acc + (tileIdx -> (acc.getOrElse(tileIdx, Seq()) :+ way))
-        }
-    }
+  ): Map[tile.TileIdx, Seq[GridBatchCommand]] = ???
+//    cmds.foldLeft(Map.empty[tile.TileIdx, Seq[GridBatchCommand]]) {
+//      case (acc, GridAddNode(n, _)) =>
+//        val tileIdx = locationsIdx(n.id)
+//        acc + (tileIdx -> (acc.getOrElse(tileIdx, Seq()) :+ n))
+//      case (acc, w: GridAddWay) =>
+//        splitWayByTile(w, locationsIdx).foldLeft(acc) {
+//          case (acc, (tileIdx, way)) =>
+//            acc + (tileIdx -> (acc.getOrElse(tileIdx, Seq()) :+ way))
+//        }
+//    }
 
-  def splitWayByTile(
+  private def splitWayByTile(
       way: GridAddWay,
       nodeLocs: Map[Long, TileIdx]
-  ): Seq[(tile.TileIdx, GridAddWay)] =
-    splitWayNodesPerTile(way.nodeIds, nodeLocs).map {
-      case (tileIdx, nodeIds) => (tileIdx, way.copy(nodeIds = nodeIds))
-    }
+  ): Seq[(tile.TileIdx, GridAddWay)] = ???
+//    splitWayNodesPerTile(way.way.nodes, nodeLocs).map {
+//      case (tileIdx, nodeIds) => (tileIdx, way.copy(nodeIds = nodeIds))
+//    }
 
   /**
     * It will split a way into a set of ways bounded to a tile.
@@ -82,7 +81,7 @@ protected trait DataDistribution {
     * @param nodeLocs index of nodesId -> tileIdx
     * @return Pairs tileIdx, Way fragment.
     */
-  def splitWayNodesPerTile(
+  private def splitWayNodesPerTile(
       nodeIds: Seq[Long],
       nodeLocs: Map[Long, tile.TileIdx]
   ): Seq[(tile.TileIdx, Seq[Long])] = {
@@ -117,46 +116,4 @@ protected trait DataDistribution {
     )
   }
 
-  protected def splitLookUps(
-      cmdsPerTileIdx: Map[TileIdx, Seq[GridBatchCommand]]
-  ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) = {
-
-    @tailrec
-    def rec(
-        remaining: Seq[(TileIdx, GridBatchCommand)],
-        nodes: Map[String, Seq[(Long, TileIdx)]],
-        ways: Map[String, Seq[(Long, TileIdx)]]
-    ): (Map[String, Seq[(Long, TileIdx)]], Map[String, Seq[(Long, TileIdx)]]) =
-      remaining match {
-        case Seq() => (nodes, ways)
-        case head +: tail =>
-          head match {
-            case (tileIdx, GridAddNode(id, _, _, _, _)) =>
-              val shard = LookUpNodeEntityIdGen.entityId(id)
-              val itemsPerShard = nodes.getOrElse(shard, Seq.empty) :+ id -> tileIdx
-              rec(
-                tail,
-                nodes + (shard -> itemsPerShard),
-                ways
-              )
-            case (tileIdx, GridAddWay(id, _, _, _)) =>
-              val shard = LookUpWayEntityIdGen.entityId(id)
-              val itemsPerShard = ways.getOrElse(shard, Seq.empty) :+ id -> tileIdx
-              rec(
-                tail,
-                nodes,
-                ways + (shard -> itemsPerShard)
-              )
-            case (_, cmd) =>
-              logger.error(s"Type not supported: ${cmd}")
-              throw new Exception(s"Type not supported: ${cmd}")
-          }
-      }
-
-    val actions: Seq[(TileIdx, GridBatchCommand)] = cmdsPerTileIdx.toSeq.flatMap {
-      case (tileIdx, actions) => actions.map(action => (tileIdx, action))
-    }
-
-    rec(actions, Map.empty, Map.empty)
-  }
 }

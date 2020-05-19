@@ -17,18 +17,21 @@
 
 package com.simplexportal.spatial.index.grid.tile.impl
 
-import com.simplexportal.spatial.model.{Node, Way}
+import com.simplexportal.spatial.model
 
+/**
+  * Interface with the Tile implementation using the simplexSpatail model.
+  */
 trait API {
   this: TileIndex =>
 
-  def getWay(id: Long): Option[Way] = ways.get(id).map { iWay =>
-    Way(
+  def getWay(id: Long): Option[model.Way] = ways.get(id).map { iWay =>
+    model.Way(
       id,
       iWay.nodeIds
         .map { nodeId =>
           val iNode = nodes(nodeId)
-          Node(
+          model.Node(
             iNode.id,
             iNode.location,
             iNode.attributes.map(attr => tagsDic(attr._1) -> attr._2)
@@ -38,18 +41,18 @@ trait API {
     )
   }
 
-  def getNode(id: Long): Option[Node] =
+  def getNode(id: Long): Option[model.Node] =
     nodes
       .get(id)
       .map(iNode =>
-        Node(
+        model.Node(
           iNode.id,
           iNode.location,
           dictionaryToAttributes(iNode.attributes)
         )
       )
 
-  def addWay(way: Way): TileIndex =
+  def addWay(way: model.Way): TileIndex =
     way.nodes
       .foldLeft(this)((tileIdx, node) => tileIdx.addNode(node))
       .addWay(
@@ -58,6 +61,6 @@ trait API {
         way.attributes
       )
 
-  def addNode(node: Node): TileIndex = addNode(node.id, node.location.lat, node.location.lon, node.attributes)
+  def addNode(node: model.Node): TileIndex = addNode(node.id, node.location.lat, node.location.lon, node.attributes)
 
 }

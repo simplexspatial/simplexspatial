@@ -23,37 +23,12 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridACK, GridBatchCommand, GridDone, GridNotDone}
 import com.simplexportal.spatial.index.grid.tile.actor.TileIdx
-import com.simplexportal.spatial.index.grid.tile.{actor => tile}
-import com.simplexportal.spatial.index.lookup.node.NodeLookUpProtocol
-import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIndexProtocol => tile}
 
 protected trait UpdateIndices extends DataDistribution with Adapter {
 
-  private def updateNodeLookups(
-      nodesPerTileLookup: Map[String, Seq[(Long, TileIdx)]]
-  )(implicit sharding: ClusterSharding, replyTo: ActorRef[AnyRef]): Int =
-    nodesPerTileLookup.foldLeft(0) {
-      case (counter, (shardId, items)) =>
-        sharding.entityRefFor(Grid.NodeLookUpTypeKey, shardId) !
-          NodeLookUpProtocol.PutBatch(items.map {
-            case (id, tileIdx) => NodeLookUpProtocol.Put(id, tileIdx, None)
-          }, Some(replyTo))
-        counter + 1
-    }
-
-  private def updateWaysLookups(
-      waysPerTileLookup: Map[String, Seq[(Long, TileIdx)]]
-  )(implicit sharding: ClusterSharding, replyTo: ActorRef[AnyRef]): Int = waysPerTileLookup.foldLeft(0) {
-    case (counter, (shardId, items)) =>
-      sharding.entityRefFor(Grid.WayLookUpTypeKey, shardId) !
-        WayLookUpProtocol.PutBatch(items.map {
-          case (id, tileIdx) => WayLookUpProtocol.Put(id, tileIdx, None)
-        }, Some(replyTo))
-      counter + 1
-  }
-
   private def updateTiles(
-      cmdsPerTile: Map[tile.TileIdx, Seq[GridBatchCommand]]
+      cmdsPerTile: Map[TileIdx, Seq[GridBatchCommand]]
   )(implicit sharding: ClusterSharding, replyTo: ActorRef[AnyRef]): Int = cmdsPerTile.foldLeft(0) {
     case (counter, (tileIdx, cmds)) =>
       sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) !
@@ -69,10 +44,7 @@ protected trait UpdateIndices extends DataDistribution with Adapter {
     implicit val adapter = adapters(context)
 
     val cmdsPerTileIdx = groupByTileIdx(cmds, locationsIdx)
-    val (nodes, ways) = splitLookUps(cmdsPerTileIdx)
-
-    // FIXME: Tiles should be updated after lookups, and not in parallel.
-    val expectedResponses = updateNodeLookups(nodes) + updateWaysLookups(ways) + updateTiles(cmdsPerTileIdx)
+    val expectedResponses = updateTiles(cmdsPerTileIdx)
 
     collectAddCommandsResponses(expectedResponses, Seq.empty, maybeReplyTo)
   }

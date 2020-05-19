@@ -7,79 +7,18 @@ option optimize_for = SPEED;
 package com.simplexportal.spatial.index.grid.entrypoints.grpc;
 
 service GRPCEntryPoint {
-    rpc AddNode (AddNodeCmd) returns (ACK);
-    rpc AddWay (AddWayCmd) returns (ACK);
-    rpc StreamBatchCommands (stream ExecuteBatchCmd) returns (stream ACK);
-    rpc GetMetrics (GetMetricsCmd) returns (Metrics);
-    rpc SearchNearestNode (SearchNearestNodeCmd) returns (NearestNodeReply);
+    rpc AddBatch (AddBatchCmds) returns (AddBatchCmds.ACK);
+    rpc AddStreamBatches (stream AddBatchCmds) returns (stream AddBatchCmds.ACK);
+    rpc GetMetrics (GetMetricsCmd) returns (GetMetricsCmd.Metrics);
+    rpc SearchNearestNode (SearchNearestNodeCmd) returns (SearchNearestNodeCmd.NearestNodeReply);
 }
 
-message ACK {
-    oneof ACKValue {
-        Done done = 1;
-        NotDone notDone = 2;
-    }
-}
-
-message Done {
-}
-
-message NotDone {
-    string clue = 1;
-}
-
-message AddNodeCmd {
-    uint64 id = 1;
-    double lon = 2;
-    double lat = 3;
-    map<string, string> attributes = 4;
-}
-
-message AddWayCmd {
-    uint64 id = 1;
-    repeated uint64 nodeIds = 2;
-    map<string, string> attributes = 3;
-}
-
-message ExecuteCmd {
-    oneof Command {
-        AddNodeCmd node = 1;
-        AddWayCmd way = 2;
-    }
-}
-
-message ExecuteBatchCmd {
-    repeated ExecuteCmd commands = 1;
-}
-
-message GetMetricsCmd {
-}
-
-message Metrics {
-    uint64 ways = 1;
-    uint64 nodes = 2;
-}
-
-message SearchNearestNodeCmd {
-    double lon = 1;
-    double lat = 2;
-}
-
-message NearestNodeReply {
-    oneof ACK {
-        NearestNode done = 1;
-        NotDone notDone = 2;
-    }
-}
-
-message NearestNode {
-    repeated Node nodes = 1;
-}
+// Generic model
 
 message Node {
     uint64 id = 1;
-    double lon = 2;
-    double lat = 3;
+    double lat = 2;
+    double lon = 3;
     map<string, string> attributes = 4;
 }
 
@@ -88,4 +27,56 @@ message Way {
     repeated Node nodes = 2;
     map<string, string> attributes = 3;
 }
+
+// Commands and responses.
+
+/* Command to add nodes or ways. */
+message AddBatchCmds {
+    message AddCmd {
+        oneof Command {
+            Node node = 1;
+            Way way = 2;
+        }
+    }
+
+    repeated AddCmd commands = 1;
+
+    // Response
+    message ACK {
+        oneof Value {
+            bool done = 1;
+            string message = 2;
+        }
+    }
+}
+
+
+/* Get index metrics. */
+message GetMetricsCmd {
+    // Response
+    message Metrics {
+        uint64 ways = 1;
+        uint64 nodes = 2;
+    }
+}
+
+
+/* Search nearest nodes. */
+message SearchNearestNodeCmd {
+    double lon = 1;
+    double lat = 2;
+
+    // Response
+    message NearestNodeReply {
+        bool done = 1;
+        string message = 2;
+        repeated Node nodes = 3;
+    }
+}
+
+
+
+
+
+
 

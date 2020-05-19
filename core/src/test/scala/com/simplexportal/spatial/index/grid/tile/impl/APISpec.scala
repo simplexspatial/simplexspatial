@@ -17,9 +17,10 @@
 
 package com.simplexportal.spatial.index.grid.tile.impl
 
-import com.simplexportal.spatial.model.{Location, Node, Way}
+import com.simplexportal.spatial.model
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import com.simplexportal.spatial.index.grid.tile.impl.{TileIndex => internal}
 
 // scalastyle:off magic.number
 
@@ -28,41 +29,41 @@ class APISpec extends AnyWordSpecLike with Matchers {
   "Using the API" should {
     val exampleNetwork = TileIndex(
       nodes = Map(
-        1L -> TileIndex.InternalNode(1, Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
-        2L -> TileIndex.InternalNode(2, Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
-        3L -> TileIndex.InternalNode(3, Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
-        4L -> TileIndex.InternalNode(4, Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
-        5L -> TileIndex.InternalNode(5, Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
-        6L -> TileIndex.InternalNode(6, Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
+        1L -> internal.InternalNode(1, model.Location(7, 3), Map(206407764 -> "true"), Set(101), Set(2), Set(2)),
+        2L -> internal.InternalNode(2, model.Location(7, 10), Map.empty, Set(101), Set(1, 3), Set(1, 3)),
+        3L -> internal.InternalNode(3, model.Location(3, 10), Map.empty, Set(101, 100), Set(2, 6, 4), Set(2, 6, 4)),
+        4L -> internal.InternalNode(4, model.Location(3, 16), Map.empty, Set(101), Set(3), Set(3)),
+        5L -> internal.InternalNode(5, model.Location(4, 5), Map.empty, Set(100), Set(6), Set(6)),
+        6L -> internal.InternalNode(6, model.Location(2, 5), Map.empty, Set(100), Set(3, 5), Set(3, 5))
       ),
       ways = Map(
-        100L -> TileIndex.InternalWay(100, Seq(5, 6, 3), Map(3373707 -> "Street Name")),
-        101L -> TileIndex.InternalWay(101, Seq(1, 2, 3, 4))
+        100L -> internal.InternalWay(100, Seq(5, 6, 3), Map(3373707 -> "Street Name")),
+        101L -> internal.InternalWay(101, Seq(1, 2, 3, 4))
       ),
       Map(206407764 -> "traffic_light", 3373707 -> "name")
     )
 
     "retrieve a way" in {
       exampleNetwork.getWay(100) shouldBe Some(
-        Way(
+        model.Way(
           100,
           Seq(
-            Node(5, Location(4, 5)),
-            Node(6, Location(2, 5)),
-            Node(3, Location(3, 10))
+            model.Node(5, model.Location(4, 5)),
+            model.Node(6, model.Location(2, 5)),
+            model.Node(3, model.Location(3, 10))
           ),
           Map("name" -> "Street Name")
         )
       )
 
       exampleNetwork.getWay(101) shouldBe Some(
-        Way(
+        model.Way(
           101,
           Seq(
-            Node(1, Location(7, 3), Map("traffic_light" -> "true")),
-            Node(2, Location(7, 10)),
-            Node(3, Location(3, 10)),
-            Node(4, Location(3, 16))
+            model.Node(1, model.Location(7, 3), Map("traffic_light" -> "true")),
+            model.Node(2, model.Location(7, 10)),
+            model.Node(3, model.Location(3, 10)),
+            model.Node(4, model.Location(3, 16))
           ),
           Map.empty
         )
@@ -73,29 +74,29 @@ class APISpec extends AnyWordSpecLike with Matchers {
 
     "retrieve a node" in {
       exampleNetwork.getNode(100000) shouldBe None
-      exampleNetwork.getNode(1) shouldBe Some(Node(1, Location(7, 3), Map("traffic_light" -> "true")))
+      exampleNetwork.getNode(1) shouldBe Some(model.Node(1, model.Location(7, 3), Map("traffic_light" -> "true")))
     }
 
     "add a Node" in {
-      val node = Node(10, Location(90, 90), Map.empty)
+      val node = model.Node(10, model.Location(90, 90), Map.empty)
       exampleNetwork.addNode(node).getNode(10) shouldBe Some(node)
     }
 
     "add a Way" in {
       val way =
-        Way(
+        model.Way(
           1000,
           Seq(
-            Node(1001, Location(90, 90), Map.empty),
-            Node(1002, Location(90, 90), Map.empty),
-            Node(1003, Location(90, 90), Map.empty)
+            model.Node(1001, model.Location(90, 90), Map.empty),
+            model.Node(1002, model.Location(90, 90), Map.empty),
+            model.Node(1003, model.Location(90, 90), Map.empty)
           ),
           Map("key" -> "value")
         )
 
       val tileIdx = exampleNetwork.addWay(way)
 
-      tileIdx.getNode(1001) shouldBe Some(Node(1001, Location(90, 90), Map.empty))
+      tileIdx.getNode(1001) shouldBe Some(model.Node(1001, model.Location(90, 90), Map.empty))
       tileIdx.getWay((1000)) shouldBe Some(way)
     }
 

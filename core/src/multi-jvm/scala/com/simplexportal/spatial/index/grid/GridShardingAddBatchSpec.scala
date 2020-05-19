@@ -109,26 +109,26 @@ abstract class GridShardingAddBatchSpec
       enterBarrier("all-up")
     }
 
-    "be able to add nodes and ways" in {
-      val probe = TestProbe[GridACK]()
-      runOn(node0) {
-
-        gridIndex ! GridAddBatch(
-          Seq(
-            GridAddNode(100, -23, -90, Map.empty),
-            GridAddNode(101, 60, 130, Map.empty),
-            GridAddNode(102, -23.3, -90, Map.empty),
-            GridAddNode(110, 1, 1, Map.empty, None),
-            GridAddNode(111, 1.000001, 1.000001, Map.empty, None),
-            GridAddNode(112, 1.000002, 1.000002, Map.empty, None),
-            GridAddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
-          ),
-          Some(probe.ref)
-        )
-        probe.receiveMessages(1, 20.seconds)
-      }
-      enterBarrier("nodes added")
-    }
+//    "be able to add nodes and ways" in {
+//      val probe = TestProbe[GridACK]()
+//      runOn(node0) {
+//
+//        gridIndex ! GridAddBatch(
+//          Seq(
+//            GridAddNode(100, -23, -90, Map.empty),
+//            GridAddNode(101, 60, 130, Map.empty),
+//            GridAddNode(102, -23.3, -90, Map.empty),
+//            GridAddNode(110, 1, 1, Map.empty, None),
+//            GridAddNode(111, 1.000001, 1.000001, Map.empty, None),
+//            GridAddNode(112, 1.000002, 1.000002, Map.empty, None),
+//            GridAddWay(101, Seq(100, 101, 102, 110, 111, 112), Map.empty, None)
+//          ),
+//          Some(probe.ref)
+//        )
+//        probe.receiveMessages(1, 20.seconds)
+//      }
+//      enterBarrier("nodes added")
+//    }
 
     "return None if way is not there" in {
       val probe = TestProbe[GridGetWayReply]()

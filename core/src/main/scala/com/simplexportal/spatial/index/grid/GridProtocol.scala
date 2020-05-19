@@ -19,12 +19,11 @@ package com.simplexportal.spatial.index.grid
 
 import akka.actor.typed.ActorRef
 import com.simplexportal.spatial.index.CommonInternalSerializer
-import com.simplexportal.spatial.model.{Location, Node, Way}
+import com.simplexportal.spatial.model
 
 /**
   * Define the protocol used by the Grid.
   */
-// FIXME: Don't use package to define the model.
 object GridProtocol {
 
   sealed trait GridMessage extends Message
@@ -51,17 +50,12 @@ object GridProtocol {
   }
 
   final case class GridAddNode(
-      id: Long,
-      lat: Double,
-      lon: Double,
-      attributes: Map[String, String],
+      node: model.Node,
       replyTo: Option[ActorRef[GridACK]] = None
   ) extends GridBatchCommand
 
   final case class GridAddWay(
-      id: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String],
+      way: model.Way,
       replyTo: Option[ActorRef[GridACK]] = None
   ) extends GridBatchCommand
 
@@ -72,20 +66,21 @@ object GridProtocol {
 
   // All Queries
 
+// FIXME: It needs a lookup index.
   final case class GridGetNode(id: Long, replyTo: ActorRef[GridGetNodeReply]) extends GridQuery
 
-  final case class GridGetNodeReply(payload: Either[String, Option[Node]]) extends GridReply[Option[Node]]
+  final case class GridGetNodeReply(payload: Either[String, Option[model.Node]]) extends GridReply[Option[model.Node]]
 
   final case class GridGetWay(id: Long, replyTo: ActorRef[GridGetWayReply]) extends GridQuery
 
-  final case class GridGetWayReply(payload: Either[String, Option[Way]]) extends GridReply[Option[Way]]
+  final case class GridGetWayReply(payload: Either[String, Option[model.Way]]) extends GridReply[Option[model.Way]]
 
   final case class GridNearestNode(
-      location: Location,
+      location: model.Location,
       replyTo: ActorRef[GridNearestNodeReply]
   ) extends GridQuery
 
-  final case class GridNearestNodeReply(payload: Either[String, Set[Node]]) extends GridReply[Set[Node]]
+  final case class GridNearestNodeReply(payload: Either[String, Set[model.Node]]) extends GridReply[Set[model.Node]]
 
   // FIXME: This should be a "final case object GridDone extends GridACK {"
   final case class GridDone() extends GridACK {

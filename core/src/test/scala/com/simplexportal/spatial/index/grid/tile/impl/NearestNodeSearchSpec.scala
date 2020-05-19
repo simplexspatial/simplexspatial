@@ -19,7 +19,7 @@
 
 package com.simplexportal.spatial.index.grid.tile.impl
 
-import com.simplexportal.spatial.model.{Location, Node}
+import com.simplexportal.spatial.model
 import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -36,26 +36,26 @@ class NearestNodeSearchSpec extends AnyWordSpecLike with Matchers with Inside {
     "fine the nearest node" when {
 
       "there is only one result" in {
-        inside(index.nearestNode(Location(6, 9))) {
+        inside(index.nearestNode(model.Location(6, 9))) {
           case Some(NearestNode(nodes, distance)) =>
-            nodes shouldBe Set(Node(1, Location(7, 10), Map.empty))
+            nodes shouldBe Set(model.Node(1, model.Location(7, 10), Map.empty))
             distance shouldBe 1.4 +- 0.1
         }
       }
 
       "there are more than one result" in {
-        inside(index.nearestNode(Location(0, 0))) {
+        inside(index.nearestNode(model.Location(0, 0))) {
           case Some(NearestNode(nodes, distance)) =>
             nodes shouldBe Set(
-              Node(1, Location(7, 10), Map.empty),
-              Node(4, Location(-7, -10), Map.empty)
+              model.Node(1, model.Location(7, 10), Map.empty),
+              model.Node(4, model.Location(-7, -10), Map.empty)
             )
             distance shouldBe 12.2 +- 0.1
         }
       }
 
       "there are not results" in {
-        TileIndex().nearestNode(Location(6, 9)) shouldBe None
+        TileIndex().nearestNode(model.Location(6, 9)) shouldBe None
       }
     }
 

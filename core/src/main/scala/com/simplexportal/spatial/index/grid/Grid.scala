@@ -24,7 +24,8 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityType
 import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.sessions._
 import com.simplexportal.spatial.index.grid.sessions.addbatch.AddBatchSession
-import com.simplexportal.spatial.index.grid.tile.actor.{Command, TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIndexActor, TileIndexEntityIdGen}
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol.Command
 import com.simplexportal.spatial.index.lookup.node.{NodeLookUpActor, NodeLookUpProtocol}
 import com.simplexportal.spatial.index.lookup.way.{WayLookUpActor, WayLookUpProtocol}
 import com.typesafe.config.ConfigFactory
@@ -77,13 +78,13 @@ object Grid {
           Behaviors.same
 
         // Queries
-        case cmd: GridGetNode =>
-          GetNodeSession.processRequest(cmd, context)
-          Behaviors.same
-
-        case cmd: GridGetWay =>
-          GetWaySession.processRequest(cmd, context)
-          Behaviors.same
+//        case cmd: GridGetNode =>
+//          GetNodeSession.processRequest(cmd, context)
+//          Behaviors.same
+//
+//        case cmd: GridGetWay =>
+//          GetWaySession.processRequest(cmd, context)
+//          Behaviors.same
 
         case cmd: GridNearestNode =>
           GetNearestNodeSession.processRequest(cmd, context)

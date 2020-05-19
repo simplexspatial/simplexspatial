@@ -100,15 +100,15 @@ abstract class GetNearestNodeSessionSpec
 
     enterBarrier("all-up")
 
-    runOn(node1) {
-      val probeACK = TestProbe[GridACK]()
-      gridIndex ! GridAddNode(1, 0, 0, Map.empty, Some(probeACK.ref))
-      gridIndex ! GridAddNode(2, 1, 1, Map.empty, Some(probeACK.ref))
-      gridIndex ! GridAddNode(3, 46, 91, Map.empty, Some(probeACK.ref))
-      gridIndex ! GridAddNode(4, 46, 91, Map.empty, Some(probeACK.ref))
-      gridIndex ! GridAddNode(5, 89, -179, Map.empty, Some(probeACK.ref))
-      probeACK.receiveMessages(5) shouldBe Seq.fill(5)(GridDone())
-    }
+//    runOn(node1) {
+//      val probeACK = TestProbe[GridACK]()
+//      gridIndex ! GridAddNode(1, 0, 0, Map.empty, Some(probeACK.ref))
+//      gridIndex ! GridAddNode(2, 1, 1, Map.empty, Some(probeACK.ref))
+//      gridIndex ! GridAddNode(3, 46, 91, Map.empty, Some(probeACK.ref))
+//      gridIndex ! GridAddNode(4, 46, 91, Map.empty, Some(probeACK.ref))
+//      gridIndex ! GridAddNode(5, 89, -179, Map.empty, Some(probeACK.ref))
+//      probeACK.receiveMessages(5) shouldBe Seq.fill(5)(GridDone())
+//    }
 
     enterBarrier("nodes added and all ready for the test")
 

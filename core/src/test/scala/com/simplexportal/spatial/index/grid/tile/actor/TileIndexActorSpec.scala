@@ -21,7 +21,8 @@ package com.simplexportal.spatial.index.grid.tile.actor
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
-import com.simplexportal.spatial.model._
+import com.simplexportal.spatial.model
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIndexProtocol => protocol}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -34,16 +35,16 @@ class TileIndexActorSpec
   "Tile Actor" should {
 
     "add the nodes" in {
-      val probeDone = testKit.createTestProbe[ACK]()
-      val probeInternalNode = testKit.createTestProbe[GetInternalNodeResponse]()
-      val probeNode = testKit.createTestProbe[GetNodeResponse]()
-      val probeMetrics = testKit.createTestProbe[Metrics]()
+      val probeDone = testKit.createTestProbe[protocol.ACK]()
+      val probeInternalNode = testKit.createTestProbe[protocol.GetInternalNodeResponse]()
+      val probeNode = testKit.createTestProbe[protocol.GetNodeResponse]()
+      val probeMetrics = testKit.createTestProbe[protocol.Metrics]()
 
       val tileActor = testKit.spawn(
         TileIndexActor("add-nodes-test", "add-nodes-test"),
         "add-nodes-test"
       )
-      tileActor ! AddNode(
+      tileActor ! protocol.AddNode(
         10,
         5,
         5,
@@ -51,41 +52,41 @@ class TileIndexActorSpec
         Some(probeDone.ref)
       )
 
-      tileActor ! GetInternalNode(10, probeInternalNode.ref)
-      tileActor ! GetNode(10, probeNode.ref)
-      tileActor ! GetMetrics(probeMetrics.ref)
+      tileActor ! protocol.GetInternalNode(10, probeInternalNode.ref)
+      tileActor ! protocol.GetNode(10, probeNode.ref)
+      tileActor ! protocol.GetMetrics(probeMetrics.ref)
 
       probeInternalNode.expectMessage(
-        GetInternalNodeResponse(
+        protocol.GetInternalNodeResponse(
           10,
           Some(
             TileIndex.InternalNode(
               10,
-              Location(5, 5),
+              model.Location(5, 5),
               Map(128826956 -> "nodeAttrValue")
             )
           )
         )
       )
       probeNode.expectMessage(
-        GetNodeResponse(
+        protocol.GetNodeResponse(
           10,
           Some(
-            Node(
+            model.Node(
               10,
-              Location(5, 5),
+              model.Location(5, 5),
               Map("nodeAttrKey" -> "nodeAttrValue")
             )
           )
         )
       )
 
-      probeMetrics.expectMessage(Metrics(0, 1))
+      probeMetrics.expectMessage(protocol.Metrics(0, 1))
     }
 
     "connect nodes using ways" in {
-      val probeWay = testKit.createTestProbe[GetInternalWayResponse]()
-      val probeMetrics = testKit.createTestProbe[Metrics]()
+      val probeWay = testKit.createTestProbe[protocol.GetInternalWayResponse]()
+      val probeMetrics = testKit.createTestProbe[protocol.Metrics]()
 
       val tileActor = testKit.spawn(
         TileIndexActor(
@@ -97,11 +98,11 @@ class TileIndexActorSpec
 
       exampleTileCommands foreach (command => tileActor ! command)
 
-      tileActor ! GetMetrics(probeMetrics.ref)
-      tileActor ! GetInternalWay(100, probeWay.ref)
-      probeMetrics.expectMessage(Metrics(2, 6))
+      tileActor ! protocol.GetMetrics(probeMetrics.ref)
+      tileActor ! protocol.GetInternalWay(100, probeWay.ref)
+      probeMetrics.expectMessage(protocol.Metrics(2, 6))
       probeWay.expectMessage(
-        GetInternalWayResponse(
+        protocol.GetInternalWayResponse(
           100,
           Some(
             TileIndex
@@ -112,8 +113,8 @@ class TileIndexActorSpec
     }
 
     "create network using blocks" in {
-      val probeWay = testKit.createTestProbe[GetInternalWayResponse]()
-      val probeMetrics = testKit.createTestProbe[Metrics]()
+      val probeWay = testKit.createTestProbe[protocol.GetInternalWayResponse]()
+      val probeMetrics = testKit.createTestProbe[protocol.Metrics]()
 
       val tileActor = testKit.spawn(
         TileIndexActor(
@@ -123,12 +124,12 @@ class TileIndexActorSpec
         "create-network-using-blocks-test"
       )
 
-      tileActor ! AddBatch(exampleTileCommands)
+      tileActor ! protocol.AddBatch(exampleTileCommands)
 
-      tileActor ! GetMetrics(probeMetrics.ref)
-      tileActor ! GetInternalWay(100, probeWay.ref)
+      tileActor ! protocol.GetMetrics(probeMetrics.ref)
+      tileActor ! protocol.GetInternalWay(100, probeWay.ref)
       probeWay.expectMessage(
-        GetInternalWayResponse(
+        protocol.GetInternalWayResponse(
           100,
           Some(
             TileIndex
@@ -140,7 +141,7 @@ class TileIndexActorSpec
     }
 
     "retrieve a way from the network" in {
-      val probeWay = testKit.createTestProbe[GetWayResponse]()
+      val probeWay = testKit.createTestProbe[protocol.GetWayResponse]()
 
       val tileActor = testKit.spawn(
         TileIndexActor(
@@ -150,19 +151,19 @@ class TileIndexActorSpec
         "retrieve-way-from-network-test"
       )
 
-      tileActor ! AddBatch(exampleTileCommands)
+      tileActor ! protocol.AddBatch(exampleTileCommands)
 
-      tileActor ! GetWay(100, probeWay.ref)
+      tileActor ! protocol.GetWay(100, probeWay.ref)
       probeWay.expectMessage(
-        GetWayResponse(
+        protocol.GetWayResponse(
           100,
           Some(
-            Way(
+            model.Way(
               100,
               Seq(
-                Node(5, Location(4, 5)),
-                Node(6, Location(2, 5)),
-                Node(3, Location(3, 10))
+                model.Node(5, model.Location(4, 5)),
+                model.Node(6, model.Location(2, 5)),
+                model.Node(3, model.Location(3, 10))
               ),
               Map("wayAttrKey" -> "wayAttrValue")
             )
@@ -170,8 +171,8 @@ class TileIndexActorSpec
         )
       )
 
-      tileActor ! GetWay(10, probeWay.ref)
-      probeWay.expectMessage(GetWayResponse(10, None))
+      tileActor ! protocol.GetWay(10, probeWay.ref)
+      probeWay.expectMessage(protocol.GetWayResponse(10, None))
 
     }
 

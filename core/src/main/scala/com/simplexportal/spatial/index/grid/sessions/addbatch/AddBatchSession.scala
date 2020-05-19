@@ -24,7 +24,7 @@ import com.simplexportal.spatial.index.grid.GridProtocol._
 import com.simplexportal.spatial.index.grid.tile.actor.TileIndexEntityIdGen
 import io.jvm.uuid.UUID
 
-object AddBatchSession extends CollectNodeInfo {
+object AddBatchSession /*extends CollectNodeInfo*/ {
 
   def processRequest(
       cmd: GridAddBatch,
@@ -32,11 +32,11 @@ object AddBatchSession extends CollectNodeInfo {
   )(
       implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
-  ): Unit =
-    context.spawn(
-      collectNodeIdx(cmd),
-      s"adding_batch_${UUID.randomString}",
-      ActorTags("session", "session-add-batch")
-    )
+  ): Unit = ???
+//    context.spawn(
+//      collectNodeIdx(cmd),
+//      s"adding_batch_${UUID.randomString}",
+//      ActorTags("session", "session-add-batch")
+//    )
 
 }

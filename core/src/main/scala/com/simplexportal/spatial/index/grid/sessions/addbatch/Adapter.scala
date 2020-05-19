@@ -21,19 +21,15 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
 import com.simplexportal.spatial.index.CommonInternalSerializer
 import com.simplexportal.spatial.index.grid.GridProtocol.{GridAddNode, GridAddWay, GridBatchCommand}
-import com.simplexportal.spatial.index.grid.sessions.GetNodeLocationsSession
-import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+//import com.simplexportal.spatial.index.grid.tile.{actor => tile}
+import com.simplexportal.spatial.index.grid.tile.actor.{TileIndexProtocol => tile}
 import com.simplexportal.spatial.index.lookup.node.NodeLookUpProtocol
 import com.simplexportal.spatial.index.lookup.way.WayLookUpProtocol
+import com.simplexportal.spatial.model
 
 protected trait Adapter {
 
   protected sealed trait ForeignResponse extends CommonInternalSerializer
-
-  protected case class LocationsWrapper(
-      locs: GetNodeLocationsSession.NodeLocations
-  ) extends ForeignResponse
-
   protected case class DoneWrapper() extends ForeignResponse
   protected case class NotDoneWrapper(msg: String) extends ForeignResponse
 
@@ -51,10 +47,10 @@ protected trait Adapter {
 
   implicit class GridAddBatchEnricher(gridAddBatch: GridBatchCommand) {
     def toTileProtocol(): tile.BatchActions = gridAddBatch match {
-      case GridAddNode(id, lat, lon, attributes, _) =>
+      case GridAddNode(model.Node(id, model.Location(lat, lon), attributes), _) =>
         tile.AddNode(id, lat, lon, attributes)
-      case GridAddWay(id, nodeIds, attributes, _) =>
-        tile.AddWay(id, nodeIds, attributes)
+//      case GridAddWay(model.Way(id, nodes, attributes), _) =>
+//        tile.AddWay(id, nodeIds, attributes)
     }
   }
 

@@ -17,7 +17,7 @@
 
 package com.simplexportal.spatial.index.grid.tile.actor
 
-import com.simplexportal.spatial.model.{BoundingBox, Location}
+import com.simplexportal.spatial.model
 
 import scala.util.Try
 
@@ -31,7 +31,7 @@ object TileIdx {
       case _ => Left(s"[${entityId}] is not a valid format for a TileIdx")
     }
 
-  def apply(location: Location)(implicit tileIdxGen: TileIndexEntityIdGen): TileIdx =
+  def apply(location: model.Location)(implicit tileIdxGen: TileIndexEntityIdGen): TileIdx =
     tileIdxGen.tileIdx(location.lat, location.lon)
 }
 
@@ -65,12 +65,12 @@ case class TileIdx(latIdx: Int, lonIdx: Int) {
     }
 
   // scalastyle:off magic.number
-  def bbox()(implicit tileIdxGen: TileIndexEntityIdGen): BoundingBox = BoundingBox(
-    min = Location(
+  def bbox()(implicit tileIdxGen: TileIndexEntityIdGen): model.BoundingBox = model.BoundingBox(
+    min = model.Location(
       -90 + ((180 / tileIdxGen.latPartitions) * latIdx),
       -180 + ((360 / tileIdxGen.lonPartitions) * lonIdx)
     ),
-    max = Location(
+    max = model.Location(
       -90 + ((180 / tileIdxGen.latPartitions) * (latIdx + 1)),
       -180 + ((360 / tileIdxGen.lonPartitions) * (lonIdx + 1))
     )

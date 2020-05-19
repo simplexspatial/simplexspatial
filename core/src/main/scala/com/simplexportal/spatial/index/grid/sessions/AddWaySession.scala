@@ -24,6 +24,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import com.simplexportal.spatial.index.grid.Grid
 import com.simplexportal.spatial.index.grid.Grid.WayLookUpTypeKey
 import com.simplexportal.spatial.index.grid.tile.actor._
+import com.simplexportal.spatial.index.grid.tile.actor.TileIndexProtocol._
 import com.simplexportal.spatial.index.grid.tile.impl.TileIndex
 import com.simplexportal.spatial.index.lookup.way.{LookUpWayEntityIdGen, WayLookUpProtocol}
 import com.simplexportal.spatial.model.Location
@@ -37,58 +38,58 @@ object AddWaySession {
   def apply(addWay: AddWay)(
       implicit sharding: ClusterSharding,
       tileIndexEntityIdGen: TileIndexEntityIdGen
-  ): Behavior[NotUsed] =
-    Behaviors
-      .setup[AnyRef] { context =>
-        var pendingResponses = 0
-
-        // Translate nodes ids into nodes.
-        context.spawn(
-          GetInternalNodesSession(
-            GetInternalNodes(addWay.nodeIds, context.self)
-          ),
-          s"getting_node_${UUID.randomString}",
-          ActorTags("session", "session-add-way")
-        )
-
-        Behaviors.receiveMessage {
-          case GetInternalNodesResponse(nodes) =>
-            validateNodes(nodes) match {
-              case Success(nodes) =>
-                splitNodesInShards(nodes).foreach {
-                  case (tileIdx, nodes) =>
-                    // Register the node in the the tile index.
-                    pendingResponses += 1
-                    sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay
-                      .copy(
-                        nodeIds = nodes.map(_.id),
-                        replyTo = Some(context.self)
-                      )
-
-                    // Register in the ways lookup.
-                    pendingResponses += 1
-                    val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
-                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpProtocol
-                      .Put(addWay.id, tileIdx, Some(context.self))
-                }
-                Behaviors.same
-              case Failure(exception) =>
-                addWay.replyTo.foreach(_ ! NotDone(exception.getMessage))
-                Behaviors.stopped
-            }
-          case Done() | WayLookUpProtocol.Done() =>
-            pendingResponses -= 1
-            if (pendingResponses == 0) {
-              addWay.replyTo.foreach(_ ! Done())
-              Behaviors.stopped
-            } else {
-              Behaviors.same
-            }
-          case _ =>
-            Behaviors.unhandled
-        }
-      }
-      .narrow[NotUsed]
+  ): Behavior[NotUsed] = ???
+//    Behaviors
+//      .setup[AnyRef] { context =>
+//        var pendingResponses = 0
+//
+//        // Translate nodes ids into nodes.
+//        context.spawn(
+//          GetInternalNodesSession(
+//            GetInternalNodes(addWay.nodeIds, context.self)
+//          ),
+//          s"getting_node_${UUID.randomString}",
+//          ActorTags("session", "session-add-way")
+//        )
+//
+//        Behaviors.receiveMessage {
+//          case GetInternalNodesResponse(nodes) =>
+//            validateNodes(nodes) match {
+//              case Success(nodes) =>
+//                splitNodesInShards(nodes).foreach {
+//                  case (tileIdx, nodes) =>
+//                    // Register the node in the the tile index.
+//                    pendingResponses += 1
+//                    sharding.entityRefFor(Grid.TileTypeKey, tileIdx.entityId) ! addWay
+//                      .copy(
+//                        nodeIds = nodes.map(_.id),
+//                        replyTo = Some(context.self)
+//                      )
+//
+//                    // Register in the ways lookup.
+//                    pendingResponses += 1
+//                    val wayLookUpId = LookUpWayEntityIdGen.entityId(addWay.id)
+//                    sharding.entityRefFor(WayLookUpTypeKey, wayLookUpId) ! WayLookUpProtocol
+//                      .Put(addWay.id, tileIdx, Some(context.self))
+//                }
+//                Behaviors.same
+//              case Failure(exception) =>
+//                addWay.replyTo.foreach(_ ! NotDone(exception.getMessage))
+//                Behaviors.stopped
+//            }
+//          case Done() | WayLookUpProtocol.Done() =>
+//            pendingResponses -= 1
+//            if (pendingResponses == 0) {
+//              addWay.replyTo.foreach(_ ! Done())
+//              Behaviors.stopped
+//            } else {
+//              Behaviors.same
+//            }
+//          case _ =>
+//            Behaviors.unhandled
+//        }
+//      }
+//      .narrow[NotUsed]
 
   /**
     * Validate all nodes in the response, and return a validated sequence of nodes.

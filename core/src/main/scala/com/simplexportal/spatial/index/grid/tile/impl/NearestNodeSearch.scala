@@ -17,13 +17,13 @@
 
 package com.simplexportal.spatial.index.grid.tile.impl
 
-import com.simplexportal.spatial.index.grid.tile.impl.TileIndex.InternalNode
-import com.simplexportal.spatial.model.{Location, Node}
+import com.simplexportal.spatial.index.grid.tile.impl.{TileIndex => internal}
+import com.simplexportal.spatial.model
 import com.simplexportal.spatial.utils.ModelEnrichers._
 import org.locationtech.jts.geom.Coordinate
 
 case class NearestNode(
-    nodes: Set[Node],
+    nodes: Set[model.Node],
     distance: Double
 ) {
 
@@ -33,12 +33,12 @@ case class NearestNode(
 trait NearestNodeSearch {
   this: TileIndex =>
 
-  def nearestNode(origin: Location): Option[NearestNode] =
+  def nearestNode(origin: model.Location): Option[NearestNode] =
     nearestInternalNode(origin.toJTS()).map {
       case (internalNodes, distance) =>
         NearestNode(
           internalNodes.map(iNode =>
-            Node(
+            model.Node(
               iNode.id,
               iNode.location,
               dictionaryToAttributes(iNode.attributes)
@@ -48,17 +48,17 @@ trait NearestNodeSearch {
         )
     }
 
+  // TODO: It will iterate all nodes in the tile so it is a really bad approach. https://github.com/angelcervera/simplexspatial/issues/41
   /**
     * Return nearest points and the distance in degrees.
-    * TODO: It will iterate all nodes in the tile so it is a really bad approach. https://github.com/angelcervera/simplexspatial/issues/41
     *
     * @param origin Point of origin. It is a JTS Coordinate(lon, lat)
     * @return A tuple with the set of nodes found and the distance in degrees.
     */
   private def nearestInternalNode(
       origin: Coordinate
-  ): Option[(Set[InternalNode], Double)] =
-    nodes.foldLeft(Option.empty[(Set[InternalNode], Double)]) {
+  ): Option[(Set[internal.InternalNode], Double)] =
+    nodes.foldLeft(Option.empty[(Set[internal.InternalNode], Double)]) {
       case (current, (_, node)) => {
         val d = origin.distance(node.location.toJTS())
         current match {
