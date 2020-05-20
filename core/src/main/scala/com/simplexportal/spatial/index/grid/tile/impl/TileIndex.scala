@@ -35,7 +35,21 @@ object TileIndex {
       ways: Set[Long] = Set.empty,
       outs: Set[Long] = Set.empty,
       ins: Set[Long] = Set.empty
-  ) extends InternalModel
+  ) extends InternalModel {
+
+    /**
+      * Create a new Node:
+      * - Taking id, location and attributes from the parameter b
+      * - joining ways, outs and ins set
+      * @param b Object to merge.
+      * @return new Object with merged values.
+      */
+    def merge(b: Node): Node = b.copy(
+      ways = ways ++ b.ways,
+      outs = outs ++ b.outs,
+      ins = ins ++ b.ins
+    )
+  }
 
   final case class Way(
       id: Long,
@@ -52,84 +66,87 @@ case class TileIndex(
 ) extends NearestNodeSearch
     with AttribsDictionary {
 
-  private def buildNewNode(
-      wayId: Long,
-      prev: Option[Long],
-      current: Long,
-      next: Option[Long]
-  ) =
-    nodes.get(current) match {
-      case None => // FIXME: This case will not happen. If it happend, there is an error in the tile!!!!
-        // If it is not in the index, it is because it is a connector.
-        internal.Node( // TODO: Calculate directions. Now, all bidirectional.
-          current,
-          model.Location.NaL,
-          ways = Set(wayId),
-          outs = (Set.empty ++ next) ++ prev,
-          ins = (Set.empty ++ next) ++ prev
-        )
-      case Some(node) =>
-        node.copy( // TODO: Calculate directions. Now, all bidirectional.
-          ways = node.ways + wayId,
-          outs = (node.outs ++ next) ++ prev,
-          ins = (node.ins ++ next) ++ prev
-        )
-    }
-
-  @tailrec
-  private def updateConnections(
-      wayId: Long,
-      prev: Option[Long],
-      current: Long,
-      nodeIds: Seq[Long],
-      updated: List[(Long, internal.Node)]
-  ): List[(Long, internal.Node)] =
-    nodeIds match {
-      case Seq() =>
-        (current, buildNewNode(wayId, prev, current, None)) :: updated
-      case Seq(next, tail @ _*) => {
-        updateConnections(
-          wayId,
-          Some(current),
-          next,
-          tail,
-          (current, buildNewNode(wayId, prev, current, Some(next))) :: updated
-        )
+  private def searchAndMerge(iNode: internal.Node, nodes: Map[Long, internal.Node]): Map[Long, internal.Node] =
+    nodes + (iNode.id -> {
+      nodes.get(iNode.id) match {
+        case None        => iNode
+        case Some(older) => older.merge(iNode)
       }
-    }
+    })
 
-  private def addInternalWay(
-      wayId: Long,
-      nodeIds: Seq[Long],
-      attributes: Map[String, String]
-  ): TileIndex = {
-    val (dic, attrs) = attributesToDictionary(attributes)
+  def addNode(node: model.Node): TileIndex = {
+    val (dic, attrs) = attributesToDictionary(node.attributes)
+
+    // If exist, merge with the new one.
     copy(
-      ways = ways + (wayId -> internal.Way(wayId, nodeIds, attrs)),
-      nodes = nodes ++ updateConnections(
-        wayId,
-        None,
-        nodeIds.head,
-        nodeIds.tail,
-        List.empty
-      ),
+      nodes = searchAndMerge(internal.Node(node.id, node.location, attrs), nodes),
       tagsDic = tagsDic ++ dic
     )
   }
 
-  def getWay(id: Long): Option[model.Way] = ways.get(id).map { iWay =>
-    model.Way(
-      id,
-      iWay.nodeIds
-        .map { nodeId =>
-          val iNode = nodes(nodeId)
-          model.Node(
-            iNode.id,
-            iNode.location,
-            iNode.attributes.map(attr => tagsDic(attr._1) -> attr._2)
-          )
-        },
-      iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
+  @tailrec
+  private def processWayNodes(
+      wayId: Long,
+      prev: Option[model.Node],
+      current: model.Node,
+      wayNodes: Seq[model.Node],
+      updatedNodes: Map[Long, internal.Node],
+      updatedTagsDic: Map[Int, String]
+  ): TileIndex = {
+    val (dic, attrs) = attributesToDictionary(current.attributes)
+    wayNodes match {
+      case Seq() =>
+        val connections = prev.map(_.id).toSet
+        val iNode = internal.Node( // TODO: Calculate directions. Now, all bidirectional.
+          current.id,
+          current.location,
+          attrs,
+          ways = Set(wayId),
+          outs = connections,
+          ins = connections
+        )
+
+        copy(
+          nodes = searchAndMerge(iNode, updatedNodes),
+          tagsDic = updatedTagsDic ++ dic
+        )
+      case Seq(next, tail @ _*) => {
+        val connections = prev.map(_.id).toSet + next.id // TODO: Calculate directions. Now, all bidirectional.
+        val iNode = internal.Node(
+          current.id,
+          current.location,
+          attrs,
+          ways = Set(wayId),
+          outs = connections,
+          ins = connections
+        )
+
+        processWayNodes(
+          wayId,
+          Some(current),
+          next,
+          tail,
+          searchAndMerge(iNode, updatedNodes),
+          updatedTagsDic ++ dic
+        )
+      }
+    }
+  }
+
+  def addWay(way: model.Way): TileIndex = {
+    val (dic, attrs) = attributesToDictionary(way.attributes)
+
+    val newWaysSet = ways + (way.id -> internal.Way(way.id, way.nodes.map(_.id), attrs))
+
+    copy(
+      ways = newWaysSet
+    ).processWayNodes(
+      way.id,
+      None,
+      way.nodes.head,
+      way.nodes.tail,
+      nodes,
+      tagsDic ++ dic
     )
   }
 
@@ -144,20 +161,19 @@ case class TileIndex(
         )
       )
 
-  def addWay(way: model.Way): TileIndex =
-    way.nodes
-      .foldLeft(this)((tileIdx, node) => tileIdx.addNode(node))
-      .addInternalWay(
-        way.id,
-        way.nodes.map(_.id),
-        way.attributes
-      )
-
-  def addNode(node: model.Node): TileIndex = {
-    val (dic, attrs) = attributesToDictionary(node.attributes)
-    copy(
-      nodes = nodes + (node.id -> internal.Node(node.id, node.location, attrs)),
-      tagsDic = tagsDic ++ dic
+  def getWay(id: Long): Option[model.Way] = ways.get(id).map { iWay =>
+    model.Way(
+      id,
+      iWay.nodeIds
+        .map { nodeId =>
+          val iNode = nodes(nodeId)
+          model.Node(
+            iNode.id,
+            iNode.location,
+            iNode.attributes.map(attr => tagsDic(attr._1) -> attr._2)
+          )
+        },
+      iWay.attributes.map(attr => tagsDic(attr._1) -> attr._2)
     )
   }
 
