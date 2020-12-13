@@ -94,16 +94,18 @@ package model {
     )
   }
 
+  sealed trait Entity
+
   final case class Node(
       id: Long,
       location: Location,
       attributes: Map[String, String] = Map.empty
-  )
+  ) extends Entity
 
   final case class Way(
       id: Long,
       nodes: Seq[Node],
       attributes: Map[String, String] = Map.empty
-  )
+  ) extends Entity
 
 }
