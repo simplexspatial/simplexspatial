@@ -63,17 +63,17 @@ lazy val commonSettings = Seq(
   ),*/
 )
 
-lazy val akkaVersion = "2.6.5"
-lazy val akkaHttpVersion = "10.1.11"
-lazy val akkaHttpCorsVersion = "0.4.2"
+lazy val akkaVersion = "2.6.11"
+lazy val akkaHttpVersion = "10.2.3"
+lazy val akkaHttpCorsVersion = "1.1.1"
 lazy val scalatestVersion = "3.1.1"
 lazy val leveldbVersion = "1.8"
-lazy val betterFilesVersion = "3.8.0"
-lazy val akkaKryoSerializationVersion = "1.1.5"
+lazy val betterFilesVersion = "3.9.1"
+lazy val akkaKryoSerializationVersion = "2.0.1"
 lazy val scalaUUIDVersion = "0.3.1"
-lazy val jtsVersion = "1.16.1"
+lazy val jtsVersion = "1.18.0"
 lazy val jdbcPersistenceVersion = "3.5.3"
-lazy val postgresJDBCDriver = "42.2.11"
+lazy val postgresJDBCDriver = "42.2.18"
 lazy val logbackVersion = "1.2.3"
 
 lazy val root = (project in file("."))
