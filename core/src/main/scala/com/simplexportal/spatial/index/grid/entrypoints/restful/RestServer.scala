@@ -191,7 +191,7 @@ object RestServer extends Directives with RestfulJsonProtocol {
           case grid.GridNearestNodeReply(Right(nodes)) =>
             complete(NearestNodes(nodes.map(n => Node(n.id, n.location.lat, n.location.lon, n.attributes))))
         }
-        parameters(('lat.as[Double], 'lon.as[Double])) { (lat, lon) =>
+        parameters('lat.as[Double], 'lon.as[Double]) { (lat, lon) =>
           reply(
             gridIndex
               .ask[grid.GridNearestNodeReply](ref => grid.GridNearestNode(model.Location(lat, lon), ref)),
